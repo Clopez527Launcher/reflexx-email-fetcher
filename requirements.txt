@@ -1,0 +1,6 @@
+pandas
+openpyxl
+mysql-connector-python
+imaplib2
+email
+python-dotenv
