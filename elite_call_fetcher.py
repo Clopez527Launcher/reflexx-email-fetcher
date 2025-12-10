@@ -46,6 +46,20 @@ def parse_duration_to_seconds(s):
     except Exception as e:
         print(f"⛔ Duration parsing failed: {s} → {e}")
         return None
+        
+def parse_call_start(raw):
+    try:
+        if hasattr(raw, "to_pydatetime"):
+            return raw.to_pydatetime()
+
+        if not isinstance(raw, str):
+            return None
+
+        raw = raw.strip()
+        return datetime.strptime(raw, "%m/%d/%Y %I:%M:%S %p")
+    except Exception as e:
+        print(f"⛔ Failed to parse call start '{raw}' → {e}")
+        return None
 
 
 # === Connect to Gmail ===
@@ -108,9 +122,9 @@ for num in messages[0].split():
                 length_raw = row.get("Call Length")
                 length_sec = parse_duration_to_seconds(length_raw)
 
-                if not length_sec:
-                    print(f"❌ Skipping: no valid duration → '{length_raw}'")
-                    continue
+                if length_sec is None:
+                print(f"❌ Skipping: no valid duration → '{length_raw}'")
+                continue
 
                 if length_sec < MIN_SEC:
                     print(f"❌ Skipping: duration too short ({length_sec}s) → '{length_raw}'")
