@@ -68,14 +68,15 @@ for num in messages[0].split():
                 print(f"⏭️ Skipping non-elite attachment: {filename}")
                 continue
 
+            processed_elite_file = True
             print(f"🔥 Processing Elite Calls file: {filename}")
 
-            # Save the attachment
+            # Save attachment
             with open(filename, "wb") as f:
                 f.write(part.get_payload(decode=True))
             print(f"📥 Saved: {filename}")
 
-            # Load CALLS sheet
+            # Load Excel
             try:
                 df = pd.read_excel(filename, sheet_name="Calls")
                 print(f"📄 Loaded {len(df)} call rows")
@@ -83,42 +84,51 @@ for num in messages[0].split():
                 print(f"❌ Failed to read Calls sheet: {e}")
                 continue
 
-            # Open database connection
+            # DB connection
             conn = mysql.connector.connect(**MYSQL_CONFIG)
             cursor = conn.cursor()
 
             inserted = 0
-            MIN_SEC = 5 * 60  # 5 minutes threshold for ELITE
+            MIN_SEC = 5 * 60  # 5 minutes
 
             for _, row in df.iterrows():
 
-                # --- Filter elite calls ---
+                # --- DEBUG FILTERING FOR ELITE CALLS ---
                 length_raw = row.get("Call Length")
                 length_sec = parse_duration_to_seconds(length_raw)
 
-                if not length_sec or length_sec < MIN_SEC:
-                    continue  # skip non-elite calls
-
-                result = str(row.get("Result", "")).strip()
-
-                # Determine agent name based on Result
-                if result == "Answered":
-                    agent_name = row.get("To Name")
-                elif result == "Connected":
-                    agent_name = row.get("From Name")
-                else:
-                    continue  # only elite if Answered or Connected
-
-                if not isinstance(agent_name, str) or agent_name.strip() == "":
+                if not length_sec:
+                    print(f"❌ Skipping: no valid duration → '{length_raw}'")
                     continue
 
-                agent_name = agent_name.strip()
+                if length_sec < MIN_SEC:
+                    print(f"❌ Skipping: duration too short ({length_sec}s) → '{length_raw}'")
+                    continue
 
+                result = str(row.get("Result", "")).strip()
+                if result not in ["Answered", "Connected"]:
+                    print(f"❌ Skipping: result not elite → '{result}'")
+                    continue
+
+                # Determine agent name
+                if result == "Answered":
+                    agent_name = row.get("To Name")
+                else:
+                    agent_name = row.get("From Name")
+
+                if not agent_name or str(agent_name).strip() == "":
+                    print(f"❌ Skipping: missing agent name (Result={result})")
+                    continue
+
+                agent_name = str(agent_name).strip()
+
+                # Other fields
                 session_id = row.get("Session Id")
                 call_start = parse_call_start(row.get("Call Start Time"))
                 call_direction = str(row.get("Call Direction", "")).strip()
                 queue_name = str(row.get("Queue", "")).strip()
 
+                # SQL insert
                 sql = """
                 INSERT INTO ring_central_elite_calls (
                     session_id,
@@ -150,9 +160,8 @@ for num in messages[0].split():
             conn.close()
 
             print(f"✅ Inserted {inserted} elite calls.")
-            processed_elite_file = True
 
-    # Mark email as read only if we processed the elite file
+    # === Mark email as SEEN only if elite file was processed ===
     if processed_elite_file:
         mail.store(num, "+FLAGS", "\\Seen")
         print("👁‍🗨 Marked email as SEEN (elite calls processed).")
@@ -161,3 +170,4 @@ for num in messages[0].split():
 
 mail.logout()
 print("🏁 Elite call import complete.")
+
