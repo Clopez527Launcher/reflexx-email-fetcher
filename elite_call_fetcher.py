@@ -84,6 +84,7 @@ for num in messages[0].split():
             # Load Excel
             try:
                 df = pd.read_excel(filename, sheet_name="Calls")
+                print("📌 Columns in sheet:", df.columns.tolist())
                 print(f"📄 Loaded {len(df)} call rows")
             except Exception as e:
                 print(f"❌ Failed to read Calls sheet: {e}")
