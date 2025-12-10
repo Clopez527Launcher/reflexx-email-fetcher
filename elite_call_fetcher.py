@@ -22,6 +22,10 @@ MYSQL_CONFIG = {
 # --- Helpers ---
 def parse_duration_to_seconds(s):
     try:
+        # If it's a pandas Timedelta
+        if hasattr(s, "total_seconds"):
+            return int(s.total_seconds())
+
         if not isinstance(s, str):
             return None
 
@@ -29,8 +33,9 @@ def parse_duration_to_seconds(s):
 
         # Format: "0 days 00:06:30"
         if "days" in s:
+            # pandas sometimes prints this format
             parts = s.split()
-            hhmmss = parts[-1]  # last part: "00:06:30"
+            hhmmss = parts[-1]
             t = datetime.strptime(hhmmss, "%H:%M:%S")
             return t.hour * 3600 + t.minute * 60 + t.second
 
