@@ -83,6 +83,8 @@ for num in messages[0].split():
     print(f"📩 Found email: {subject}")
 
     processed_elite_file = False
+    inserted_any_elite = False
+
 
     for part in msg.walk():
         if part.get("Content-Disposition") and "attachment" in part.get("Content-Disposition"):
@@ -193,10 +195,11 @@ for num in messages[0].split():
                         call_direction,
                         queue_name
                     ))
-
                     inserted += 1
+                    inserted_any_elite = True
                 except Exception as e:
                     print(f"❌ Insert error: {e}")
+
 
             conn.commit()
             cursor.close()
@@ -204,12 +207,13 @@ for num in messages[0].split():
 
             print(f"✅ Inserted {inserted} elite calls.")
 
-    # === Mark email as SEEN only if elite file was processed ===
-    if processed_elite_file:
+    # === Mark email as SEEN only if we actually inserted elite calls ===
+    if processed_elite_file and inserted_any_elite:
         mail.store(num, "+FLAGS", "\\Seen")
-        print("👁‍🗨 Marked email as SEEN (elite calls processed).")
+        print("👁‍🗨 Marked email as SEEN (elite calls inserted).")
     else:
-        print("ℹ️ Email left unread (no elite file found).")
+        print("ℹ️ Email left unread (no elite calls inserted for this script).")
+
 
 mail.logout()
 print("🏁 Elite call import complete.")
