@@ -22,7 +22,7 @@ MYSQL_CONFIG = {
 # --- Helpers ---
 def parse_duration_to_seconds(s):
     try:
-        # If it's a pandas Timedelta
+        # If it's a pandas Timedelta (most likely for Call Length)
         if hasattr(s, "total_seconds"):
             return int(s.total_seconds())
 
@@ -33,7 +33,6 @@ def parse_duration_to_seconds(s):
 
         # Format: "0 days 00:06:30"
         if "days" in s:
-            # pandas sometimes prints this format
             parts = s.split()
             hhmmss = parts[-1]
             t = datetime.strptime(hhmmss, "%H:%M:%S")
@@ -46,9 +45,11 @@ def parse_duration_to_seconds(s):
     except Exception as e:
         print(f"⛔ Duration parsing failed: {s} → {e}")
         return None
-        
+
+
 def parse_call_start(raw):
     try:
+        # Pandas Timestamp
         if hasattr(raw, "to_pydatetime"):
             return raw.to_pydatetime()
 
@@ -123,8 +124,8 @@ for num in messages[0].split():
                 length_sec = parse_duration_to_seconds(length_raw)
 
                 if length_sec is None:
-                print(f"❌ Skipping: no valid duration → '{length_raw}'")
-                continue
+                    print(f"❌ Skipping: no valid duration → '{length_raw}'")
+                    continue
 
                 if length_sec < MIN_SEC:
                     print(f"❌ Skipping: duration too short ({length_sec}s) → '{length_raw}'")
