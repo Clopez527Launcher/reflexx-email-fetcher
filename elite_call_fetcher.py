@@ -148,28 +148,44 @@ for num in messages[0].split():
 
                 agent_name = str(agent_name).strip()
 
+                # 🔍 Look up user_id by nickname
+                cursor.execute(
+                    "SELECT id FROM users WHERE nickname = %s",
+                    (agent_name,)
+                )
+                user_row = cursor.fetchone()
+                if not user_row:
+                    print(f"⚠️ No users.nickname match for agent_name='{agent_name}'. Skipping.")
+                    continue
+
+                user_id = user_row[0]
+
                 # Other fields
                 session_id = row.get("Session Id")
                 call_start = parse_call_start(row.get("Call Start Time"))
                 call_direction = str(row.get("Call Direction", "")).strip()
                 queue_name = str(row.get("Queue", "")).strip()
 
+
                 # SQL insert
                 sql = """
                 INSERT INTO ring_central_elite_calls (
                     session_id,
+                    user_id,
                     agent_name,
                     result,
                     call_length_seconds,
                     call_start,
                     call_direction,
                     queue_name
-                ) VALUES (%s,%s,%s,%s,%s,%s,%s)
+                ) VALUES (%s,%s,%s,%s,%s,%s,%s,%s)
                 """
+
 
                 try:
                     cursor.execute(sql, (
                         int(session_id) if session_id else None,
+                        user_id,
                         agent_name,
                         result,
                         length_sec,
@@ -177,6 +193,7 @@ for num in messages[0].split():
                         call_direction,
                         queue_name
                     ))
+
                     inserted += 1
                 except Exception as e:
                     print(f"❌ Insert error: {e}")
