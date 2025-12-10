@@ -24,17 +24,22 @@ def parse_duration_to_seconds(s):
     try:
         if not isinstance(s, str):
             return None
+
+        s = s.strip()
+
+        # Format: "0 days 00:06:30"
+        if "days" in s:
+            parts = s.split()
+            hhmmss = parts[-1]  # last part: "00:06:30"
+            t = datetime.strptime(hhmmss, "%H:%M:%S")
+            return t.hour * 3600 + t.minute * 60 + t.second
+
+        # Format: "00:06:30"
         t = datetime.strptime(s, "%H:%M:%S")
         return t.hour * 3600 + t.minute * 60 + t.second
-    except:
-        return None
 
-def parse_call_start(raw):
-    try:
-        if not isinstance(raw, str):
-            return None
-        return datetime.strptime(raw, "%m/%d/%Y %I:%M:%S %p")
-    except:
+    except Exception as e:
+        print(f"⛔ Duration parsing failed: {s} → {e}")
         return None
 
 
