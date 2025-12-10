@@ -31,7 +31,7 @@ print(f"📬 Unread matches found: {len(messages[0].split())}")
 print("🔥🔥🔥 HELLO FROM NEW DAILY SCRIPT 🔥🔥🔥")
 
 for num in messages[0].split():
-    _, msg_data = mail.fetch(num, "(RFC822)")
+    _, msg_data = mail.fetch(num, "(BODY.PEEK[])")
     msg = email.message_from_bytes(msg_data[0][1])
 
     subject = decode_header(msg["Subject"])[0][0]
