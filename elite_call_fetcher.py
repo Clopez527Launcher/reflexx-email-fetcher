@@ -73,7 +73,7 @@ status, messages = mail.search(None, '(UNSEEN SUBJECT "Scheduled Reports from Ri
 print(f"📬 Unread matches: {len(messages[0].split())}")
 
 for num in messages[0].split():
-    _, msg_data = mail.fetch(num, "(RFC822)")
+    _, msg_data = mail.fetch(num, "(BODY.PEEK[])")
     msg = email.message_from_bytes(msg_data[0][1])
 
     subject = decode_header(msg["Subject"])[0][0]
