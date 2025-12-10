@@ -1,0 +1,1301 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard (New){% endblock %}
+
+{% block content %}
+<style>
+		/* === Align Dashboard layout with Analytics === */
+		.page-wrapper {
+				margin-top: 0 !important;
+				padding-top: 40 !important;   /* ⬅️ was 40px */
+		}
+
+		/* ⬆️ Move ONLY the sidebar up on this page */
+  .floating-nav {
+    top: 70px !important;   /* try 60; tweak to 55/65 if you want */
+  }
+
+  /* --- Performance Buckets layout & spacing --- */
+
+  .bucket-leaderboard {
+    list-style: none;
+    margin: 6px 0 0;
+    padding: 0;
+    max-height: 110px;
+    overflow-y: auto;
+
+    /* thin, subtle scrollbars */
+    scrollbar-width: thin;
+    scrollbar-color: #00ffff33 transparent;
+  }
+
+  .bucket-leaderboard::-webkit-scrollbar {
+    width: 4px;
+  }
+  .bucket-leaderboard::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .bucket-leaderboard::-webkit-scrollbar-thumb {
+    background: #00ffff33;
+    border-radius: 4px;
+  }
+
+  .bucket-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;             /* 💡 space between pieces */
+    padding: 1px 0;
+    font-size: 0.9rem;
+  }
+
+  .lb-rank {
+    width: 1.6rem;
+    flex-shrink: 0;
+    color: #00ffff;
+  }
+
+  .lb-name {
+    flex: 1;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .lb-score {
+    min-width: 120px;     /* 💡 keeps label pulled away from name */
+    text-align: right;
+    font-weight: 600;
+  }
+
+  /* --- Color coding for labels --- */
+  .score-excellent {
+    color: #00f6ff;       /* bright neon blue */
+  }
+
+  .score-above {
+    color: #12d87b;       /* green */
+  }
+
+  .score-average {
+    color: #ffd966;       /* yellow */
+  }
+
+  .score-below {
+    color: #ff9f40;       /* orange */
+  }
+
+  .score-poor {
+    color: #ff4d4d;       /* red */
+  }
+
+  .score-nodata {
+    color: #888888;       /* neutral grey for "No Data" */
+  }
+		.rico-toggle-btn {
+    border: none;
+    background: none;
+    box-shadow: none;
+    color: #00ffff;
+    cursor: pointer;
+    font-size: 0.8rem;
+    margin-left: 4px;
+    padding: 0;
+    line-height: 1;
+    display: inline;
+  }
+		/* --- Color swap: page black, widgets navy --- */
+  :root{
+				/* background navy (back on the page) */
+				--page-navy: #0b1626;
+
+				/* slightly lighter navy for widgets */
+				--widget-navy: #12243b;  /* tweak lighter/darker if you want */
+		}
+
+  /* Force the overall page background to black */
+  body,
+		.content,
+		.content-wrapper,
+		.page-wrapper {
+				background: var(--page-navy) !important;
+				color: var(--text-main);
+		}
+
+		/* ================= Analytics-style skin for Dashboard (New) ================= */
+
+		:root{
+				/* NEW: make page background the old “light widget” color */
+				--page-navy:   #12243b;   /* lighter navy background */
+
+				/* NEW: make ALL widgets match the sleek dark one */
+				--card-bg:     #0e151d;   /* dark navy widget background */
+				--card-inner:  #0b131a;
+				--card-border: #1f2a36;   /* subtle outline */
+				--text-main:   #e9f6ff;
+				--text-muted:  #9ab;
+		}
+
+
+		/* Page background back to deep navy */
+		body,
+		.content,
+		.content-wrapper,
+		.page-wrapper {
+				background: var(--page-navy) !important;
+				color: var(--text-main);
+		}
+
+		/* ALL dashboard cards/widgets, even nested ones */
+		.page-wrapper div[style*="border:1px solid"]{
+				background: var(--card-bg) !important;
+				border-color: var(--card-border) !important;
+				border-radius: 12px !important;
+				box-shadow:
+						0 8px 24px rgba(0,0,0,0.45),
+						inset 0 0 0 1px rgba(255,255,255,0.02);
+		}
+
+
+		/* Any nested card-like blocks (strengths/weaknesses containers etc.) */
+		.page-wrapper div[style*="border-radius:10px"],
+		.page-wrapper div[style*="border-radius:12px"]{
+				border-radius: 12px !important;
+		}
+
+		/* Inputs / selects to match Analytics */
+		.page-wrapper select,
+		.page-wrapper input[type="date"]{
+				border: 1px solid var(--card-border) !important;
+				background: var(--card-bg) !important;
+				color: var(--text-main) !important;
+				border-radius: 8px !important;
+				padding: 6px 10px !important;
+				outline: none;
+		}
+
+		.page-wrapper select:focus,
+		.page-wrapper input[type="date"]:focus{
+				box-shadow: 0 0 0 2px rgba(0,255,255,0.15);
+		}
+
+		/* Subtle muted text helper */
+		.page-wrapper .muted { color: var(--text-muted); }
+		
+		/* ✅ Hide "Showing for YYYY-MM-DD" lines in LSP Performance */
+		#ce-phone-date,
+		#ce-quote-date,
+		#ce-move-date {
+				display: none !important;
+		}
+		
+		/* ✅ Hide "Showing call stats for YYYY-MM-DD" lines in Call Stats widgets */
+		#cs-today-status,
+		#cs-yest-status {
+				display: none !important;
+		}
+		
+		/* Hide only the text "Comparative DB Window:" but keep the dropdown */
+		.ce-window-wrap {
+				font-size: 0; /* hide text */
+		}
+
+		.ce-window-wrap select {
+				font-size: 0.85rem; /* restore dropdown text size */
+		}
+
+
+
+		/* ========================================================================== */
+
+</style>
+
+<div class="page-wrapper" style="
+  width: 100%;
+  max-width: none;        /* ✅ no cap = no centering feel */
+  margin: 0;              /* ✅ pin to left */
+  padding-top: 40px;
+  padding-left: 0px;      /* ✅ tighten left gap */
+  padding-right: 26px;
+  transform: translateX(-14px);  /* ✅ nudge whole dashboard left */
+  box-sizing: border-box;
+">
+
+  <h1 style="
+    color:#fff;
+    text-align:left;
+    padding-left: 6px;   /* small nudge to match card edge */
+    margin-top: 26px;
+    margin-bottom: 16px;
+  ">
+    Dashboard
+  </h1>
+
+  <!-- ========================= -->
+  <!-- MAIN 2-COLUMN LAYOUT GRID -->
+  <!-- ========================= -->
+  <div style="
+    margin-top:30px;
+    display:grid;
+    /* LEFT stretches, RIGHT stays a fixed nice width */
+    grid-template-columns: minmax(0, 1fr) clamp(360px, 28vw, 440px);
+    gap:12px;
+    align-items:start;
+  ">
+
+    <!-- ✅ LEFT COLUMN / ROW 1: LSP Performance -->
+    <div style="
+      grid-column:1;
+      padding:16px;
+      background:var(--widget-navy);
+      border:1px solid #00ffff;
+      border-radius:10px;
+      color:#fff;
+      width:100%;
+      box-sizing:border-box;
+      min-height:260px;
+      font-size: 1.05rem;
+      line-height: 1.35;
+    ">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+        <h2 style="margin:0; color:#00ffff;">LSP Performance</h2>
+
+        <div class="ce-window-wrap" style="color:#ccc;">
+          Comparative DB Window:
+          <select id="ce-window-select"
+                  onchange="changeCeWindow(this.value)"
+                  style="background:#000; color:#fff; border:1px solid #00ffff; border-radius:4px; padding:2px 6px;">
+            <option value="l7" selected>Last 7 Days</option>
+            <option value="l30">Last 30 Days</option>
+            <option value="l60">Last 60 Days</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- 3 columns inside one card -->
+      <div style="display:flex; gap:20px; flex-wrap:wrap;">
+        <!-- Phone Bucket -->
+        <div style="flex:1; min-width:220px;">
+          <div style="display:flex; flex-direction:column; gap:4px;">
+            <div style="display:flex; flex-direction:column;">
+              <span style="font-weight:700; font-size:1.1rem;">Phone Performance</span>
+              <span id="ce-phone-date" style="font-size:0.8rem; color:#aaa;">Showing for --</span>
+            </div>
+            <ul id="ce-phone-list"
+                class="bucket-leaderboard"
+                style="list-style:none; margin:6px 0 0; padding:0; font-size:1.1rem;">
+            </ul>
+          </div>
+        </div>
+
+        <!-- Quote Bucket -->
+        <div style="flex:1; min-width:220px;">
+          <div style="display:flex; flex-direction:column; gap:4px;">
+            <div style="display:flex; flex-direction:column;">
+              <span style="font-weight:700; font-size:1.1rem;">Quote Performance</span>
+              <span id="ce-quote-date" style="font-size:0.8rem; color:#aaa;">Showing for --</span>
+            </div>
+            <ul id="ce-quote-list"
+                class="bucket-leaderboard"
+                style="list-style:none; margin:6px 0 0; padding:0; font-size:0.9rem;">
+            </ul>
+          </div>
+        </div>
+
+        <!-- Movement Bucket -->
+        <div style="flex:1; min-width:220px;">
+          <div style="display:flex; flex-direction:column; gap:4px;">
+            <div style="display:flex; flex-direction:column;">
+              <span style="font-weight:700; font-size:1.1rem;">Movement Performance</span>
+              <span id="ce-move-date" style="font-size:0.8rem; color:#aaa;">Showing for --</span>
+            </div>
+            <ul id="ce-move-list"
+                class="bucket-leaderboard"
+                style="list-style:none; margin:6px 0 0; padding:0; font-size:0.9rem;">
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ✅ RIGHT COLUMN / ROW 1-2: Tall KPI Widget placeholder -->
+    <div style="
+      grid-column:2;
+      grid-row:1 / span 2;
+      width:100%;
+      justify-self:end;
+    ">
+      <div style="
+        padding:16px;
+        background:var(--widget-navy);
+        border:1px solid #00ffff;
+        border-radius:12px;
+        color:#fff;
+        box-sizing:border-box;
+        width:100%;
+        min-height:540px;
+        display:flex;
+        flex-direction:column;
+      ">
+        <h2 style="margin:0 0 10px 0; color:#00ffff;">Reflexx KPI (Coming Soon)</h2>
+        <p style="color:#9ab; font-size:0.9rem; max-width:320px;">
+          This panel will show the new Reflexx Score / CE-based KPI once we wire it up.
+        </p>
+
+        <div style="
+          margin-top:16px;
+          flex:1;
+          border-radius:10px;
+          border:1px dashed #00ffff55;
+          background:rgba(0,0,0,0.25);
+          display:flex;
+          align-items:center;
+          justify-content:center;
+          text-align:center;
+          color:#667;
+          font-size:0.9rem;
+        ">
+          KPI visualization area<br>(chart / meter / AI summary)
+        </div>
+      </div>
+    </div>
+
+    <!-- ✅ LEFT COLUMN / ROW 2: Strengths + Weaknesses -->
+    <div id="ai-insights-wrap" style="
+      grid-column:1;
+      display:grid;
+      grid-template-columns: 1fr 1fr;
+      gap:12px;
+      width:100%;
+    ">
+
+      <div style="
+        background:var(--widget-navy);
+        border:1px solid #00ffaa;
+        border-radius:12px;
+        padding:16px;
+        color:#fff;
+        min-height:260px;
+      ">
+        <h2 style="margin:0 0 10px 0; color:#00ffaa;">Top Strengths</h2>
+        <ul id="ai-strengths-list" style="list-style:none; padding-left:0; margin:0;">
+          <li style="color:#777;">Loading strengths...</li>
+        </ul>
+      </div>
+
+      <div style="
+        background:var(--widget-navy);
+        border:1px solid #ff5555;
+        border-radius:12px;
+        padding:16px;
+        color:#fff;
+        min-height:260px;
+      ">
+        <h2 style="margin:0 0 10px 0; color:#ff5555;">Top Weaknesses</h2>
+        <ul id="ai-weaknesses-list" style="list-style:none; padding-left:0; margin:0;">
+          <li style="color:#777;">Loading weaknesses...</li>
+        </ul>
+      </div>
+
+    </div>
+
+  </div> <!-- end main 2-col grid -->
+
+  <!-- ✅ BOTTOM ROW: Advisor Pro Time + Call Stats Today + Call Stats Yesterday -->
+  <div style="
+    margin-top:12px;
+    width:100%;
+    box-sizing:border-box;
+    display:grid;
+    grid-template-columns: 2fr 1fr 1fr;  /* Advisor Pro wide, Call Stats split */
+    gap:12px;
+  ">
+
+    <!-- Advisor Pro Time (wide) -->
+    <div style="
+      padding:16px;
+      background:var(--widget-navy);
+      border:1px solid #00ffff;
+      border-radius:10px;
+      color:#fff;
+      width:100%;
+      box-sizing:border-box;
+    ">
+      <h2 style="margin-top:0; color:#00ffff; margin-bottom: 10px;">Advisor Pro Time</h2>
+
+      <!-- Status + Employee filter -->
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; gap:12px;">
+        <div id="ap-status" style="color:#aaa; font-size: 0.9rem;">
+          Loading Advisor Pro usage...
+        </div>
+
+        <div style="font-size:0.9rem; color:#ccc;">
+          <label for="ap-employee-select" style="margin-right:6px;">Employee:</label>
+          <select id="ap-employee-select" style="background:#000; color:#fff; border:1px solid #00ffff; border-radius:4px; padding:2px 6px;">
+            <option value="all">All Employees</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Chart Canvas -->
+      <div style="height:230px; max-height:230px; min-height:230px; overflow:hidden;">
+        <canvas id="apChart"></canvas>
+      </div>
+    </div>
+
+    <!-- Call Stats Today -->
+    <div style="
+      padding:16px;
+      background:var(--widget-navy);
+      border:1px solid #00ffff;
+      border-radius:10px;
+      color:#fff;
+      box-sizing:border-box;
+      width:100%;
+      min-height:260px;
+    ">
+
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+        <h2 style="margin:0; color:#00ffff;">Call Stats Today</h2>
+
+        <select id="cs-today-employee"
+                onchange="loadCallStatsToday()"
+                style="
+                  background:#000;
+                  color:#fff;
+                  border:1px solid #00ffff;
+                  border-radius:6px;
+                  padding:4px 8px;
+                  font-size:0.9rem;
+                ">
+          <option value="all">All Employees</option>
+        </select>
+      </div>
+
+      <div id="cs-today-status" style="color:#aaa; font-size: 0.9rem; margin-bottom:8px;">
+        Loading today’s call stats...
+      </div>
+
+      <div style="text-align:center; font-size:0.9rem; margin-bottom:2px; margin-top:-2px;">
+        <span id="cs-today-rico-toggle"
+              class="rico-toggle-btn"
+              onclick="toggleRicoColumn('cs-today-table', 'cs-today-rico-toggle', 1, 'reflexx_hide_rico_today')">
+          ^
+        </span>
+      </div>
+
+      <table id="cs-today-table" style="width:100%; margin:-2px auto 0 auto; border-collapse:collapse; font-size:0.95rem;">
+        <thead>
+          <tr>
+            <th style="text-align:left; padding:6px 4px;"></th>
+            <th style="text-align:center; padding:6px 4px;">Ricochet</th>
+            <th style="text-align:center; padding:6px 4px;">RingCentral</th>
+            <th style="text-align:center; padding:6px 4px;">Total</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td style="padding:4px 4px;">Inbounds</td>
+            <td id="cs-today-rico-in"   class="cs-today-rico-col" style="text-align:center; padding:4px 4px;">–</td>
+            <td id="cs-today-rc-in"     style="text-align:center; padding:4px 4px;">–</td>
+            <td id="cs-today-total-in"  style="text-align:center; padding:4px 4px;">–</td>
+          </tr>
+          <tr>
+            <td style="padding:4px 4px;">Outbounds</td>
+            <td id="cs-today-rico-out"   class="cs-today-rico-col" style="text-align:center; padding:4px 4px;">–</td>
+            <td id="cs-today-rc-out"     style="text-align:center; padding:4px 4px;">–</td>
+            <td id="cs-today-total-out"  style="text-align:center; padding:4px 4px;">–</td>
+          </tr>
+          <tr>
+            <td style="padding:4px 4px;">Inbound Time</td>
+            <td id="cs-today-rico-ib"    class="cs-today-rico-col" style="text-align:center; padding:4px 4px;">–</td>
+            <td id="cs-today-rc-ib"      style="text-align:center; padding:4px 4px;">–</td>
+            <td id="cs-today-total-ib"   style="text-align:center; padding:4px 4px;">–</td>
+          </tr>
+          <tr>
+            <td style="padding:4px 4px;">Outbound Time</td>
+            <td id="cs-today-rico-ob"    class="cs-today-rico-col" style="text-align:center; padding:4px 4px;">–</td>
+            <td id="cs-today-rc-ob"      style="text-align:center; padding:4px 4px;">–</td>
+            <td id="cs-today-total-ob"   style="text-align:center; padding:4px 4px;">–</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Call Stats Yesterday -->
+    <div style="
+      padding:16px;
+      background:var(--widget-navy);
+      border:1px solid #00ffff;
+      border-radius:10px;
+      color:#fff;
+      box-sizing:border-box;
+      width:100%;
+      min-height:260px;
+    ">
+
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+        <h2 style="margin:0; color:#00ffff;">Call Stats Yesterday</h2>
+
+        <select id="cs-yest-employee"
+                onchange="loadCallStatsYesterday()"
+                style="
+                  background:#000;
+                  color:#fff;
+                  border:1px solid #00ffff;
+                  border-radius:6px;
+                  padding:4px 8px;
+                  font-size:0.9rem;
+                ">
+          <option value="all">All Employees</option>
+        </select>
+      </div>
+
+      <div id="cs-yest-status" style="color:#aaa; font-size: 0.9rem; margin-bottom:8px;">
+        Loading yesterday’s call stats...
+      </div>
+
+      <div style="text-align:center; font-size:0.9rem; margin-bottom:2px; margin-top:-2px;">
+        <span id="cs-yest-rico-toggle"
+              class="rico-toggle-btn"
+              onclick="toggleRicoColumn('cs-yest-table', 'cs-yest-rico-toggle', 1, 'reflexx_hide_rico_yest')">
+          ^
+        </span>
+      </div>
+
+      <table id="cs-yest-table" style="width:100%; margin:-2px auto 0 auto; border-collapse:collapse; font-size:0.95rem;">
+        <thead>
+          <tr>
+            <th style="text-align:left; padding:6px 4px;"></th>
+            <th style="text-align:center; padding:6px 4px;">Ricochet</th>
+            <th style="text-align:center; padding:6px 4px;">RingCentral</th>
+            <th style="text-align:center; padding:6px 4px;">Total</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td style="padding:4px 4px;">Inbounds</td>
+            <td id="cs-yest-rico-in"   class="cs-yest-rico-col" style="text-align:center; padding:4px 4px;">–</td>
+            <td id="cs-yest-rc-in"     style="text-align:center; padding:4px 4px;">–</td>
+            <td id="cs-yest-total-in"  style="text-align:center; padding:4px 4px;">–</td>
+          </tr>
+          <tr>
+            <td style="padding:4px 4px;">Outbounds</td>
+            <td id="cs-yest-rico-out"   class="cs-yest-rico-col" style="text-align:center; padding:4px 4px;">–</td>
+            <td id="cs-yest-rc-out"     style="text-align:center; padding:4px 4px;">–</td>
+            <td id="cs-yest-total-out"  style="text-align:center; padding:4px 4px;">–</td>
+          </tr>
+          <tr>
+            <td style="padding:4px 4px;">Inbound Time</td>
+            <td id="cs-yest-rico-ib"    class="cs-yest-rico-col" style="text-align:center; padding:4px 4px;">–</td>
+            <td id="cs-yest-rc-ib"      style="text-align:center; padding:4px 4px;">–</td>
+            <td id="cs-yest-total-ib"   style="text-align:center; padding:4px 4px;">–</td>
+          </tr>
+          <tr>
+            <td style="padding:4px 4px;">Outbound Time</td>
+            <td id="cs-yest-rico-ob"    class="cs-yest-rico-col" style="text-align:center; padding:4px 4px;">–</td>
+            <td id="cs-yest-rc-ob"      style="text-align:center; padding:4px 4px;">–</td>
+            <td id="cs-yest-total-ob"   style="text-align:center; padding:4px 4px;">–</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+  </div> <!-- end bottom grid -->
+
+</div> <!-- end .page-wrapper -->
+
+<!-- 🔌 Simple JS for "Call Stats Today" (fixed to today) -->
+<script>
+  // When the page loads, first load employees, then today's call stats + CE buckets
+  document.addEventListener("DOMContentLoaded", function () {
+    initCallStatsToday();
+    loadCeBuckets();   // 🔥 new line to load CE performance buckets
+			 loadAiOverallInsights();  // 🤖 new line to load AI overall strengths/weaknesses
+  });
+
+
+  // 👉 Step 1: Fill BOTH Employee dropdowns from /manager-employees
+  function initCallStatsToday() {
+    const empSelectToday = document.getElementById("cs-today-employee");
+    const empSelectYest  = document.getElementById("cs-yest-employee");
+
+    // If neither select exists, just try loading stats and bail
+    if (!empSelectToday && !empSelectYest) {
+      loadCallStatsToday();
+      loadCallStatsYesterday();
+      return;
+    }
+
+    fetch("/manager-employees")
+      .then(resp => resp.json())
+      .then(data => {
+        console.log("[Call Stats] /manager-employees response:", data);
+
+        const selects = [];
+        if (empSelectToday) selects.push(empSelectToday);
+        if (empSelectYest)  selects.push(empSelectYest);
+
+        selects.forEach(sel => {
+          // Reset options
+          sel.innerHTML = "";
+
+          // Add "All Employees"
+          const optAll = document.createElement("option");
+          optAll.value = "all";
+          optAll.textContent = "All Employees";
+          sel.appendChild(optAll);
+
+          // Add each employee (id + nickname/email)
+          if (Array.isArray(data)) {
+            data.forEach(emp => {
+              const opt = document.createElement("option");
+              opt.value = emp.id;  // users.id → employee_id
+              opt.textContent = emp.nickname || emp.email || `User ${emp.id}`;
+              sel.appendChild(opt);
+            });
+          }
+        });
+
+        // After dropdowns are ready, load stats for today & yesterday
+        loadCallStatsToday();
+        loadCallStatsYesterday();
+      })
+      .catch(err => {
+        console.error("[Call Stats] employees error:", err);
+        // Even if employees fail, still try loading stats for all
+        loadCallStatsToday();
+        loadCallStatsYesterday();
+      });
+  }
+
+
+  // 👉 Step 2: Load today's call stats (optionally filtered by employee)
+  function loadCallStatsToday() {
+    const statusEl = document.getElementById("cs-today-status");
+    if (!statusEl) return;
+
+    // Build today's date as YYYY-MM-DD (local time)
+    const now = new Date();
+    const yyyy = now.getFullYear();
+    const mm = String(now.getMonth() + 1).padStart(2, "0");
+    const dd = String(now.getDate()).padStart(2, "0");
+    const todayStr = `${yyyy}-${mm}-${dd}`;
+
+    // Read selected employee (or "all")
+    const empSelect   = document.getElementById("cs-today-employee");
+    const employeeId  = empSelect ? empSelect.value : "all";
+
+    // Build URL: always today's date, plus optional employee_id
+    let url = `/api/call-stats?date=${todayStr}`;
+    if (employeeId && employeeId !== "all") {
+      url += `&employee_id=${encodeURIComponent(employeeId)}`;
+    }
+
+    fetch(url)
+      .then(resp => resp.json())
+      .then(data => {
+        console.log("[Call Stats Today] raw response:", data);
+
+        if (!data || data.error) {
+          statusEl.textContent = "No call stats available for today.";
+          return;
+        }
+
+        // Expected data shape from /api/call-stats:
+        // {
+        //   inbound_count,
+        //   outbound_count,
+        //   inbound_duration,
+        //   outbound_duration,
+        //   rc_inbound_count,
+        //   rc_outbound_count,
+        //   rc_inbound_duration,
+        //   rc_outbound_duration,
+        //   date
+        // }
+
+        const d = data;
+
+        // Ricochet column (currently 0 / placeholder until we wire real rico data)
+        setText("cs-today-rico-in",  d.rc_inbound_count);
+        setText("cs-today-rico-out", d.rc_outbound_count);
+        setText("cs-today-rico-ib",  d.rc_inbound_duration);
+        setText("cs-today-rico-ob",  d.rc_outbound_duration);
+
+        // RingCentral column (from call_metrics)
+        setText("cs-today-rc-in",  d.inbound_count);
+        setText("cs-today-rc-out", d.outbound_count);
+        setText("cs-today-rc-ib",  d.inbound_duration);
+        setText("cs-today-rc-ob",  d.outbound_duration);
+
+
+        // Totals = Ricochet + RingCentral (counts)
+        const totalIn  = (d.inbound_count  || 0) + (d.rc_inbound_count  || 0);
+        const totalOut = (d.outbound_count || 0) + (d.rc_outbound_count || 0);
+
+        // Totals = Ricochet + RingCentral (time)
+        const totalIbSeconds =
+          hmsToSeconds(d.inbound_duration) + hmsToSeconds(d.rc_inbound_duration);
+        const totalObSeconds =
+          hmsToSeconds(d.outbound_duration) + hmsToSeconds(d.rc_outbound_duration);
+
+        const totalIb = secondsToHMS(totalIbSeconds);
+        const totalOb = secondsToHMS(totalObSeconds);
+
+        setText("cs-today-total-in",  totalIn);
+        setText("cs-today-total-out", totalOut);
+        setText("cs-today-total-ib",  totalIb);
+        setText("cs-today-total-ob",  totalOb);
+
+        // Status text with employee name
+        let empLabel = "All Employees";
+        if (empSelect && empSelect.value !== "all") {
+          empLabel = empSelect.options[empSelect.selectedIndex].text;
+        }
+
+        statusEl.textContent = `Showing call stats for ${d.date || todayStr} — ${empLabel}`;
+      })
+      .catch(err => {
+        console.error("[Call Stats Today] error:", err);
+        statusEl.textContent = "Error loading call stats for today.";
+      });
+  }
+		
+		// 👉 Step 3: Load yesterday's call stats (optionally filtered by employee)
+  function loadCallStatsYesterday() {
+    const statusEl = document.getElementById("cs-yest-status");
+    if (!statusEl) return;
+
+    // Build yesterday's date as YYYY-MM-DD (local time)
+    const d = new Date();
+    d.setDate(d.getDate() - 1); // go back one day
+    const yyyy = d.getFullYear();
+    const mm   = String(d.getMonth() + 1).padStart(2, "0");
+    const dd   = String(d.getDate()).padStart(2, "0");
+    const yestStr = `${yyyy}-${mm}-${dd}`;
+
+    // Read selected employee (or "all")
+    const empSelect   = document.getElementById("cs-yest-employee");
+    const employeeId  = empSelect ? empSelect.value : "all";
+
+    // Build URL: always yesterday's date, plus optional employee_id
+    let url = `/api/call-stats?date=${yestStr}`;
+    if (employeeId && employeeId !== "all") {
+      url += `&employee_id=${encodeURIComponent(employeeId)}`;
+    }
+
+    fetch(url)
+      .then(resp => resp.json())
+      .then(data => {
+        console.log("[Call Stats Yesterday] raw response:", data);
+
+        if (!data || data.error) {
+          statusEl.textContent = "No call stats available for yesterday.";
+          return;
+        }
+
+        const dResp = data;
+
+        // Ricochet column
+        setText("cs-yest-rico-in",  dResp.rc_inbound_count);
+        setText("cs-yest-rico-out", dResp.rc_outbound_count);
+        setText("cs-yest-rico-ib",  dResp.rc_inbound_duration);
+        setText("cs-yest-rico-ob",  dResp.rc_outbound_duration);
+
+        // RingCentral column
+        setText("cs-yest-rc-in",  dResp.inbound_count);
+        setText("cs-yest-rc-out", dResp.outbound_count);
+        setText("cs-yest-rc-ib",  dResp.inbound_duration);
+        setText("cs-yest-rc-ob",  dResp.outbound_duration);
+
+        // Totals = Ricochet + RingCentral (counts)
+        const totalIn  = (dResp.inbound_count  || 0) + (dResp.rc_inbound_count  || 0);
+        const totalOut = (dResp.outbound_count || 0) + (dResp.rc_outbound_count || 0);
+
+        // Totals = Ricochet + RingCentral (time)
+        const totalIbSeconds =
+          hmsToSeconds(dResp.inbound_duration) + hmsToSeconds(dResp.rc_inbound_duration);
+        const totalObSeconds =
+          hmsToSeconds(dResp.outbound_duration) + hmsToSeconds(dResp.rc_outbound_duration);
+
+        const totalIb = secondsToHMS(totalIbSeconds);
+        const totalOb = secondsToHMS(totalObSeconds);
+
+        setText("cs-yest-total-in",  totalIn);
+        setText("cs-yest-total-out", totalOut);
+        setText("cs-yest-total-ib",  totalIb);
+        setText("cs-yest-total-ob",  totalOb);
+
+        // Status text with employee name
+        let empLabel = "All Employees";
+        if (empSelect && empSelect.value !== "all") {
+          empLabel = empSelect.options[empSelect.selectedIndex].text;
+        }
+
+        statusEl.textContent = `Showing call stats for ${dResp.date || yestStr} — ${empLabel}`;
+      })
+      .catch(err => {
+        console.error("[Call Stats Yesterday] error:", err);
+        statusEl.textContent = "Error loading call stats for yesterday.";
+      });
+  }
+
+  // ---- time helpers: "HH:MM:SS" <-> seconds ----
+  function hmsToSeconds(str) {
+    if (!str || typeof str !== "string") return 0;
+    const parts = str.split(":");
+    if (parts.length !== 3) return 0;
+    const h = parseInt(parts[0], 10) || 0;
+    const m = parseInt(parts[1], 10) || 0;
+    const s = parseInt(parts[2], 10) || 0;
+    return h * 3600 + m * 60 + s;
+  }
+
+  function secondsToHMS(sec) {
+    if (!sec || sec <= 0) return "00:00:00";
+    sec = Math.floor(sec);
+    const h = Math.floor(sec / 3600);
+    const m = Math.floor((sec % 3600) / 60);
+    const s = sec % 60;
+    const pad = (n) => String(n).padStart(2, "0");
+    return `${pad(h)}:${pad(m)}:${pad(s)}`;
+  }
+
+  // Small helper to safely put text in cells
+  function setText(id, value) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.textContent = (value === undefined || value === null || value === "") ? "0" : value;
+  }
+
+  // ---------- CE globals ----------
+  let CE_WINDOW = "l7";          // "l7", "l30", or "l60"
+  let ceBucketCache = null;      // will hold { date, rows } from /api/ce-buckets
+
+  // ---------- CE helper: turn z-score into label ----------
+  function zToLabel(z) {
+    if (z === null || z === undefined || isNaN(z)) {
+      return "No Data";
+    }
+
+    const zNum = Number(z);
+
+    if (zNum > 1.5) return "Excellent";
+    if (zNum > 0.5) return "Above Average";
+    if (zNum >= -0.5) return "Average";
+    if (zNum >= -1.5) return "Below Average";
+    return "Poor";
+  }
+
+  // ---------- CE helper: render one bucket list ----------
+  function renderCeBucket(listId, dateLabelId, rows, zField, latestDate) {
+    const ul = document.getElementById(listId);
+    const dateLabel = document.getElementById(dateLabelId);
+
+    if (!ul) return;
+
+    // Set "Showing for YYYY-MM-DD"
+    if (dateLabel && latestDate) {
+      dateLabel.textContent = `Showing for ${latestDate}`;
+    }
+
+    ul.innerHTML = "";
+
+    if (!rows || !rows.length) {
+      ul.innerHTML = "<li>No data</li>";
+      return;
+    }
+
+    // Sort by z-score (highest first), nulls treated as very low
+    const sorted = [...rows].sort((a, b) => {
+      const za = a[zField] == null ? -999 : a[zField];
+      const zb = b[zField] == null ? -999 : b[zField];
+      return zb - za;
+    });
+
+    // Take top 5
+    sorted.slice(0, 5).forEach((row, idx) => {
+      const li = document.createElement("li");
+      li.className = "bucket-item";
+
+      const rankSpan = document.createElement("span");
+      rankSpan.className = "lb-rank";
+      rankSpan.textContent = `${idx + 1}.`;
+
+      const nameSpan = document.createElement("span");
+      nameSpan.className = "lb-name";
+      nameSpan.textContent = row.user_name || "Unknown";
+
+      const labelSpan = document.createElement("span");
+      labelSpan.className = "lb-score";
+
+      // Get the label text
+      const labelText = zToLabel(row[zField]);
+      labelSpan.textContent = labelText;
+
+      // Add a color class based on the label
+      switch (labelText) {
+        case "Excellent":
+          labelSpan.classList.add("score-excellent");
+          break;
+        case "Above Average":
+          labelSpan.classList.add("score-above");
+          break;
+        case "Average":
+          labelSpan.classList.add("score-average");
+          break;
+        case "Below Average":
+          labelSpan.classList.add("score-below");
+          break;
+        case "Poor":
+          labelSpan.classList.add("score-poor");
+          break;
+        default:
+          labelSpan.classList.add("score-nodata");
+          break;
+      }
+
+      li.appendChild(rankSpan);
+      li.appendChild(nameSpan);
+      li.appendChild(labelSpan);
+
+      ul.appendChild(li);
+    });
+  }  // ✅ this closes renderCeBucket
+
+  // ---------- CE: Render all three buckets for current window ----------
+  function renderAllCeBuckets() {
+    if (!ceBucketCache) return;
+
+    const latestDate = ceBucketCache.date || "";
+    const rows       = ceBucketCache.rows || [];
+
+    // Decide which suffix to use in the field names
+    // CE_WINDOW is "l7", "l30", or "l60"
+    let suffix = "l7";
+    if (CE_WINDOW === "l30") suffix = "l30";
+    else if (CE_WINDOW === "l60") suffix = "l60";
+
+    const phoneField = `phone_ce_${suffix}_z`;
+    const quoteField = `quote_ce_${suffix}_z`;
+    const moveField  = `movement_ce_${suffix}_z`;
+
+    // Phone bucket
+    renderCeBucket(
+      "ce-phone-list",
+      "ce-phone-date",
+      rows,
+      phoneField,
+      latestDate
+    );
+
+    // Quote bucket
+    renderCeBucket(
+      "ce-quote-list",
+      "ce-quote-date",
+      rows,
+      quoteField,
+      latestDate
+    );
+
+    // Movement bucket
+    renderCeBucket(
+      "ce-move-list",
+      "ce-move-date",
+      rows,
+      moveField,
+      latestDate
+    );
+  }
+
+  // ---------- CE: load bucket data once, then render for current window ----------
+  function loadCeBuckets() {
+    fetch("/api/ce-buckets")
+      .then((res) => res.json())
+      .then((data) => {
+        console.log("[CE Buckets] raw response:", data);
+
+        // Cache so we can re-render without extra API calls
+        ceBucketCache = data;
+
+        // Render using current CE_WINDOW (default "l7")
+        renderAllCeBuckets();
+      })
+      .catch((err) => {
+        console.error("[CE Buckets] error:", err);
+      });
+  }
+
+  // ---------- CE: change window from dropdown ----------
+  function changeCeWindow(value) {
+    CE_WINDOW = value;   // "l7", "l30", or "l60"
+    renderAllCeBuckets();
+  }
+		
+// ----------------------------------------------------
+// Advisor Pro – Load Employees
+// ----------------------------------------------------
+async function loadApEmployees() {
+  const sel = document.getElementById("ap-employee-select");
+  if (!sel) return;
+
+  try {
+    const resp = await fetch("/manager-employees");
+    const data = await resp.json();
+
+    // Reset to just "All Employees"
+    sel.innerHTML = "";
+    const optAll = document.createElement("option");
+    optAll.value = "all";
+    optAll.textContent = "All Employees";
+    sel.appendChild(optAll);
+
+    // Add employees
+    if (Array.isArray(data)) {
+      data.forEach(emp => {
+        const opt = document.createElement("option");
+        opt.value = emp.id;
+        opt.textContent = emp.nickname || emp.email || `User ${emp.id}`;
+        sel.appendChild(opt);
+      });
+    }
+  } catch (err) {
+    console.error("[AdvisorPro] Error loading employees:", err);
+  }
+}
+
+// ----------------------------------------------------
+// Advisor Pro – Load Chart Data
+// ----------------------------------------------------
+let apChart = null;
+
+async function loadApSeries() {
+  const sel = document.getElementById("ap-employee-select");
+  const emp = sel ? sel.value : "all";
+
+  const statusEl = document.getElementById("ap-status");
+  if (statusEl) statusEl.textContent = "Loading...";
+
+  const url = `/api/analytics/advisor-pro-series?employee_id=${emp}`;
+  try {
+    const resp = await fetch(url);
+    const json = await resp.json();
+
+    const labels = json.data.map(r => `${r.date} (${r.weekday})`);
+    const minutes = json.data.map(r => r.minutes);
+
+    const ctx = document.getElementById("apChart").getContext("2d");
+
+    // Destroy previous chart
+    if (apChart) {
+      apChart.destroy();
+    }
+
+    // Build new chart
+    apChart = new Chart(ctx, {
+      type: "bar",
+      data: {
+        labels: labels,
+        datasets: [{
+          label: "Minutes in Advisor Pro",
+          data: minutes,
+          backgroundColor: "rgba(0, 255, 255, 0.4)",
+          borderColor: "#00ffff",
+          borderWidth: 2
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        layout: {
+          padding: { top: 10, right: 20, bottom: 25, left: 10 }
+        },
+        scales: {
+          y: {
+            beginAtZero: true,
+            ticks: {
+              color: "#ccc",
+              font: { size: 10 }
+            },
+            grid: {
+              color: "rgba(255,255,255,0.08)"
+            }
+          },
+          x: {
+            ticks: {
+              color: "#ccc",
+              font: { size: 10 },
+              maxRotation: 0,
+              minRotation: 0
+            },
+            grid: {
+              display: false
+            }
+          }
+        },
+        plugins: {
+          legend: {
+            labels: {
+              color: "#ccc",
+              font: { size: 11 }
+            },
+            position: "top"
+          }
+        }
+      }
+    });
+
+    if (statusEl) {
+      let label = emp === "all"
+        ? "All Employees"
+        : sel.options[sel.selectedIndex].text;
+      statusEl.textContent = `Advisor Pro activity for last 7 days — ${label}`;
+    }
+  } catch (err) {
+    console.error("[AdvisorPro] Load error:", err);
+    if (statusEl) statusEl.textContent = "Error loading Advisor Pro data.";
+  }
+}
+
+// ----------------------------------------------------
+// Advisor Pro – INIT
+// ----------------------------------------------------
+document.addEventListener("DOMContentLoaded", function () {
+  loadApEmployees().then(() => {
+    loadApSeries();
+  });
+
+  const sel = document.getElementById("ap-employee-select");
+  if (sel) {
+    sel.addEventListener("change", loadApSeries);
+  }
+});		
+
+  // Helper: show/hide one column by index in a given table
+  function setRicoVisibility(tableId, colIndex, hide) {
+    const table = document.getElementById(tableId);
+    if (!table) return;
+
+    const headerRow = table.tHead ? table.tHead.rows[0] : table.rows[0];
+    if (!headerRow || !headerRow.cells[colIndex]) return;
+
+    const displayValue = hide ? "none" : "";
+    for (let r = 0; r < table.rows.length; r++) {
+      const cell = table.rows[r].cells[colIndex];
+      if (cell) {
+        cell.style.display = displayValue;
+      }
+    }
+  }
+
+  // Click handler: toggle and save preference
+  function toggleRicoColumn(tableId, btnId, colIndex, storageKey) {
+    const table = document.getElementById(tableId);
+    if (!table) return;
+
+    const headerRow = table.tHead ? table.tHead.rows[0] : table.rows[0];
+    if (!headerRow || !headerRow.cells[colIndex]) return;
+
+    const currentlyHidden = headerRow.cells[colIndex].style.display === "none";
+    const shouldHide = !currentlyHidden;
+
+    // Apply visibility
+    setRicoVisibility(tableId, colIndex, shouldHide);
+
+    // Update caret
+    const btn = document.getElementById(btnId);
+    if (btn) {
+      btn.textContent = shouldHide ? "v" : "^";
+    }
+
+    // Remember in localStorage
+    if (storageKey) {
+      localStorage.setItem(storageKey, shouldHide ? "1" : "0");
+    }
+  }
+
+  // On load: read saved preference and apply it
+  function initRicoColumn(tableId, btnId, colIndex, storageKey) {
+    const stored = storageKey ? localStorage.getItem(storageKey) : null;
+    const shouldHide = stored === "1";
+
+    setRicoVisibility(tableId, colIndex, shouldHide);
+
+    const btn = document.getElementById(btnId);
+    if (btn) {
+      btn.textContent = shouldHide ? "v" : "^";
+    }
+  }
+
+  window.addEventListener("load", function() {
+    // colIndex = 1 because columns are: 0=Metric, 1=Ricochet, 2=RingCentral, 3=Total
+    initRicoColumn("cs-today-table", "cs-today-rico-toggle", 1, "reflexx_hide_rico_today");
+    initRicoColumn("cs-yest-table", "cs-yest-rico-toggle", 1, "reflexx_hide_rico_yest");
+  });
+		
+// ----------------------------------------------------
+// 🤖 AI Overall Insights (Dashboard New)
+// ----------------------------------------------------
+async function loadAiOverallInsights() {
+  const strengthsUl = document.getElementById("ai-strengths-list");
+  const weaknessesUl = document.getElementById("ai-weaknesses-list");
+  if (!strengthsUl || !weaknessesUl) return;
+
+  strengthsUl.innerHTML = "<li style='color:#777;'>Loading strengths...</li>";
+  weaknessesUl.innerHTML = "<li style='color:#777;'>Loading weaknesses...</li>";
+
+  try {
+    const res = await fetch("/api/ai-dashboard-insights?window=overall");
+    const data = await res.json();
+
+    const rows = data.rows || [];
+
+    const strengths = rows.filter(r => r.polarity === "strength");
+    const weaknesses = rows.filter(r => r.polarity === "weakness");
+
+    renderAiList(strengthsUl, strengths, "strength");
+    renderAiList(weaknessesUl, weaknesses, "weakness");
+  } catch (err) {
+    strengthsUl.innerHTML = "<li style='color:#ff9999;'>Error loading strengths</li>";
+    weaknessesUl.innerHTML = "<li style='color:#ff9999;'>Error loading weaknesses</li>";
+    console.error("[AI Insights] error:", err);
+  }
+}
+
+function renderAiList(ul, items, mode) {
+  ul.innerHTML = "";
+
+  if (!items.length) {
+    ul.innerHTML = "<li style='color:#777;'>No insights yet.</li>";
+    return;
+  }
+
+  items.forEach(row => {
+    const li = document.createElement("li");
+    li.style.padding = "10px 8px";
+    li.style.borderBottom = "1px solid #222";
+    li.style.display = "flex";
+    li.style.flexDirection = "column";
+    li.style.gap = "4px";
+
+    const name = document.createElement("div");
+    name.textContent = row.full_name || "Unknown";
+    name.style.fontWeight = "700";
+    name.style.color = (mode === "strength") ? "#b6ffe8" : "#ffb6b6";
+
+    const msg = document.createElement("div");
+    msg.textContent = row.raw_message || "";
+    msg.style.color = "#ddd";
+    msg.style.fontSize = "14px";
+    msg.style.lineHeight = "1.35";
+
+    li.appendChild(name);
+    li.appendChild(msg);
+    ul.appendChild(li);
+  });
+}
+
+</script>
+{% endblock %}
+
+
