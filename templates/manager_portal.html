@@ -348,6 +348,24 @@
 </style>
 
 <style>
+  /* make the names look like links (blue + hover) */
+  #phone-leaderboard .lb-name,
+  #quoting-leaderboard .lb-name,
+  #movement-leaderboard .lb-name {
+    color: #4fc3ff;           /* light blue = clickable vibe */
+    cursor: pointer;
+    transition: color 0.2s ease;
+  }
+
+  #phone-leaderboard li:hover .lb-name,
+  #quoting-leaderboard li:hover .lb-name,
+  #movement-leaderboard li:hover .lb-name {
+    color: #7fe2ff;           /* a bit brighter on hover */
+    text-decoration: underline;
+  }
+</style>
+
+<style>
 
   /* 🔹 Pull the header + date label up a bit */
   #phoneWidget > h3,
@@ -565,7 +583,7 @@
         <h3 style="margin:0 0 6px 0;">Phone</h3>
 
         <!-- main KPI number -->
-        <div id="phoneKpi" style="font-size:26px;font-weight:700;color:#00ffff;">—</div>
+        <div id="phoneKpi" style="font-size:26px;font-weight:700;color:#00ffff;"> </div>
         <small id="phone-range-label" style="opacity:.5;margin-bottom:10px;">Loading…</small>
 
         <!-- little list inside the card -->
@@ -578,7 +596,7 @@
       <div class="widget kpi-card" id="quotingWidget"
            style="min-height:285px;display:flex;flex-direction:column;">
         <h3 style="margin:0 0 6px 0;">Quoting</h3>
-        <div id="quotingKpi" style="font-size:26px;font-weight:700;color:#00ffff;">—</div>
+        <div id="quotingKpi" style="font-size:26px;font-weight:700;color:#00ffff;"> </div>
         <small id="quoting-range-label" style="opacity:.5;margin-bottom:10px;">Loading…</small>
         <ul id="quoting-leaderboard" class="bucket-leaderboard">
           <li>Loading…</li>
@@ -589,7 +607,7 @@
       <div class="widget kpi-card" id="movementWidget"
            style="min-height:285px;display:flex;flex-direction:column;">
         <h3 style="margin:0 0 6px 0;">Movement</h3>
-        <div id="movementKpi" style="font-size:26px;font-weight:700;color:#00ffff;">—</div>
+        <div id="movementKpi" style="font-size:26px;font-weight:700;color:#00ffff;"> </div>
         <small id="movement-range-label" style="opacity:.5;margin-bottom:10px;">Loading…</small>
         <ul id="movement-leaderboard" class="bucket-leaderboard">
           <li>Loading…</li>
