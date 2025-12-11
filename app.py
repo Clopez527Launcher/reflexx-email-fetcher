@@ -253,17 +253,27 @@ def get_buckets():
 @app.route("/api/reflexx_kpi")
 @login_required
 def api_reflexx_kpi():
-    # 🔹 Use same DB helper pattern you use elsewhere
+    """
+    Reflexx KPI / Index Leaderboard API
+
+    RULES:
+    - Always anchor to YESTERDAY'S DATE (calendar yesterday), not MAX(day).
+    - For period="yesterday", use these columns:
+        - daily_elite_per_minute  -> ratio/index
+        - daily_elite_calls       -> elite_calls
+        - daily_talk_seconds      -> talk_seconds
+    - For 7d/14d/30d/60d, use the rolling window columns on the YESTERDAY row:
+        - w_7d_ratio, w_7d_elite_calls, w_7d_talk_seconds, etc.
+    """
     conn = get_db_connection()
-    cursor = conn.cursor()   # plain cursor, no dictionary=True
+    cursor = conn.cursor()   # assumes dict-style rows from your helper
 
-
-    # Period from query string, default to 7d
+    # 1) Which window? (default 7d)
     period = request.args.get("period", "7d")
 
-    # For "yesterday", use the daily row itself (daily_elite_per_minute, etc.)
+    # 2) Map period -> column names in elite_calls_master
     ratio_columns = {
-        "yesterday": "daily_elite_per_minute",  # ⬅️ yesterday = latest day's per-minute index
+        "yesterday": "daily_elite_per_minute",   # index for the single day
         "7d": "w_7d_ratio",
         "14d": "w_14d_ratio",
         "30d": "w_30d_ratio",
@@ -271,7 +281,7 @@ def api_reflexx_kpi():
     }
 
     calls_columns = {
-        "yesterday": "daily_elite_calls",       # ⬅️ raw daily count
+        "yesterday": "daily_elite_calls",        # raw daily count
         "7d": "w_7d_elite_calls",
         "14d": "w_14d_elite_calls",
         "30d": "w_30d_elite_calls",
@@ -279,15 +289,14 @@ def api_reflexx_kpi():
     }
 
     talk_columns = {
-        "yesterday": "daily_talk_seconds",      # ⬅️ raw daily talk seconds
+        "yesterday": "daily_talk_seconds",       # raw daily talk seconds
         "7d": "w_7d_talk_seconds",
         "14d": "w_14d_talk_seconds",
         "30d": "w_30d_talk_seconds",
         "60d": "w_60d_talk_seconds",
     }
 
-
-    # Safety: default to 7d if something weird comes in
+    # Safety: if something weird comes in, default to 7d
     if period not in ratio_columns:
         period = "7d"
 
@@ -295,10 +304,10 @@ def api_reflexx_kpi():
     calls_col = calls_columns[period]
     talk_col = talk_columns[period]
 
-    # 🔹 Use manager_id from the logged-in user so each manager only sees their team
-    manager_id = current_user.id
+    # 3) Anchor date: ALWAYS calendar yesterday
+    yesterday = date.today() - timedelta(days=1)
 
-    # Use the latest day in the table as the anchor (this is "yesterday" when you log in next morning)
+    # 4) Pull rows for YESTERDAY ONLY (the fully completed day)
     query = f"""
         SELECT 
             user_id,
@@ -308,29 +317,24 @@ def api_reflexx_kpi():
             {talk_col} AS talk_seconds
         FROM elite_calls_master
         WHERE
-            day = (SELECT MAX(day) FROM elite_calls_master)
-            AND {ratio_col} IS NOT NULL
-            AND {calls_col} > 0
-        ORDER BY ratio DESC;
+            day = %s
+        ORDER BY {ratio_col} DESC;
     """
 
-
-    from datetime import date
-
-    cursor.execute(query)
-
+    cursor.execute(query, (yesterday,))
     rows = cursor.fetchall()
 
-    # Build leaderboard + compute team average index (ratio * 100)
+    # 5) Build leaderboard + compute team average index (ratio * 100)
     leaderboard = []
     total_index = 0.0
     count = 0
 
     for r in rows:
-        if r["ratio"] is None:
-            continue
+        # Treat NULL ratio as 0.0 so everyone shows up
+        raw_ratio = r["ratio"]
+        ratio_value = float(raw_ratio) if raw_ratio is not None else 0.0
 
-        index_score = float(r["ratio"]) * 100  # Multiply by 100
+        index_score = ratio_value * 100  # Multiply by 100
 
         leaderboard.append({
             "user_id": r["user_id"],
@@ -349,9 +353,11 @@ def api_reflexx_kpi():
     return jsonify({
         "status": "ok",
         "period": period,
+        "anchor_day": yesterday.isoformat(),  # for debugging if you ever need it
         "rows": leaderboard,
         "team_index_avg": team_index_avg
     })
+
 
 
 # ---------- Quotes: upload, list, view ----------
