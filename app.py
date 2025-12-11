@@ -317,25 +317,19 @@ def api_reflexx_kpi():
     rows = cursor.fetchall()
 
     # Format into clean JSON (also convert talk seconds → minutes)
-    # r is now a TUPLE: (user_id, user_name, ratio, elite_calls, talk_seconds)
     leaderboard = []
     for r in rows:
-        user_id = r[0]
-        user_name = r[1]
-        ratio = r[2]
-        elite_calls = r[3]
-        talk_seconds = r[4]
-
-        talk_minutes = (talk_seconds or 0) / 60.0
+        # r is a dict: keys from the SELECT:
+        # user_id, user_name, ratio, elite_calls, talk_seconds
+        talk_minutes = (r["talk_seconds"] or 0) / 60.0
 
         leaderboard.append({
-            "user_id": user_id,
-            "user_name": user_name,
-            "ratio": float(ratio) if ratio is not None else 0.0,
-            "elite_calls": int(elite_calls or 0),
+            "user_id": r["user_id"],
+            "user_name": r["user_name"],
+            "ratio": float(r["ratio"]) if r["ratio"] is not None else 0.0,
+            "elite_calls": int(r["elite_calls"] or 0),
             "talk_minutes": round(talk_minutes)
         })
-
 
     cursor.close()
     conn.close()
