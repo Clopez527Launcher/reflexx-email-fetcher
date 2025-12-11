@@ -250,6 +250,105 @@ def get_buckets():
 
     return jsonify(results)
 
+@app.route("/api/reflexx_kpi")
+@login_required
+def api_reflexx_kpi():
+    # 🔹 Use same DB helper pattern you use elsewhere
+    # Example if you use mysql.connection:
+    #   cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+    #
+    # Or if you use get_db_connection():
+    #   conn = get_db_connection()
+    #   cursor = conn.cursor(dictionary=True)
+
+    # 👉 Adjust this to match your setup:
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True)
+
+    # Period from query string, default to 7d
+    period = request.args.get("period", "7d")
+
+    # Map period → column names in elite_calls_master
+    ratio_columns = {
+        "yesterday": "w_yesterday_ratio",
+        "7d": "w_7d_ratio",
+        "14d": "w_14d_ratio",
+        "30d": "w_30d_ratio",
+        "60d": "w_60d_ratio",
+    }
+
+    calls_columns = {
+        "yesterday": "w_yesterday_elite_calls",
+        "7d": "w_7d_elite_calls",
+        "14d": "w_14d_elite_calls",
+        "30d": "w_30d_elite_calls",
+        "60d": "w_60d_elite_calls",
+    }
+
+    talk_columns = {
+        "yesterday": "w_yesterday_talk_seconds",
+        "7d": "w_7d_talk_seconds",
+        "14d": "w_14d_talk_seconds",
+        "30d": "w_30d_talk_seconds",
+        "60d": "w_60d_talk_seconds",
+    }
+
+    # Safety: default to 7d if something weird comes in
+    if period not in ratio_columns:
+        period = "7d"
+
+    ratio_col = ratio_columns[period]
+    calls_col = calls_columns[period]
+    talk_col = talk_columns[period]
+
+    # 🔹 Use manager_id from the logged-in user so each manager only sees their team
+    manager_id = current_user.manager_id
+
+    # We want the *latest day* per user (so we use the rolling window columns)
+    query = f"""
+        SELECT 
+            e.user_id,
+            e.user_name,
+            e.{ratio_col} AS ratio,
+            e.{calls_col} AS elite_calls,
+            e.{talk_col} AS talk_seconds
+        FROM elite_calls_master e
+        JOIN (
+            SELECT user_id, MAX(day) AS max_day
+            FROM elite_calls_master
+            GROUP BY user_id
+        ) latest 
+            ON latest.user_id = e.user_id
+           AND latest.max_day = e.day
+        JOIN users u
+            ON u.id = e.user_id
+        WHERE 
+            u.manager_id = %s
+            AND e.{ratio_col} IS NOT NULL
+            AND e.{calls_col} > 0
+        ORDER BY ratio DESC;
+    """
+
+    cursor.execute(query, (manager_id,))
+    rows = cursor.fetchall()
+
+    # Format into clean JSON (also convert talk seconds → minutes)
+    leaderboard = []
+    for r in rows:
+        talk_minutes = (r["talk_seconds"] or 0) / 60.0
+        leaderboard.append({
+            "user_id": r["user_id"],
+            "user_name": r["user_name"],
+            "ratio": float(r["ratio"]) if r["ratio"] is not None else 0.0,
+            "elite_calls": int(r["elite_calls"] or 0),
+            "talk_minutes": round(talk_minutes)
+        })
+
+    cursor.close()
+    conn.close()
+
+    return jsonify({"status": "ok", "period": period, "rows": leaderboard})
+
 
 # ---------- Quotes: upload, list, view ----------
 import io, os, time

@@ -202,6 +202,124 @@
 		.ce-window-wrap select {
 				font-size: 0.85rem; /* restore dropdown text size */
 		}
+		
+		/* ===== Reflexx KPI Leaderboard ===== */
+
+  .kpi-card {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    min-height: 260px;
+    max-height: 420px;
+  }
+
+  .kpi-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 6px;
+  }
+
+  .kpi-title {
+    font-size: 15px;
+    font-weight: 600;
+    color: #e9f6ff;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .kpi-subtitle {
+    font-size: 11px;
+    font-weight: 400;
+    color: #7fa8c4;
+  }
+
+  .kpi-filter-select {
+    background: #06111f;
+    color: #cfeeff;
+    border: 1px solid #264b63;
+    border-radius: 999px;
+    padding: 4px 12px;
+    font-size: 12px;
+    outline: none;
+    cursor: pointer;
+  }
+
+  .kpi-filter-select:focus {
+    box-shadow: 0 0 0 1px #00e1ff80;
+  }
+
+  .kpi-list {
+    margin-top: 4px;
+    padding-top: 4px;
+    padding-right: 4px;
+    flex: 1;
+    overflow-y: auto;
+
+    scrollbar-width: thin;
+    scrollbar-color: #00ffff33 transparent;
+  }
+
+  .kpi-list::-webkit-scrollbar {
+    width: 4px;
+  }
+  .kpi-list::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .kpi-list::-webkit-scrollbar-thumb {
+    background: #00ffff33;
+    border-radius: 999px;
+  }
+
+  .kpi-row {
+    display: flex;
+    align-items: center;
+    padding: 6px 0;
+    border-bottom: 1px dashed #1b324a;
+    font-size: 13px;
+  }
+
+  .kpi-row:last-child {
+    border-bottom: none;
+  }
+
+  .kpi-rank {
+    width: 22px;
+    font-weight: 600;
+    color: #00f7ff;
+    text-align: left;
+  }
+
+  .kpi-main {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .kpi-name {
+    font-weight: 500;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .kpi-meta {
+    font-size: 11px;
+    color: #7fa8c4;
+  }
+
+  .kpi-score {
+    font-weight: 600;
+    font-size: 13px;
+    margin-left: 8px;
+    white-space: nowrap;
+  }
+
+  .kpi-empty {
+    font-size: 12px;
+    color: #7fa8c4;
+    padding-top: 6px;
+  }
+
 
 
 
@@ -336,9 +454,27 @@
         display:flex;
         flex-direction:column;
       ">
-        <h2 style="margin:0 0 10px 0; color:#00ffff;">Reflexx KPI (Coming Soon)</h2>
-        <p style="color:#9ab; font-size:0.9rem; max-width:320px;">
-          This panel will show the new Reflexx Score / CE-based KPI once we wire it up.
+        <div class="card-dark kpi-card">
+										<div class="kpi-header">
+												<div class="kpi-title">
+														Reflexx KPI Leaderboard
+														<span class="kpi-subtitle">Elite Calls / Talk Time ratio</span>
+												</div>
+
+												<select id="kpi-period-select" class="kpi-filter-select">
+														<option value="yesterday">Yesterday</option>
+														<option value="7d" selected>Last 7 Days</option>
+														<option value="14d">Last 14 Days</option>
+														<option value="30d">Last 30 Days</option>
+														<option value="60d">Last 60 Days</option>
+												</select>
+										</div>
+
+										<div id="kpi-leaderboard" class="kpi-list">
+												<!-- Rows will be injected here by JS -->
+												<div class="kpi-empty">Loading leaderboard…</div>
+										</div>
+								</div>
         </p>
 
         <div style="
@@ -1294,6 +1430,72 @@ function renderAiList(ul, items, mode) {
     ul.appendChild(li);
   });
 }
+
+document.addEventListener("DOMContentLoaded", function () {
+  const periodSelect = document.getElementById("kpi-period-select");
+  const listEl = document.getElementById("kpi-leaderboard");
+
+  if (!periodSelect || !listEl) {
+    return;
+  }
+
+  function renderKpiRows(rows) {
+    listEl.innerHTML = "";
+
+    if (!rows || rows.length === 0) {
+      listEl.innerHTML = '<div class="kpi-empty">No KPI data yet for this period.</div>';
+      return;
+    }
+
+    rows.forEach((row, index) => {
+      const item = document.createElement("div");
+      item.className = "kpi-row";
+
+      const ratioVal = typeof row.ratio === "number" ? row.ratio : parseFloat(row.ratio || "0");
+      const ratioText = ratioVal.toFixed(3);
+
+      const calls = row.elite_calls || 0;
+      const mins = row.talk_minutes || 0;
+
+      item.innerHTML = `
+        <div class="kpi-rank">${index + 1}</div>
+        <div class="kpi-main">
+          <div class="kpi-name">${row.user_name}</div>
+          <div class="kpi-meta">${calls} elite calls · ${mins} min talk</div>
+        </div>
+        <div class="kpi-score">${ratioText}</div>
+      `;
+
+      listEl.appendChild(item);
+    });
+  }
+
+  function loadKpi(period) {
+    listEl.innerHTML = '<div class="kpi-empty">Loading leaderboard…</div>';
+
+    fetch(`/api/reflexx_kpi?period=${encodeURIComponent(period)}`)
+      .then((resp) => resp.json())
+      .then((data) => {
+        if (data.status !== "ok") {
+          listEl.innerHTML = '<div class="kpi-empty">Error loading KPI data.</div>';
+          return;
+        }
+        renderKpiRows(data.rows);
+      })
+      .catch((err) => {
+        console.error("Error loading KPI:", err);
+        listEl.innerHTML = '<div class="kpi-empty">Error loading KPI data.</div>';
+      });
+  }
+
+  // Initial load
+  loadKpi(periodSelect.value);
+
+  // Reload when the filter changes
+  periodSelect.addEventListener("change", function () {
+    loadKpi(periodSelect.value);
+  });
+});
 
 </script>
 {% endblock %}
