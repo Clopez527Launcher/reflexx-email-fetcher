@@ -254,16 +254,9 @@ def get_buckets():
 @login_required
 def api_reflexx_kpi():
     # 🔹 Use same DB helper pattern you use elsewhere
-    # Example if you use mysql.connection:
-    #   cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
-    #
-    # Or if you use get_db_connection():
-    #   conn = get_db_connection()
-    #   cursor = conn.cursor(dictionary=True)
-
-    # 👉 Adjust this to match your setup:
     conn = get_db_connection()
-    cursor = conn.cursor(dictionary=True)
+    cursor = conn.cursor()   # plain cursor, no dictionary=True
+
 
     # Period from query string, default to 7d
     period = request.args.get("period", "7d")
@@ -333,16 +326,25 @@ def api_reflexx_kpi():
     rows = cursor.fetchall()
 
     # Format into clean JSON (also convert talk seconds → minutes)
+    # r is now a TUPLE: (user_id, user_name, ratio, elite_calls, talk_seconds)
     leaderboard = []
     for r in rows:
-        talk_minutes = (r["talk_seconds"] or 0) / 60.0
+        user_id = r[0]
+        user_name = r[1]
+        ratio = r[2]
+        elite_calls = r[3]
+        talk_seconds = r[4]
+
+        talk_minutes = (talk_seconds or 0) / 60.0
+
         leaderboard.append({
-            "user_id": r["user_id"],
-            "user_name": r["user_name"],
-            "ratio": float(r["ratio"]) if r["ratio"] is not None else 0.0,
-            "elite_calls": int(r["elite_calls"] or 0),
+            "user_id": user_id,
+            "user_name": user_name,
+            "ratio": float(ratio) if ratio is not None else 0.0,
+            "elite_calls": int(elite_calls or 0),
             "talk_minutes": round(talk_minutes)
         })
+
 
     cursor.close()
     conn.close()
