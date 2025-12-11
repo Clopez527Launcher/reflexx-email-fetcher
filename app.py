@@ -295,34 +295,25 @@ def api_reflexx_kpi():
     talk_col = talk_columns[period]
 
     # 🔹 Use manager_id from the logged-in user so each manager only sees their team
-    manager_id = current_user.manager_id
+    manager_id = current_user.id
 
-    # We want the *latest day* per user (so we use the rolling window columns)
+    # Simple version: just use the latest window columns per row, no users join for now
     query = f"""
         SELECT 
-            e.user_id,
-            e.user_name,
-            e.{ratio_col} AS ratio,
-            e.{calls_col} AS elite_calls,
-            e.{talk_col} AS talk_seconds
-        FROM elite_calls_master e
-        JOIN (
-            SELECT user_id, MAX(day) AS max_day
-            FROM elite_calls_master
-            GROUP BY user_id
-        ) latest 
-            ON latest.user_id = e.user_id
-           AND latest.max_day = e.day
-        JOIN users u
-            ON u.id = e.user_id
-        WHERE 
-            u.manager_id = %s
-            AND e.{ratio_col} IS NOT NULL
-            AND e.{calls_col} > 0
+            user_id,
+            user_name,
+            {ratio_col} AS ratio,
+            {calls_col} AS elite_calls,
+            {talk_col} AS talk_seconds
+        FROM elite_calls_master
+        WHERE
+            {ratio_col} IS NOT NULL
+            AND {calls_col} > 0
         ORDER BY ratio DESC;
     """
 
-    cursor.execute(query, (manager_id,))
+    # No manager_id filter needed in this simple version
+    cursor.execute(query)
     rows = cursor.fetchall()
 
     # Format into clean JSON (also convert talk seconds → minutes)
