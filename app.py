@@ -337,7 +337,7 @@ def api_reflexx_kpi():
         total_index += index_score
         count += 1
 
-    team_index_avg = round(total_index / count, 1) if count > 0 else 0.0
+    team_index_avg = (total_index / count) if count > 0 else 0.0
 
     cursor.close()
     conn.close()
