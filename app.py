@@ -297,7 +297,7 @@ def api_reflexx_kpi():
     # 🔹 Use manager_id from the logged-in user so each manager only sees their team
     manager_id = current_user.id
 
-    # Use only the latest day in the table (today's row for each user)
+    # Use REAL calendar today, not MAX(day)
     query = f"""
         SELECT 
             user_id,
@@ -307,13 +307,16 @@ def api_reflexx_kpi():
             {talk_col} AS talk_seconds
         FROM elite_calls_master
         WHERE
-            day = (SELECT MAX(day) FROM elite_calls_master)
+            day = %s
             AND {ratio_col} IS NOT NULL
             AND {calls_col} > 0
         ORDER BY ratio DESC;
     """
 
-    cursor.execute(query)
+    from datetime import date
+
+    today = date.today()
+    cursor.execute(query, (today,))
 
     rows = cursor.fetchall()
 
