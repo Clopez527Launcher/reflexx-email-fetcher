@@ -297,7 +297,7 @@ def api_reflexx_kpi():
     # 🔹 Use manager_id from the logged-in user so each manager only sees their team
     manager_id = current_user.id
 
-    # Simple version: just use the latest window columns per row, no users join for now
+    # Use only the latest day in the table (today's row for each user)
     query = f"""
         SELECT 
             user_id,
@@ -307,13 +307,14 @@ def api_reflexx_kpi():
             {talk_col} AS talk_seconds
         FROM elite_calls_master
         WHERE
-            {ratio_col} IS NOT NULL
+            day = (SELECT MAX(day) FROM elite_calls_master)
+            AND {ratio_col} IS NOT NULL
             AND {calls_col} > 0
         ORDER BY ratio DESC;
     """
 
-    # No manager_id filter needed in this simple version
     cursor.execute(query)
+
     rows = cursor.fetchall()
 
     # Format into clean JSON (also convert talk seconds → minutes)
