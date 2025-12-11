@@ -455,11 +455,10 @@
         flex-direction:column;
       ">
         <div class="card-dark kpi-card">
-										<div class="kpi-header">
-												<div class="kpi-title">
-														Reflexx KPI Leaderboard
-														<span class="kpi-subtitle">Elite Calls / Talk Time ratio</span>
-												</div>
+												<div class="kpi-header">
+																<div class="kpi-title">
+																				Index Leaderboard
+																</div>
 
 												<select id="kpi-period-select" class="kpi-filter-select">
 														<option value="yesterday">Yesterday</option>
@@ -1451,8 +1450,8 @@ document.addEventListener("DOMContentLoaded", function () {
       const item = document.createElement("div");
       item.className = "kpi-row";
 
-      const ratioVal = typeof row.ratio === "number" ? row.ratio : parseFloat(row.ratio || "0");
-      const ratioText = ratioVal.toFixed(3);
+      const indexVal = row.index || 0;
+						const indexText = indexVal.toFixed(1);
 
       const calls = row.elite_calls || 0;
       const mins = row.talk_minutes || 0;
@@ -1461,9 +1460,8 @@ document.addEventListener("DOMContentLoaded", function () {
         <div class="kpi-rank">${index + 1}</div>
         <div class="kpi-main">
           <div class="kpi-name">${row.user_name}</div>
-          <div class="kpi-meta">${calls} elite calls · ${mins} min talk</div>
         </div>
-        <div class="kpi-score">${ratioText}</div>
+        <div class="kpi-score">${indexText}</div>
       `;
 
       listEl.appendChild(item);

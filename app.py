@@ -324,13 +324,16 @@ def api_reflexx_kpi():
         # user_id, user_name, ratio, elite_calls, talk_seconds
         talk_minutes = (r["talk_seconds"] or 0) / 60.0
 
+        index_score = 0.0
+        if r["ratio"] is not None:
+            index_score = float(r["ratio"]) * 100  # Multiply by 100
+
         leaderboard.append({
             "user_id": r["user_id"],
             "user_name": r["user_name"],
-            "ratio": float(r["ratio"]) if r["ratio"] is not None else 0.0,
-            "elite_calls": int(r["elite_calls"] or 0),
-            "talk_minutes": round(talk_minutes)
+            "index": round(index_score, 1)   # One decimal place
         })
+
 
     cursor.close()
     conn.close()
