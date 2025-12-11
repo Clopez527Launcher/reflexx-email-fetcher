@@ -1513,21 +1513,29 @@ document.addEventListener("DOMContentLoaded", function () {
           return;
         }
 
-        // Fill the leaderboard
+        // 🔹 Fill the leaderboard rows
         renderKpiRows(data.rows);
 
-        // 🔹 Update the big Team Index Average number
+        // 🔹 Compute Team Index Average directly from the row index values
         if (avgEl) {
-          const avg = typeof data.team_index_avg === "number"
-            ? data.team_index_avg
-            : parseFloat(data.team_index_avg || "0");
+          const rows = Array.isArray(data.rows) ? data.rows : [];
+          let sum = 0;
+          let count = 0;
 
-          // Fix floating-point weirdness so 5.65 -> 5.7, not 5.6
-          const rounded = Math.round((avg + 0.0000001) * 10) / 10;
+          rows.forEach((row) => {
+            const val = typeof row.index === "number"
+              ? row.index
+              : parseFloat(row.index || "0");
+            if (!isNaN(val)) {
+              sum += val;
+              count += 1;
+            }
+          });
 
+          const avg = count > 0 ? (sum / count) : 0;
+          const rounded = Math.round((avg + 0.0000001) * 10) / 10; // 5.65 -> 5.7
           avgEl.textContent = rounded.toFixed(1);
         }
-
       })
       .catch((err) => {
         console.error("Error loading KPI:", err);
