@@ -317,16 +317,16 @@ def api_reflexx_kpi():
 
     rows = cursor.fetchall()
 
-    # Format into clean JSON (also convert talk seconds → minutes)
+    # Build leaderboard + compute team average index (ratio * 100)
     leaderboard = []
-    for r in rows:
-        # r is a dict: keys from the SELECT:
-        # user_id, user_name, ratio, elite_calls, talk_seconds
-        talk_minutes = (r["talk_seconds"] or 0) / 60.0
+    total_index = 0.0
+    count = 0
 
-        index_score = 0.0
-        if r["ratio"] is not None:
-            index_score = float(r["ratio"]) * 100  # Multiply by 100
+    for r in rows:
+        if r["ratio"] is None:
+            continue
+
+        index_score = float(r["ratio"]) * 100  # Multiply by 100
 
         leaderboard.append({
             "user_id": r["user_id"],
@@ -334,11 +334,21 @@ def api_reflexx_kpi():
             "index": round(index_score, 1)   # One decimal place
         })
 
+        total_index += index_score
+        count += 1
+
+    team_index_avg = round(total_index / count, 1) if count > 0 else 0.0
 
     cursor.close()
     conn.close()
 
-    return jsonify({"status": "ok", "period": period, "rows": leaderboard})
+    return jsonify({
+        "status": "ok",
+        "period": period,
+        "rows": leaderboard,
+        "team_index_avg": team_index_avg
+    })
+
 
 
 # ---------- Quotes: upload, list, view ----------
