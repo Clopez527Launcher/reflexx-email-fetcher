@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}Manager Dashboard{% endblock %}</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+
+  <!-- ✅ Make MANAGER_ID available before dashboard.js runs -->
+  <script>
+    window.MANAGER_ID = {{ (session.get('manager_id') or 4) | int }};
+  </script>
+  <!-- ✅ Your bundle (file lives at /static/dashboard.js) -->
+  <script defer src="{{ url_for('static', filename='dashboard.js') }}"></script>
+
+  {% block head %}{% endblock %}
+</head>
+<body data-manager-id="{{ (session.get('manager_id') or 4) | int }}">
+
+  <!-- 🌈 Gradient Definition (shared across all pages) -->
+  <svg style="display: none;">
+    <defs>
+      <linearGradient id="progressGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+        <stop offset="0%" stop-color="#00aaff" />
+        <stop offset="50%" stop-color="#00cccc" />
+        <stop offset="100%" stop-color="#00ff99" />
+      </linearGradient>
+    </defs>
+  </svg>
+
+  <!-- 🔝 Top Banner -->
+  <div class="top-banner">
+    <img src="{{ url_for('static', filename='Reflexx_Icon.ico') }}" alt="Reflexx Logo">
+  </div>
+
+  <!-- 🔗 Sidebar + Main -->
+  <div style="display: flex; flex: 1;">
+    <!-- Sidebar Navigation -->
+    <div class="floating-nav">
+      <h2 class="app-title">Reflexx</h2>
+      <a href="{{ url_for('manager_portal') }}" class="nav-btn {% if request.endpoint == 'manager_portal' %}active{% endif %}">Dashboard</a>
+						<a href="{{ url_for('dashboard_new') }}" class="nav-btn {% if request.endpoint == 'dashboard_new' %}active{% endif %}">Dashboard (New)</a>
+      <a href="{{ url_for('analytics') }}" class="nav-btn {% if request.endpoint == 'analytics' %}active{% endif %}">Analytics</a>   
+      <a href="{{ url_for('business_metrics') }}" class="nav-btn {% if request.endpoint == 'business_metrics' %}active{% endif %}">Business Metrics</a>
+      <a href="{{ url_for('reports') }}" class="nav-btn {% if request.endpoint == 'reports' %}active{% endif %}">Reports</a>
+      <a href="{{ url_for('notifications') }}" class="nav-btn {% if request.endpoint == 'notifications' %}active{% endif %}">Notifications</a>
+      <a href="{{ url_for('timekeeping') }}" class="nav-btn {% if request.endpoint == 'timekeeping' %}active{% endif %}">Timekeeping</a>
+
+      <!-- ✅ Clear cached IDs on logout -->
+      <button class="logout-btn" id="logoutBtn">Logout</button>
+      <a href="{{ url_for('brick') }}" class="easter-egg">🎮</a>
+    </div>
+
+    <!-- Page Content -->
+    <div class="main-content">
+      {% block content %}{% endblock %}
+    </div>
+  </div>
+
+  {% block scripts %}{% endblock %}
+
+  <!-- 🔗 Auto-refresh RingCentral (single copy, safe globally) + logout cache clear -->
+  <script>
+  document.addEventListener('DOMContentLoaded', () => {
+    const startEl = document.getElementById('cm-start');
+    const endEl   = document.getElementById('cm-end');
+    const applyBtn = document.getElementById('cm-apply');
+
+    function triggerRC() {
+      if (window.__CALLSTATS_SINGLETON !== 'inline') {
+        if (typeof window.applyDateRangeFetch === 'function') {
+          window.applyDateRangeFetch();
+        } else if (applyBtn) {
+          applyBtn.click();
+        }
+      }
+    }
+
+    [startEl, endEl].forEach(el => {
+      if (!el) return;
+      el.addEventListener('change', triggerRC);
+      el.addEventListener('keydown', e => { if (e.key === 'Enter') triggerRC(); });
+    });
+
+    // ✅ Clear manager/employee cache on logout
+    document.getElementById('logoutBtn')?.addEventListener('click', () => {
+      localStorage.removeItem('MANAGER_ID');
+      localStorage.removeItem('employee_id');
+      window.location.href = "{{ url_for('logout') }}";
+    });
+  });
+  </script>
+</body>
+</html>

@@ -1,1 +1,1 @@
-worker: python fetch_email_reports.py
+web: gunicorn app:app

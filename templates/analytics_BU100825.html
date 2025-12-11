@@ -1,0 +1,508 @@
+{% extends "base.html" %}
+
+{% block title %}Analytics – Reflexx{% endblock %}
+
+{% block content %}
+<style>
+  :root { --sidebar-width: 260px; }
+  .with-sidebar { margin-left: var(--sidebar-width); padding: 16px 20px; }
+  @media (max-width: 900px) { .with-sidebar { margin-left: 0; padding: 12px; } }
+  .team-score-widget { max-width: 1200px; margin-right: auto; }
+
+  /* fixed-size chart wrapper (keeps chart areas identical) */
+  .chart-wrap-small {
+    width: 700px;
+    height: 280px;
+    max-width: 700px;
+    margin: 0 auto;
+    position: relative;
+  }
+  .chart-wrap-small canvas {
+    width: 100% !important;
+    height: 100% !important;
+  }
+
+  /* fixed left panel width so both cards align perfectly */
+  .metric-panel { width: 320px; min-width: 320px; }
+
+  /* common card shell */
+  .card-dark {
+    background:#0e151d; border:1px solid #1f2a36; border-radius:12px;
+    padding:16px; color:#e9f6ff; display:flex; align-items:center;
+    justify-content:space-between; flex-wrap:wrap; gap:16px;
+  }
+
+  .muted { color:#9ab; }
+  .accent { color:#8fb; }
+
+  /* ================= Employee Trends widget styles (self-contained) ================ */
+  .emp-card {
+    background:#0e151d; border:1px solid #1f2a36; border-radius:12px;
+    padding:16px; color:#e9f6ff; margin-top:18px;
+  }
+  .emp-controls { display:flex; gap:12px; align-items:center; flex-wrap:wrap; }
+  .emp-controls h3 { margin:0; font-weight:700; flex:1 1 220px; text-align:center; }
+  .emp-controls .right { margin-left:auto; display:flex; gap:10px; align-items:center; }
+  .emp-input, .emp-select, .emp-btn {
+    border:1px solid #1f2a36; background:#0e151d; color:#dff; border-radius:8px; padding:8px 10px;
+  }
+  .emp-btn { cursor:pointer; }
+  .emp-grid {
+    display:grid; grid-template-columns: repeat(2, minmax(260px, 1fr));
+    gap:16px; margin-top:16px;
+  }
+  .emp-chart {
+    background:#0b131a; border:1px solid #1f2a36; border-radius:10px; padding:12px;
+    min-height:220px; display:flex; flex-direction:column; gap:8px;
+  }
+  .emp-chart h4 { margin:0; font-size:16px; color:#cfe8ff; }
+  .emp-canvas-wrap { position:relative; width:100%; height:180px; }
+</style>
+
+<div class="with-sidebar">
+  <section class="team-score-widget" style="margin-top:24px;">
+    <h2 style="color:#fff;margin:0 0 10px;">Team Score</h2>
+
+    <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:10px 0 14px;">
+      <label style="color:#cfe8ff;">Date:
+        <input id="teamDate" type="date" />
+      </label>
+
+      <label style="color:#cfe8ff;">Range:
+        <select id="rangePreset">
+          <option value="week">Week (±3 days)</option>
+          <option value="last30" selected>Past 30 Days</option>
+          <option value="month">Current Month</option>
+          <option value="quarter">Quarter</option>
+          <option value="year">Year</option>
+          <option value="custom">Custom</option>
+        </select>
+      </label>
+
+      <label id="customStartWrap" style="color:#cfe8ff; display:none;">Start:
+        <input id="customStart" type="date" />
+      </label>
+      <label id="customEndWrap" style="color:#cfe8ff; display:none;">End:
+        <input id="customEnd" type="date" />
+      </label>
+
+      <button id="applyBtn"
+              style="padding:8px 12px;border:1px solid #1f2a36;background:#0e151d;color:#dff;border-radius:8px;cursor:pointer;">
+        Apply
+      </button>
+
+      <div id="teamStatus" style="margin-left:auto;color:#9dd;display:flex;gap:12px;align-items:center;">
+        <span id="loadingBadge" style="display:none;font-size:12px;background:#1f2a36;padding:4px 8px;border-radius:6px;">Loading…</span>
+        <span id="errorBadge" style="display:none;font-size:12px;background:#3b1620;color:#ffb4c2;padding:4px 8px;border-radius:6px;">Error</span>
+      </div>
+    </div>
+
+    <!-- Card 1: Baseline (30-day rolling) -->
+    <div id="baselineResult" class="card-dark">
+      <div class="metric-panel">
+        <div style="font-size:18px;color:#a8c7ff;">Baseline Over Time</div>
+        <div id="baselineAvgPct" style="font-size:54px;line-height:1;font-weight:700;">—</div>
+        <div id="baselineDateLabel" class="muted" style="font-size:16px;">Select a date</div>
+
+        <div style="margin-top:12px;font-size:16px;">
+          <div>High: <span id="baselineHigh" class="accent">—</span></div>
+          <div style="margin-top:4px;">Low: <span id="baselineLow" class="muted">—</span></div>
+        </div>
+      </div>
+
+      <div class="chart-wrap-small">
+        <canvas id="baselineTrend" aria-label="baseline trend"></canvas>
+      </div>
+    </div>
+
+    <!-- Card 2: Team Score -->
+    <div id="teamResult" class="card-dark" style="margin-top:18px;">
+      <div class="metric-panel">
+        <div style="font-size:18px;color:#a8c7ff;">Team Score Over Time</div>
+        <div id="teamPercent" style="font-size:54px;line-height:1;font-weight:700;">—</div>
+        <div id="teamDateLabel" class="muted" style="font-size:16px;">Select a date</div>
+
+        <div style="margin-top:8px;font-size:16px;">High: <span id="teamHigh" class="accent">—</span></div>
+        <div style="margin-top:4px;font-size:16px;">Low: <span id="teamLow" class="muted">—</span></div>
+      </div>
+
+      <div class="chart-wrap-small">
+        <canvas id="teamTrend" aria-label="trend"></canvas>
+      </div>
+    </div>
+
+    <!-- ================= Employee Trends (Self-Contained) ================= -->
+    <div id="empTrends" class="emp-card">
+      <div class="emp-controls">
+        <input id="emp-start" class="emp-input" type="date" />
+        <input id="emp-end" class="emp-input" type="date" />
+        <h3>Employee Trends</h3>
+        <div class="right">
+          <select id="emp-user" class="emp-select">
+            <option value="">Loading employees…</option>
+          </select>
+          <button id="emp-apply" class="emp-btn">Apply</button>
+        </div>
+      </div>
+
+      <div class="emp-grid">
+        <div class="emp-chart">
+          <h4>Mouse Distance</h4>
+          <div class="emp-canvas-wrap"><canvas id="emp-mouse"></canvas></div>
+        </div>
+        <div class="emp-chart">
+          <h4>Keystrokes</h4>
+          <div class="emp-canvas-wrap"><canvas id="emp-keys"></canvas></div>
+        </div>
+        <div class="emp-chart">
+          <h4>Clicks</h4>
+          <div class="emp-canvas-wrap"><canvas id="emp-clicks"></canvas></div>
+        </div>
+        <div class="emp-chart">
+          <h4>Idle Time</h4>
+          <div class="emp-canvas-wrap"><canvas id="emp-idle"></canvas></div>
+        </div>
+      </div>
+    </div>
+    <!-- ==================================================================== -->
+
+  </section>
+</div>
+
+<!-- Include Chart.js once (remove if already in base.html) -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script>
+(() => {
+  const DEBUG_MODE = false;
+
+  const dateInput   = document.getElementById('teamDate');
+  const presetSel   = document.getElementById('rangePreset');
+  const customStart = document.getElementById('customStart');
+  const customEnd   = document.getElementById('customEnd');
+
+  const applyBtn    = document.getElementById('applyBtn');
+  const percentEl   = document.getElementById('teamPercent');
+  const dateLabelEl = document.getElementById('teamDateLabel');
+  const teamHighEl  = document.getElementById('teamHigh');
+  const teamLowEl   = document.getElementById('teamLow');
+  const loadingEl   = document.getElementById('loadingBadge');
+  const errorEl     = document.getElementById('errorBadge');
+
+  const trendCtx    = document.getElementById('teamTrend').getContext('2d');
+  const baselineCtx = document.getElementById('baselineTrend').getContext('2d');
+
+  const baselineDateEl = document.getElementById('baselineDateLabel');
+
+  const dbg = DEBUG_MODE ? document.createElement('div') : null;
+  if (DEBUG_MODE) {
+    dbg.id = 'analyticsDebug';
+    dbg.style.cssText = 'margin-top:12px;font-size:12px;color:#9ab';
+    document.querySelector('.team-score-widget').appendChild(dbg);
+  }
+
+  let trend;
+  let baselineTrendChart;
+
+  // --- Helpers ---
+  function formatLocalYMD(d) {
+    const y = d.getFullYear();
+    const m = String(d.getMonth()+1).padStart(2,'0');
+    const day = String(d.getDate()).padStart(2,'0');
+    return `${y}-${m}-${day}`;
+  }
+  function parseLocalYMD(s) {
+    const [y,m,d] = s.split('-').map(Number);
+    return new Date(y, m-1, d);
+  }
+  function rollingAvg(nums, window = 30) {
+    const out = new Array(nums.length).fill(null);
+    const q = []; let sum = 0;
+    for (let i=0;i<nums.length;i++){
+      const v = Number(nums[i]); if(!Number.isNaN(v)){ q.push(v); sum+=v; }
+      while(q.length>window) sum -= q.shift();
+      out[i] = q.length ? (sum/q.length) : null;
+    }
+    return out;
+  }
+  function minMax(nums) {
+    const vals = (nums||[]).map(Number).filter(v=>!isNaN(v));
+    if(!vals.length) return {min:null,max:null};
+    return { min: Math.min(...vals), max: Math.max(...vals) };
+  }
+  function lastNonNull(arr) {
+    for(let i=arr.length-1;i>=0;i--){ const v=arr[i]; if(v!=null && !isNaN(Number(v))) return Number(v); }
+    return null;
+  }
+  function fmtPct(v) { if (v==null || isNaN(v)) return '—'; return Math.round(Number(v)) + '%'; }
+
+  // Default to today's date in local YYYY-MM-DD
+  const today = new Date();
+  dateInput.value = formatLocalYMD(today);
+
+  function showLoading(on) {
+    loadingEl.style.display = on ? 'inline-block' : 'none';
+    errorEl.style.display = 'none';
+  }
+  function showError(msg) { errorEl.textContent = msg || 'Error'; errorEl.style.display = 'inline-block'; }
+
+  function startOfQuarter(d) { const q=Math.floor(d.getMonth()/3)*3; return new Date(d.getFullYear(), q, 1); }
+  function endOfQuarter(d)   { const q=Math.floor(d.getMonth()/3)*3; return new Date(d.getFullYear(), q+3, 0); }
+
+  function buildRange(baseDateStr, preset) {
+    const base = parseLocalYMD(baseDateStr);
+    if (preset === 'last30') { const e=base; const s=new Date(base.getTime()-29*86400000); return [s,e]; }
+    if (preset === 'week')   { const s=new Date(base.getTime()-3*86400000); const e=new Date(base.getTime()+3*86400000); return [s,e]; }
+    if (preset === 'month')  { const s=new Date(base.getFullYear(), base.getMonth(), 1); const e=new Date(base.getFullYear(), base.getMonth()+1, 0); return [s,e]; }
+    if (preset === 'quarter'){ return [startOfQuarter(base), endOfQuarter(base)]; }
+    if (preset === 'year')   { return [new Date(base.getFullYear(),0,1), new Date(base.getFullYear(),11,31)]; }
+    if (preset === 'custom') {
+      if (!customStart.value || !customEnd.value) return [null,null];
+      return [parseLocalYMD(customStart.value), parseLocalYMD(customEnd.value)];
+    }
+    return [null,null];
+  }
+
+  async function fetchJSON(url) {
+    const full = DEBUG_MODE ? (url + (url.includes('?') ? '&' : '?') + 'debug=1') : url;
+    const res = await fetch(full, { credentials: 'same-origin' });
+    if (!res.ok) throw new Error(`HTTP ${res.status}: ${(await res.text().catch(()=>'')) || res.statusText}`);
+    return res.json();
+  }
+
+  function renderDebug(j, context) {
+    if (!DEBUG_MODE || !j || !dbg) return;
+    const rows = (j.labels && j.data) ? j.labels.map((lbl,i)=>`${lbl}: ${j.data[i] ?? 'null'}`).join('<br>') : '';
+    const d = j.debug || {};
+    dbg.innerHTML = `<details open style="background:#0e151d;border:1px solid #1f2a36;border-radius:8px;padding:8px;">
+        <summary style="cursor:pointer;color:#8fb">Debug (${context})</summary>
+        ${d.window_local ? `<div>Window: <code>${d.window_local.start}</code> → <code>${d.window_local.end}</code></div>` : ''}
+        ${rows ? `<hr><div style="max-height:140px;overflow:auto;">${rows}</div>` : ''}
+      </details>`;
+  }
+
+  async function loadSelectedDate(d) {
+    const j = await fetchJSON(`/api/analytics/team-percent?date=${encodeURIComponent(d)}`);
+    percentEl.textContent = fmtPct(j.team_percent);
+    const [Y,M,D] = d.split('-').map(Number);
+    const dateStr = new Date(Y, M-1, D).toDateString();
+    if (dateLabelEl)   dateLabelEl.textContent = dateStr;
+    if (baselineDateEl) baselineDateEl.textContent = dateStr;
+    renderDebug(j, 'team-percent (single date)');
+  }
+
+  async function loadTrendAndBaselines(start, end) {
+    const s = dateInput.value ? undefined : null; // no-op; just to keep lints quiet
+    const startStr = formatLocalYMD(start);
+    const endStr   = formatLocalYMD(end);
+    const j = await fetchJSON(`/api/analytics/team-series?start=${startStr}&end=${endStr}`);
+
+    if (trend) trend.destroy();
+
+    const baselineLine = Array((j.labels || []).length).fill(j.baseline_selected);
+
+    /* Team % chart */
+    trend = new Chart(trendCtx, {
+      type:'line',
+      data:{ labels:j.labels||[], datasets:[
+        { label:'Team %', data:j.data||[], spanGaps:true, tension:0.35, pointRadius:2, borderColor:'#00c0ff', backgroundColor:'rgba(0,192,255,0.1)', fill:true },
+        { label:'Baseline', data:baselineLine, borderColor:'#ffffff', borderWidth:1, borderDash:[6,6], pointRadius:0, fill:false }
+      ]},
+      options:{
+        responsive:true, maintainAspectRatio:false,
+        plugins:{ legend:{display:false}, tooltip:{ intersect:false, mode:'index', callbacks:{label:(c)=>` ${Math.round(c.parsed.y)}%` } } },
+        scales:{
+          x:{ ticks:{ color:'#9ab', maxRotation:35, minRotation:35, callback:function(v){ const label=this.getLabelForValue(v); return /^\d{4}-\d{2}-\d{2}$/.test(label)?label.slice(5):label; } }, grid:{ color:'#1f2a36' } },
+          y:{ beginAtZero:true, suggestedMax:100, ticks:{ color:'#9ab', callback:v=>v+'%' }, grid:{ color:'#1f2a36' } }
+        }
+      }
+    });
+
+    /* 30-day rolling series for Baseline chart */
+    const rolling30 = rollingAvg(j.data||[], 30);
+    const { min, max } = minMax(rolling30);
+    const latest = lastNonNull(rolling30);
+
+    document.getElementById('baselineAvgPct').textContent = fmtPct(latest);
+    document.getElementById('baselineHigh').textContent   = fmtPct(max);
+    document.getElementById('baselineLow').textContent    = fmtPct(min);
+
+    if (baselineTrendChart) baselineTrendChart.destroy();
+    baselineTrendChart = new Chart(baselineCtx, {
+      type:'line',
+      data:{ labels:j.labels||[], datasets:[
+        { label:'Baseline (30-day rolling)', data:rolling30, spanGaps:true, tension:0.35, pointRadius:2, borderColor:'#00c0ff', backgroundColor:'rgba(0,192,255,0.1)', fill:true }
+      ]},
+      options:{
+        responsive:true, maintainAspectRatio:false,
+        plugins:{ legend:{display:false}, tooltip:{ intersect:false, mode:'index', callbacks:{label:(c)=>` ${Math.round(c.parsed.y)}%` } } },
+        scales:{
+          x:{ ticks:{ color:'#9ab', maxRotation:35, minRotation:35, callback:function(v){ const label=this.getLabelForValue(v); return /^\d{4}-\d{2}-\d{2}$/.test(label)?label.slice(5):label; } }, grid:{ color:'#1f2a36' } },
+          y:{ beginAtZero:true, suggestedMax:100, ticks:{ color:'#9ab', callback:v=>v+'%' }, grid:{ color:'#1f2a36' } }
+        }
+      }
+    });
+
+    // Team Score High/Low over the selected range
+    const { min: teamMin, max: teamMax } = minMax(j.data || []);
+    if (teamHighEl) teamHighEl.textContent = fmtPct(teamMax);
+    if (teamLowEl)  teamLowEl.textContent  = fmtPct(teamMin);
+
+    renderDebug(j, 'team-series (range)');
+  }
+
+  function toggleCustom(show) {
+    document.getElementById('customStartWrap').style.display = show ? 'inline-block' : 'none';
+    document.getElementById('customEndWrap').style.display   = show ? 'inline-block' : 'none';
+  }
+
+  async function refresh() {
+    const baseDate = document.getElementById('teamDate').value;
+    if (!baseDate) return;
+
+    showLoading(true);
+    try {
+      await loadSelectedDate(baseDate);
+      const preset = document.getElementById('rangePreset').value;
+      toggleCustom(preset === 'custom');
+      let [s,e] = (function(){ return (function(base,p){ const d = new Date(base); return [d,d];})(baseDate); })(); // no-op
+      [s,e] = (function(base, preset){
+        const parse=(s)=>{const [y,m,d]=s.split('-').map(Number);return new Date(y,m-1,d);};
+        const b=parse(base);
+        if(preset==='last30'){return [new Date(b.getTime()-29*86400000), b];}
+        if(preset==='week'){return [new Date(b.getTime()-3*86400000), new Date(b.getTime()+3*86400000)];}
+        if(preset==='month'){return [new Date(b.getFullYear(),b.getMonth(),1), new Date(b.getFullYear(),b.getMonth()+1,0)];}
+        if(preset==='quarter'){const q=Math.floor(b.getMonth()/3)*3;return [new Date(b.getFullYear(),q,1), new Date(b.getFullYear(),q+3,0)];}
+        if(preset==='year'){return [new Date(b.getFullYear(),0,1), new Date(b.getFullYear(),11,31)];}
+        if(preset==='custom'){ if(!customStart.value||!customEnd.value) return [null,null]; return [parse(customStart.value), parse(customEnd.value)];}
+        return [null,null];
+      })(baseDate, document.getElementById('rangePreset').value);
+
+      if (!s || !e) throw new Error('Invalid range');
+      await loadTrendAndBaselines(s, e);
+    } catch (e) {
+      console.error(e); showError('Failed to load');
+    } finally { showLoading(false); }
+  }
+
+  document.getElementById('rangePreset').addEventListener('change', () => {
+    toggleCustom(document.getElementById('rangePreset').value === 'custom');
+  });
+  document.getElementById('applyBtn').addEventListener('click', refresh);
+
+  refresh();
+})();
+</script>
+
+<!-- ================= Employee Trends widget script (isolated IIFE) ================= -->
+<script>
+(() => {
+  // ------- Local helpers (scoped) -------
+  const toYMD = (d) => {
+    const y=d.getFullYear(), m=String(d.getMonth()+1).padStart(2,'0'), day=String(d.getDate()).padStart(2,'0');
+    return `${y}-${m}-${day}`;
+  };
+
+  // ------- Elements -------
+  const startEl = document.getElementById('emp-start');
+  const endEl   = document.getElementById('emp-end');
+  const userSel = document.getElementById('emp-user');
+  const apply   = document.getElementById('emp-apply');
+
+  // init dates: past 7 days
+  const today = new Date();
+  endEl.value = toYMD(today);
+  startEl.value = toYMD(new Date(today.getTime() - 6*86400000));
+
+  // ------- Charts -------
+  // NEW (formats x-axis labels to MM-DD)
+  const mkLine = (ctx, label) => new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: [],
+      datasets: [{
+        label,
+        data: [],
+        tension: 0.35,
+        pointRadius: 0,
+        borderColor: '#00c0ff',
+        backgroundColor: 'rgba(0,192,255,0.08)',
+        fill: true
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: {
+          ticks: {
+            color: '#9ab',
+            callback: function (value) {
+              const label = this.getLabelForValue(value);
+              // turn "YYYY-MM-DD" into "MM-DD"
+              if (typeof label === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(label)) {
+                return label.slice(5);
+              }
+              return label;
+            }
+          },
+          grid: { color: '#1f2a36' }
+        },
+        y: { ticks: { color: '#9ab' }, grid: { color: '#1f2a36' } }
+      }
+    }
+  });
+
+  const cMouse  = mkLine(document.getElementById('emp-mouse').getContext('2d'), 'Mouse Distance');
+  const cKeys   = mkLine(document.getElementById('emp-keys').getContext('2d'), 'Keystrokes');
+  const cClicks = mkLine(document.getElementById('emp-clicks').getContext('2d'), 'Clicks');
+  const cIdle   = mkLine(document.getElementById('emp-idle').getContext('2d'), 'Idle');
+
+  async function j(url){ const r = await fetch(url, {credentials:'same-origin'}); if(!r.ok) throw new Error('HTTP '+r.status); return r.json(); }
+
+  // Populate employees (nickname → email fallback)
+  async function loadEmployees(){
+    try{
+      // use the endpoint we already updated for nicknames
+      const list = await j('/manager-employees'); // [{id, email, nickname}]
+
+      const pickLabel = (u) =>
+        (u.nickname && u.nickname.trim()) || u.email;
+
+      userSel.innerHTML = list
+        .slice()
+        .sort((a,b) => pickLabel(a).localeCompare(pickLabel(b)))
+        .map(u => `<option value="${u.id}">${pickLabel(u)}</option>`)
+        .join('');
+    }catch(e){
+      userSel.innerHTML = `<option value="">(failed to load)</option>`;
+      console.error(e);
+    }
+  }
+
+  // Load series for selected employee
+  async function refresh(){
+    const uid = userSel.value;
+    if(!uid) return;
+
+    const s = startEl.value, e = endEl.value;
+    try{
+      const data = await j(`/api/analytics/employee-series?user_id=${encodeURIComponent(uid)}&start=${encodeURIComponent(s)}&end=${encodeURIComponent(e)}`);
+      // Expect: { labels:[...], mouse_distance:[...], keystrokes:[...], mouse_clicks:[...], idle_count:[...] }
+      const L = data.labels || [];
+      const set = (chart, arr) => { chart.data.labels = L; chart.data.datasets[0].data = arr || []; chart.update(); };
+
+      set(cMouse,  data.mouse_distance);
+      set(cKeys,   data.keystrokes);
+      set(cClicks, data.mouse_clicks);
+      set(cIdle,   data.idle_count);
+    }catch(e){ console.error(e); }
+  }
+
+  apply.addEventListener('click', refresh);
+
+  loadEmployees().then(refresh);
+})();
+</script>
+{% endblock %}

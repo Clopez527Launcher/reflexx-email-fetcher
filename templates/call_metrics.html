@@ -1,0 +1,95 @@
+{% extends "base.html" %}
+
+{% block title %}Call Metrics – Reflexx{% endblock %}
+
+{% block content %}
+  <div class="main-content call-metrics-layout">
+    <div class="top-bar">
+      <h1>Call Metrics</h1>
+    </div>
+
+    <h2 style="margin-top: 30px; color: white;">📞 Call Log (Last 30-Min Updates)</h2>
+
+    <div id="pagination" style="margin: 20px 0 10px; text-align: center;"></div>
+
+    <table id="callMetricsTable" border="1" cellpadding="6" cellspacing="0"
+           style="width:100%; background-color: #2a2a2a; color: #fff; text-align: center;">
+      <thead style="background-color: #111;">
+        <tr>
+          <th>Agent</th>
+          <th>Extension</th>
+          <th>Date</th>
+          <th>Total Calls</th>
+          <th>Inbound</th>
+          <th>Outbound</th>
+          <th>Handle Time</th>
+          <th>Inbound Time</th>
+          <th>Outbound Time</th>
+          <th>Logged At</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  let currentPage = 1;
+
+  async function loadCallMetrics(page = 1) {
+    if (page < 1) return;
+
+    const managerId = 4; // 🔥 Replace with session-based ID later
+    const res = await fetch(`/api/manager-call-metrics/${managerId}?page=${page}`);
+    const data = await res.json();
+
+    const tbody = document.querySelector("#callMetricsTable tbody");
+    const pagination = document.getElementById("pagination");
+    tbody.innerHTML = "";
+
+    if (data.length === 0 && page > 1) return;
+
+    if (data.length === 0 && page === 1) {
+      const tr = document.createElement("tr");
+      tr.innerHTML = `<td colspan="10">No call metrics available.</td>`;
+      tbody.appendChild(tr);
+      pagination.innerHTML = "";
+      return;
+    }
+
+    data.forEach(row => {
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td>${row.agent}</td>
+        <td>${row.extension}</td>
+        <td>${row.report_date}</td>
+        <td>${row.total_calls}</td>
+        <td>${row.inbound_calls}</td>
+        <td>${row.outbound_calls}</td>
+        <td>${row.handle_time}</td>
+        <td>${row.inbound_time}</td>
+        <td>${row.outbound_time}</td>
+        <td>${new Date(row.created_at).toLocaleString()}</td>
+      `;
+      tbody.appendChild(tr);
+    });
+
+    pagination.innerHTML = `
+      <button onclick="loadCallMetrics(${page - 1})" ${page === 1 ? "disabled" : ""}
+        style="background-color: #007bff; color: white; border: none; padding: 6px 12px; margin: 0 5px; border-radius: 4px; cursor: pointer;">
+        Previous
+      </button>
+      <span style="margin: 0 10px; font-weight: bold; color: #00e6e6;">Page ${page}</span>
+      <button onclick="loadCallMetrics(${page + 1})" ${data.length < 50 ? "disabled" : ""}
+        style="background-color: #007bff; color: white; border: none; padding: 6px 12px; margin: 0 5px; border-radius: 4px; cursor: pointer;">
+        Next
+      </button>
+    `;
+
+    currentPage = page;
+  }
+
+  document.addEventListener("DOMContentLoaded", () => loadCallMetrics());
+</script>
+{% endblock %}

@@ -1,0 +1,1192 @@
+{% extends "base.html" %}
+
+{% block title %}Manager Dashboard – Reflexx{% endblock %}
+
+{% block content %}
+
+<style>
+  /* ------- Top bar ------- */
+  .top-bar{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:12px}
+  .top-bar h1{margin:0;flex:1 1 240px;min-width:220px}
+  .top-bar .controls{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+  .top-bar .controls label{display:inline-flex;align-items:center;gap:6px;color:#fff;margin:0}
+  #employeeSelect{min-width:220px;height:32px}
+  #cm-start,#cm-end{width:150px;height:32px;background:#111;color:#fff;border:1px solid #00ffff;border-radius:4px;padding:3px 6px}
+  #cm-apply{height:32px;padding:0 16px;border-radius:6px;background:#00ffff;color:#000;border:none;cursor:pointer}
+  #cm-error{line-height:1}
+
+  /* ------- 2-col layout ------- */
+  .dashboard-container{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:20px;align-items:start}
+  .left-column,.right-column{display:flex;flex-direction:column;gap:20px;min-width:0}
+  .left-column>*, .right-column>*{width:100%;max-width:100%;box-sizing:border-box}
+
+  /* ------- Call Stats ------- */
+  .callstats-table{width:100%;border-collapse:separate;border-spacing:0;margin-top:6px}
+  .callstats-table th,.callstats-table td{padding:10px 14px}
+  .callstats-table thead th{color:#00ffff;font-weight:600;text-align:center}
+  .callstats-table tbody td:first-child{text-align:left;color:#fff;font-weight:600}
+  .callstats-table th:not(:first-child),.callstats-table td:not(:first-child){border-left:1px solid rgba(255,255,255,.35)}
+  .callstats-table tbody td{text-align:center;color:#fff;font-weight:600}
+  .badge-muted{font-size:.75rem;color:#9bbcd4;opacity:.9;margin-left:8px}
+
+  /* ------- KPI widgets ------- */
+  .kpi-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:20px}
+  .widget.kpi-card{position:relative;display:flex;flex-direction:column;align-items:center;gap:10px}
+
+  /* Remove date pill (not used) */
+  .kpi-datebadge{display:none}
+
+  .widget.kpi-card h3{margin-top:12px;margin-bottom:6px}
+
+  /* Ring — smaller so the tile is shorter */
+  .ring{width:100%;max-width:180px}
+  .ring-track{fill:none;stroke:#0a3240;stroke-width:12}
+  .ring-progress{fill:none;stroke:url(#ringGradLocal)!important;stroke-width:12;transform:rotate(-90deg);transform-origin:60px 60px;filter:url(#ringGlowLocal);transition:stroke-dashoffset .6s ease-in-out}
+  .ring-label{fill:#e9f6ff;font-weight:700;font-size:18px;text-anchor:middle;dominant-baseline:central}
+
+  /* Text below the ring */
+  .kpi-stats{text-align:center;color:#e9f6ff;margin-top:4px}
+  .kpi-delta{font-size:17px;font-weight:700;margin:6px 0 2px}
+  .kpi-baseline,.kpi-current{font-size:14px;color:#9ab}
+
+  /* Put Baseline | Range avg on one line */
+  .kpi-meta-row{display:flex;justify-content:center;align-items:center;gap:20px;margin:6px 0 2px}
+  .kpi-meta-row .kpi-baseline,.kpi-meta-row .kpi-current{font-size:14px;color:#9ab}
+
+  /* Make the Team Score tile shorter without touching others */
+  #baselineRingWidget{min-height:220px;padding:8px 0 10px}
+
+  /* Keep 2-col grid forced */
+  .main-content .dashboard-container{grid-template-columns:minmax(0,1fr) minmax(0,1fr)!important}
+
+  /* Headings unified */
+  :root{--widget-title-size:clamp(18px,1.6vw,22px)}
+  .dashboard-layout .widget > h3,
+  .dashboard-layout .scorecard-widget h3,
+  .dashboard-layout .kpi-card > h3,
+  .dashboard-layout .chat-tile-wide > h3{font-size:var(--widget-title-size);line-height:1.2;font-weight:700;margin:0 0 10px;display:flex;align-items:center;gap:8px;font-family:'Segoe UI',sans-serif}
+  .dashboard-layout .widget > h3 *, .dashboard-layout .scorecard-widget h3 *,
+  .dashboard-layout .kpi-card > h3 *, .dashboard-layout .chat-tile-wide > h3 *{line-height:1}
+  .dashboard-container .left-column > .widget:first-of-type > h3,
+  .dashboard-container .right-column > .widget:first-of-type > h3{justify-content:center;text-align:center}
+</style>
+
+<style>
+  /* === Tighten Team Score spacing & reduce tile height === */
+  #baselineRingWidget{
+    min-height: 196px;        /* a bit shorter */
+    padding-top: 4px;
+    padding-bottom: 8px;
+  }
+  #baselineRingWidget > h3{
+    margin-top: 2px;          /* title closer to top */
+    margin-bottom: 4px;       /* title closer to ring */
+  }
+  #baselineRingWidget .ring{
+    max-width: 170px;         /* slightly smaller ring */
+    display: block;
+    margin-top: 0;            /* ring closer to title */
+    margin-bottom: 4px;       /* ring closer to meta row */
+  }
+  #baselineRingWidget .kpi-stats{
+    margin-top: 0;            /* remove extra gap above meta row */
+  }
+  #baselineRingWidget .kpi-meta-row{
+    gap: 14px;                /* a bit tighter between Baseline | Range */
+    margin: 2px 0 0;
+  }
+  #baselineRingWidget .kpi-delta{
+    margin-top: 4px;          /* pull delta up slightly */
+    font-size: 16px;
+  }
+</style>
+
+<style>
+  .scorecard-muted {
+    color: rgba(230, 241, 244, 0.35) !important;
+  }
+</style>
+
+<style>
+  .bucket-leaderboard {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    /* give space so the scrollbar isn't on top of the % */
+    padding-right: 54px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    max-height: 95px;
+    overflow-y: auto;
+
+    /* Firefox thin bar */
+    scrollbar-width: thin;
+    scrollbar-color: #00ffff33 transparent;
+  }
+
+  .bucket-leaderboard li {
+    font-size: 1rem;
+    line-height: 1.25;
+    display: flex;
+    justify-content: space-between;
+  }
+
+  /* Chrome / Edge / Safari scrollbar styling */
+  .bucket-leaderboard::-webkit-scrollbar {
+    width: 6px;              /* thin bar */
+  }
+  .bucket-leaderboard::-webkit-scrollbar-track {
+    background: transparent; /* no ugly grey box */
+  }
+  .bucket-leaderboard::-webkit-scrollbar-thumb {
+    background: #00ffff66;   /* cyan-ish bar to match UI */
+    border-radius: 999px;
+  }
+  .bucket-leaderboard::-webkit-scrollbar-thumb:hover {
+    background: #00ffffaa;
+  }
+</style>
+
+<style>
+  /* make the 3 bucket lists flex rows */
+  #phone-leaderboard li,
+  #quoting-leaderboard li,
+  #movement-leaderboard li {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+  }
+
+  /* make the name shrinkable and add padding on the right */
+  #phone-leaderboard .lb-name,
+  #quoting-leaderboard .lb-name,
+  #movement-leaderboard .lb-name {
+    flex: 1 1 auto;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    padding-right: 12px; /* <-- THIS pushes the % away */
+  }
+
+  /* lock the % on the right */
+  #phone-leaderboard .lb-score,
+  #quoting-leaderboard .lb-score,
+  #movement-leaderboard .lb-score {
+    flex: 0 0 auto;
+    min-width: 52px;     /* room for 12.5% */
+    text-align: right;
+    font-weight: 600;
+  }
+</style>
+
+<style>
+  /* bucket rows should look clickable */
+  #phone-leaderboard li,
+  #quoting-leaderboard li,
+  #movement-leaderboard li {
+    cursor: pointer;
+  }
+</style>
+
+<div class="main-content dashboard-layout">
+  <div class="top-bar">
+    <h1>Manager Dashboard</h1>
+    <div class="controls controls--right">
+      <label>From: <input type="text" id="cm-start" placeholder="mm/dd/yyyy"></label>
+      <label>To:   <input type="text" id="cm-end"   placeholder="mm/dd/yyyy"></label>
+      <small id="cm-error" style="display:none;color:#ff6b6b;white-space:nowrap;">End date must be after start date.</small>
+      <select id="employeeSelect"><option value="all">All Employees</option></select>
+    </div>
+  </div>
+
+  <div class="dashboard-container">
+
+    <!-- LEFT -->
+    <div class="left-column">
+
+      <!-- TOP LEFT 2 CARDS -->
+      <div style="display:grid;grid-template-columns:repeat(2, minmax(0, 1fr));gap:20px;margin-bottom:20px;">
+        <!-- PHONE (big card + list area) -->
+								<div class="widget kpi-card" id="phoneWidget"
+													style="min-height:285px;display:flex;flex-direction:column;">
+										<h3 style="margin:0 0 6px 0;">Phone</h3>
+
+										<!-- main KPI number -->
+										<div id="phoneKpi" style="font-size:26px;font-weight:700;color:#00ffff;">—</div>
+										<small id="phone-range-label" style="opacity:.5;margin-bottom:10px;">Loading…</small>
+
+										<!-- little list inside the card -->
+										<ul id="phone-leaderboard" class="bucket-leaderboard">
+														<li>Loading…</li>
+										</ul>
+								</div>
+
+        <!-- Quoting -->
+        <div class="widget kpi-card" id="quotingWidget"
+													style="min-height:285px;display:flex;flex-direction:column;">
+										<h3 style="margin:0 0 6px 0;">Quoting</h3>
+										<div id="quotingKpi" style="font-size:26px;font-weight:700;color:#00ffff;">—</div>
+										<small id="quoting-range-label" style="opacity:.5;margin-bottom:10px;">Loading…</small>
+										<ul id="quoting-leaderboard" class="bucket-leaderboard">
+														<li>Loading…</li>
+										</ul>
+								</div>
+						</div>		
+
+
+      <!-- SCORECARD (same as before) -->
+      <div class="scorecard-widget" style="width:100%;max-width:100%;height:100%;padding:20px;border:1px solid #0ff;border-radius:10px;background:#1a1a1a;box-shadow:0 0 10px #00ffff;color:#fff;font-family:'Segoe UI',sans-serif;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:15px;">
+          <h3 style="margin:0;color:#00ffff;">📊 Scorecard Report</h3>
+          <div style="font-size:12px;"><input type="date" id="scorecard-date" name="scorecard-date" style="background:#222;color:#fff;border:1px solid #00ffff;border-radius:4px;padding:3px 6px;"></div>
+        </div>
+        <p style="margin-bottom:10px;font-size:14px;color:#ccc;">Grades and scores for each user based on daily performance.</p>
+        <table style="width:100%;border-collapse:collapse;font-size:14px;">
+          <thead>
+            <tr style="border-bottom:1px solid #333;color:#00ffff;">
+              <th style="text-align:left;padding:6px 0;">User</th>
+              <th style="text-align:center;padding:6px 0;">Grade</th>
+              <th style="text-align:right;padding:6px 0;">Score</th>
+            </tr>
+          </thead>
+          <tbody id="scorecard-table-body">
+            <tr><td colspan="3" style="text-align:center;color:#888;">Loading...</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="widget" id="aiInsightsWidget">
+        {% include 'ai_insights.html' %}
+      </div>
+
+      <div class="chat-tile-wide">
+        <h3>🤖 Ask Reflexx AI (Beta)</h3>
+        <div id="ai-response" class="ai-response-box-wide" style="height:300px;width:100%;">Ask me something about today's data.</div>
+        <input id="ai-input" type="text" placeholder="e.g., Who had the most idle time?" style="height:60px;margin-top:15px;font-size:1rem;">
+        <button onclick="askAI()" style="margin-top:10px">Submit</button>
+      </div>
+    </div>
+
+    <!-- RIGHT -->
+    <div class="right-column">
+
+      <!-- TOP RIGHT 2 CARDS -->
+      <div style="display:grid;grid-template-columns:repeat(2, minmax(0, 1fr));gap:20px;margin-bottom:20px;">
+
+        <!-- Movement -->
+        <div class="widget kpi-card" id="movementWidget"
+													style="min-height:285px;display:flex;flex-direction:column;">
+										<h3 style="margin:0 0 6px 0;">Movement</h3>
+										<div id="movementKpi" style="font-size:26px;font-weight:700;color:#00ffff;">—</div>
+										<small id="movement-range-label" style="opacity:.5;margin-bottom:10px;">Loading…</small>
+										<ul id="movement-leaderboard" class="bucket-leaderboard">
+														<li>Loading…</li>
+										</ul>
+								</div>
+
+
+        <!-- Team Score -->
+        <div class="widget kpi-card" id="baselineRingWidget"
+             style="min-height:285px;display:flex;flex-direction:column;">
+
+          <h3>Team Score</h3>
+          <svg class="ring" viewBox="0 0 120 120" aria-label="Team score ring">
+            <defs>
+              <linearGradient id="ringGradLocal" x1="0" y1="0" x2="120" y2="0" gradientUnits="userSpaceOnUse">
+                <stop offset="0%"   stop-color="#00aaff"/>
+                <stop offset="50%"  stop-color="#00cccc"/>
+                <stop offset="100%" stop-color="#00ff99"/>
+              </linearGradient>
+              <filter id="ringGlowLocal" x="-50%" y="-50%" width="200%" height="200%">
+                <feGaussianBlur in="SourceGraphic" stdDeviation="3" result="blur"/>
+                <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+              </filter>
+            </defs>
+            <circle class="ring-track" cx="60" cy="60" r="50"></circle>
+            <circle class="ring-progress" cx="60" cy="60" r="50"
+                    stroke="url(#ringGradLocal)" filter="url(#ringGlowLocal)"
+                    stroke-linecap="round" stroke-width="12" fill="none"></circle>
+            <text id="kpiCenter" class="ring-label" x="60" y="60">—</text>
+          </svg>
+          <div class="kpi-stats">
+            <div class="kpi-meta-row">
+              <div id="kpiBaseline" class="kpi-baseline">Baseline: —</div>
+              <div id="kpiCurrent"  class="kpi-current">Range avg: —</div>
+            </div>
+            <div id="kpiDelta" class="kpi-delta">—</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- WEB USAGE -->
+      <div class="widget">
+        <h3>Web Usage</h3>
+        <div style="width:100%;height:250px"><canvas id="weblogsChart"></canvas></div>
+      </div>
+
+      <!-- CALL STATS -->
+      <div class="kpi-pair" style="display:grid;grid-template-columns:1fr 1fr;gap:20px;align-items:start;">
+        <div class="widget" id="callStatsWidget" style="grid-column: 1 / -1;">
+          <h3>Call Statistics</h3>
+          <table class="callstats-table">
+            <thead>
+              <tr>
+                <th></th>
+                <th>Ricochet <span id="ricochetStatus" class="badge-muted">Not connected</span></th>
+                <th>RingCentral</th>
+                <th>Total</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Inbounds</td><td><span id="ri_inbounds">0</span></td>
+                <td><span id="inboundCalls">🔄 Loading...</span></td>
+                <td><span id="tt_inbounds">&mdash;</span></td>
+              </tr>
+              <tr>
+                <td>Outbounds</td><td><span id="ri_outbounds">0</span></td>
+                <td><span id="outboundCalls">🔄 Loading...</span></td>
+                <td><span id="tt_outbounds">&mdash;</span></td>
+              </tr>
+              <tr>
+                <td>Inbound Time</td><td><span id="ri_in_time">0:00:00</span></td>
+                <td><span id="inboundDuration">🔄 Loading...</span></td>
+                <td><span id="tt_in_time">&mdash;</span></td>
+              </tr>
+              <tr>
+                <td>Outbound Time</td><td><span id="ri_out_time">0:00:00</span></td>
+                <td><span id="outboundDuration">🔄 Loading...</span></td>
+                <td><span id="tt_out_time">&mdash;</span></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- keep hidden slot -->
+        <div class="widget" id="futureMiniSlot" style="display:none;"></div>
+      </div>
+    </div>
+
+  </div> <!-- /dashboard-container -->
+</div> <!-- /main-content -->
+
+<!-- bucket / scorecard detail modal -->
+<div id="scorecard-modal"
+     style="display:none;
+            position:fixed;
+            top:50%;
+            left:50%;
+            transform:translate(-50%, -50%);
+            background:#111;
+            border:1px solid #00ffff;
+            border-radius:10px;
+            padding:16px;
+            min-width:320px;
+            max-width:480px;
+            z-index:9999;
+            color:#fff;
+            box-shadow:0 0 20px rgba(0,255,255,.35);">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+    <div class="modal-title" style="font-weight:600;color:#00ffff;">Detail</div>
+    <button onclick="document.getElementById('scorecard-modal').style.display='none';"
+            style="background:none;border:none;color:#fff;font-size:16px;cursor:pointer;line-height:1;">✕</button>
+  </div>
+  <div class="modal-body" style="font-size:14px;line-height:1.4;">
+    Loading...
+  </div>
+</div>
+
+<!-- Manager id for “All Employees” queries (server injects this) -->
+<script>window.MANAGER_ID={{ (current_user.manager_id or 0) | int }};</script>
+
+<script>
+  // STEP A: get dates from the top filters on this page (and normalize to YYYY-MM-DD)
+  function getDashboardDates() {
+    const startInput = document.getElementById("cm-start");
+    const endInput   = document.getElementById("cm-end");
+    const today = new Date().toISOString().slice(0, 10);
+
+    function normalizeDate(str) {
+      if (!str) return "";
+      // already YYYY-MM-DD
+      if (str.indexOf("-") !== -1) return str;
+      // assume MM/DD/YYYY
+      const parts = str.split("/");
+      if (parts.length === 3) {
+        const [mm, dd, yyyy] = parts;
+        return `${yyyy}-${mm.padStart(2, "0")}-${dd.padStart(2, "0")}`;
+      }
+      return str;
+    }
+
+    const startRaw = startInput && startInput.value ? startInput.value : today;
+    const endRaw   = endInput   && endInput.value   ? endInput.value   : today;
+
+    return {
+      start: normalizeDate(startRaw),
+      end:   normalizeDate(endRaw)
+    };
+  }
+
+  // STEP B: render one bucket (phone / quoting / movement)
+  function renderBucket(listId, labelId, data, start, end) {
+    const ul    = document.getElementById(listId);
+    const label = document.getElementById(labelId);
+    if (!ul) return;
+
+    ul.innerHTML = "";
+
+    if (label) {
+      label.textContent = `Showing ${start} → ${end}`;
+    }
+
+    if (!data || !data.length) {
+      ul.innerHTML = "<li>No data for this period.</li>";
+      return;
+    }
+
+    // figure out which bucket this is
+    let bucketType = "";
+    if (listId.indexOf("phone") !== -1) bucketType = "phone";
+    else if (listId.indexOf("quoting") !== -1) bucketType = "quoting";
+    else if (listId.indexOf("movement") !== -1) bucketType = "movement";
+
+    data.forEach((row, idx) => {
+      const li = document.createElement("li");
+      li.className = "bucket-item";
+      li.dataset.bucket = bucketType;
+
+      // store BOTH id and name in the <li>
+      const userIdFromApi = row.user_id || row.id || row.userId;
+      li.dataset.userId   = userIdFromApi ? String(userIdFromApi) : "";
+      li.dataset.userName = row.user_name || row.name || "";
+
+      // just for debugging
+      console.log("bucket row", row);
+
+      li.innerHTML = `
+        <span>
+          <span class="lb-rank">${idx + 1}.</span>
+          <span class="lb-name">${row.user_name}</span>
+        </span>
+        <span class="lb-score">${row.avg_score}%</span>
+      `;
+      ul.appendChild(li);
+    });
+  }
+
+  // STEP C: fetch a bucket from the backend
+  async function fetchBucket(bucketName) {
+    const { start, end } = getDashboardDates();
+    const url = `/api/buckets?bucket=${bucketName}&start=${start}&end=${end}`;
+    try {
+      const res = await fetch(url);
+      if (!res.ok) throw new Error("network");
+      const payload = await res.json();
+      return { data: payload, start, end };
+    } catch (err) {
+      console.error("bucket fetch failed", err);
+      return { data: [], start, end };
+    }
+  }
+
+  // STEP D: load all the cards
+  async function loadAllDashboardBuckets() {
+    const phone = await fetchBucket("phone");
+    renderBucket("phone-leaderboard", "phone-range-label", phone.data, phone.start, phone.end);
+
+    const quoting = await fetchBucket("quoting");
+    renderBucket("quoting-leaderboard", "quoting-range-label", quoting.data, quoting.start, quoting.end);
+
+    const movement = await fetchBucket("movement");
+    renderBucket("movement-leaderboard", "movement-range-label", movement.data, movement.start, movement.end);
+  }
+
+  // STEP E: helper for minutes → "X hr Y min"
+  function minutesToHrMin(mins) {
+    mins = Number(mins) || 0;
+    const h = Math.floor(mins / 60);
+    const m = mins % 60;
+    return `${h} hr ${m} min`;
+  }
+
+  // STEP F (new): show the modal for all 3
+  function minutesToHrMin(mins) {
+    mins = Number(mins) || 0;
+    const h = Math.floor(mins / 60);
+    const m = mins % 60;
+    return `${h} hr ${m} min`;
+  }
+  function secondsToHrMin(sec) {
+    sec = Number(sec) || 0;
+    const m = Math.floor(sec / 60);
+    const h = Math.floor(m / 60);
+    const mm = m % 60;
+    return `${h} hr ${mm} min`;
+  }
+
+  function showBucketDetailModal(bucket, data) {
+    const modal = document.getElementById("scorecard-modal");
+    if (!modal) {
+      console.warn("scorecard-modal not found");
+      return;
+    }
+    const body  = modal.querySelector(".modal-body");
+    const title = modal.querySelector(".modal-title");
+
+    const name  = data.user_name || "Unknown";
+    const start = data.start || "";
+    const end   = data.end || "";
+
+    title.textContent = `${name} – ${start} → ${end}`;
+
+    if (bucket === "phone") {
+      body.innerHTML = `
+        <ul>
+          <li><strong>Inbound Calls:</strong> ${data.inbounds || 0}</li>
+          <li><strong>Outbound Calls:</strong> ${data.outbounds || 0}</li>
+          <li><strong>Inbound Talk Time:</strong> ${minutesToHrMin(data.ib_time_minutes || 0)}</li>
+          <li><strong>Outbound Talk Time:</strong> ${minutesToHrMin(data.ob_time_minutes || 0)}</li>
+        </ul>
+      `;
+    } else if (bucket === "quoting") {
+      body.innerHTML = `
+        <ul>
+          <li><strong>Quoted Items:</strong> ${data.quoted_items || 0}</li>
+          <li><strong>Unique Quotes:</strong> ${data.quotes_unique || 0}</li>
+          <li><strong>Advisor Pro Minutes:</strong> ${minutesToHrMin(data.advisor_pro_minutes || 0)}</li>
+        </ul>
+      `;
+    } else if (bucket === "movement") {
+      body.innerHTML = `
+        <ul>
+          <li><strong>Mouse Distance:</strong> ${data.mouse_distance || 0}</li>
+          <li><strong>Keystrokes:</strong> ${data.keystrokes || 0}</li>
+          <li><strong>Mouse Clicks:</strong> ${data.mouse_clicks || 0}</li>
+          <li><strong>Idle Time:</strong> ${secondsToHrMin(data.idle_time_seconds || 0)}</li>
+        </ul>
+      `;
+    }
+
+    modal.style.display = "block";
+  }
+
+  // STEP G (new): single click handler for all 3 buckets
+  document.addEventListener("click", async function (e) {
+    const li = e.target.closest(".bucket-item");
+    if (!li) return;
+
+    const bucket   = li.dataset.bucket;          // phone | quoting | movement
+    const userId   = li.dataset.userId;          // might be ""
+    const userName = li.dataset.userName ||
+                     (li.querySelector(".lb-name")?.textContent.trim()) ||
+                     "";
+    if (!bucket) return;
+
+    const { start, end } = getDashboardDates();
+
+    // pick the right endpoint
+    let url = "";
+    if (bucket === "phone") {
+      url = `/api/buckets/phone-detail?start=${encodeURIComponent(start)}&end=${encodeURIComponent(end)}`;
+    } else if (bucket === "quoting") {
+      url = `/api/buckets/quoting-detail?start=${encodeURIComponent(start)}&end=${encodeURIComponent(end)}`;
+    } else if (bucket === "movement") {
+      url = `/api/buckets/movement-detail?start=${encodeURIComponent(start)}&end=${encodeURIComponent(end)}`;
+    } else {
+      return;
+    }
+
+    // prefer id, fall back to name
+    if (userId) {
+      url += `&user_id=${encodeURIComponent(userId)}`;
+    } else if (userName) {
+      url += `&user_name=${encodeURIComponent(userName)}`;
+    }
+
+    console.log("calling detail:", url);
+
+    try {
+      const res  = await fetch(url);
+      const data = await res.json();
+      showBucketDetailModal(bucket, data);
+    } catch (err) {
+      console.error("error loading detail", err);
+    }
+  });
+		
+  // STEP H: initial load
+  document.addEventListener("DOMContentLoaded", loadAllDashboardBuckets);
+
+  // STEP I: reload buckets if dates change
+  const startEl = document.getElementById("cm-start");
+  const endEl   = document.getElementById("cm-end");
+  if (startEl) startEl.addEventListener("change", loadAllDashboardBuckets);
+  if (endEl)   endEl.addEventListener("change", loadAllDashboardBuckets);
+</script>
+
+<!-- Flatpickr (date pickers) -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/themes/dark.css">
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+
+
+<script>
+  const fpOptions = { dateFormat:"m/d/Y", allowInput:false, clickOpens:true };
+  const startPicker = flatpickr("#cm-start", fpOptions);
+  const endPicker   = flatpickr("#cm-end",   fpOptions);
+  (function(){
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    startPicker.setDate(today, false);
+    endPicker.setDate(today, false);
+  })();
+</script>
+
+<!-- 🔧 KPI Ring logic -->
+<script>
+(function () {
+  const startInput = document.getElementById('cm-start') || document.getElementById('scorecard-date');
+  const endInput   = document.getElementById('cm-end');
+  const applyBtn   = document.getElementById('cm-apply');
+
+  const widget   = document.getElementById('baselineRingWidget');
+  const ring     = widget ? widget.querySelector('.ring-progress') : null;
+  const centerEl = widget ? widget.querySelector('#kpiCenter') : null;
+  const dateBadge= document.getElementById('kpiDateLabel');
+
+  const deltaEl  = document.getElementById('kpiDelta');
+  const baseEl   = document.getElementById('kpiBaseline');
+  const currEl   = document.getElementById('kpiCurrent');
+
+  if (!widget || !ring || !centerEl || !startInput) return;
+
+  const CIRC = 2 * Math.PI * 50;
+  function setRing(fillRatio) {
+    const f = Math.max(0, Math.min(1, Number(fillRatio) || 0));
+    ring.style.strokeDasharray  = String(CIRC);
+    ring.style.strokeDashoffset = String((1 - f) * CIRC);
+  }
+
+  const fmtPct1 = n => (n == null || isNaN(n)) ? '—' : `${Number(n).toFixed(1)}%`;
+  const fmtPct2 = n => (n == null || isNaN(n)) ? '—' : `${Number(n).toFixed(2)}%`;
+
+  function normalizeDate(raw) {
+    if (!raw) return '';
+    const s = String(raw).trim();
+    if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s;
+    const m = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+    if (m) { const mm = m[1].padStart(2,'0'), dd = m[2].padStart(2,'0'); return `${m[3]}-${mm}-${dd}`; }
+    const d = new Date(s);
+    if (!isNaN(d)) { const mm = String(d.getMonth()+1).padStart(2,'0'), dd = String(d.getDate()).padStart(2,'0'); return `${d.getFullYear()}-${mm}-${dd}`; }
+    return '';
+  }
+  function fmtMDY(ymd) {
+    if (!ymd) return '';
+    const [y,m,d] = ymd.split('-').map(Number);
+    return `${String(m).padStart(2,'0')}/${String(d).padStart(2,'0')}/${y}`;
+  }
+  async function fetchJSON(url) {
+    const res = await fetch(url, { credentials: 'same-origin' });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    return res.json();
+  }
+
+  // anti-race
+  let RENDER_TOKEN = 0;
+
+  async function refreshRing() {
+    const token = ++RENDER_TOKEN;
+
+    const startYMD = normalizeDate(startInput.value);
+    const endYMD   = normalizeDate(endInput?.value || '');
+    if (!startYMD) return;
+
+    const isRange  = !!(endYMD && endYMD >= startYMD);
+
+    // 1) get baseline / series
+    const series   = await fetchJSON(
+      `/api/analytics/team-series?start=${startYMD}&end=${isRange ? endYMD : startYMD}`
+    );
+    const baseline = (typeof series.baseline_all_time === 'number')
+      ? series.baseline_all_time
+      : null;
+
+    // 2) get current team score for the date/range
+    let currentPct = null;
+    if (isRange) {
+      const payload = await fetchJSON(
+        `/api/team-score?start=${encodeURIComponent(startYMD)}&end=${encodeURIComponent(endYMD)}`
+      );
+      if (payload && typeof payload.team_score === 'number') {
+        currentPct = Math.round(
+          Math.round((payload.team_score + Number.EPSILON) * 10) / 10
+        );
+      }
+    } else {
+      const payload = await fetchJSON(
+        `/api/team-score?start=${encodeURIComponent(startYMD)}&end=${encodeURIComponent(startYMD)}`
+      );
+      if (payload && typeof payload.team_score === 'number') {
+        currentPct = Math.round(
+          Math.round((payload.team_score + Number.EPSILON) * 10) / 10
+        );
+      }
+    }
+
+    // if a newer render started, abort this one
+    if (token !== RENDER_TOKEN) return;
+
+    // 3) render
+    if (currentPct != null) {
+      const expected = `${currentPct}%`;
+      centerEl.textContent = expected;
+
+      // guard: remove old sublabels
+      widget.querySelectorAll(".ring-sublabel").forEach(el => el.remove());
+
+      // add sublabel
+      const sub = document.createElementNS("http://www.w3.org/2000/svg", "text");
+      sub.setAttribute("x","60");
+      sub.setAttribute("y","75");
+      sub.setAttribute("text-anchor","middle");
+      sub.setAttribute("fill","white");
+      sub.setAttribute("font-size","10");
+      sub.classList.add("ring-sublabel");
+      sub.textContent = "to baseline";
+      ring.parentNode.appendChild(sub);
+
+      // ring fill (clamp 0–100)
+      const ratio = Math.max(0, Math.min(100, currentPct));
+      setRing(ratio / 100);
+
+      // delta text
+      if (baseline != null) {
+        const delta = currentPct - baseline;
+        const word  = delta > 0 ? 'Up' : delta < 0 ? 'Down' : 'Even';
+        deltaEl.textContent = `${word} ${fmtPct1(Math.abs(delta))} from baseline`;
+        deltaEl.classList.remove('kpi-up','kpi-down');
+        if (delta > 0) deltaEl.classList.add('kpi-up');
+        if (delta < 0) deltaEl.classList.add('kpi-down');
+      } else {
+        deltaEl.textContent = '—';
+        deltaEl.classList.remove('kpi-up','kpi-down');
+      }
+    } else {
+      // no data → reset ring
+      centerEl.textContent = '—';
+      if (widget._centerObserver) widget._centerObserver.disconnect();
+      widget.querySelectorAll(".ring-sublabel").forEach(el => el.remove());
+      deltaEl.textContent = '—';
+      deltaEl.classList.remove('kpi-up','kpi-down');
+      setRing(0);
+    }
+  }
+  
+
+  refreshRing().catch(console.error);
+
+  if (applyBtn) applyBtn.addEventListener('click', () => refreshRing().catch(console.error));
+  startInput.addEventListener('change',  () => refreshRing().catch(console.error));
+  if (endInput) endInput.addEventListener('change', () => refreshRing().catch(console.error));
+  const scDate = document.getElementById('scorecard-date');
+  if (scDate) scDate.addEventListener('change', () => refreshRing().catch(console.error));
+})();
+</script>
+
+<!-- 🔍 User Metrics Modal (unchanged) -->
+<div id="userMetricsModal" style="display:none;position:fixed;z-index:1000;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.8);">
+  <div style="background:#111;color:#fff;margin:10% auto;padding:20px;width:400px;border:2px solid #00f0ff;border-radius:8px;position:relative;">
+    <span onclick="document.getElementById('userMetricsModal').style.display='none'"
+          style="position:absolute;top:10px;right:15px;cursor:pointer;color:#ccc;">✖</span>
+    <div id="userMetricsContent">Loading...</div>
+  </div>
+</div>
+
+<!-- ✅ Inline Call-Stats writer (uses /api/call-metrics/{range,summary}; per-user fix) -->
+<script>
+(function () {
+  const $ = id => document.getElementById(id);
+  const setText = (id, v) => { const el = $(id); if (el) el.textContent = v; };
+
+  const toYMD = (mdy) => {
+    if (!mdy) return '';
+    const m = String(mdy).match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+    return m ? `${m[3]}-${m[1].padStart(2,'0')}-${m[2].padStart(2,'0')}` : String(mdy);
+  };
+  const todayYMD = () => {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+  };
+  const secFromHHMMSS = (t) => {
+    if (t == null) return 0;
+    if (typeof t === 'number') return t|0;
+    const s = String(t).trim();
+    const parts = s.split(':').map(Number);
+    if (parts.length === 3 && parts.every(Number.isFinite)) {
+      const [h,m,ss]=parts; return h*3600 + m*60 + ss;
+    }
+    return Number.isFinite(Number(s)) ? Number(s)|0 : 0;
+  };
+  const fmtHMS = (totalSec) => {
+    totalSec = Math.max(0, totalSec|0);
+    const h=Math.floor(totalSec/3600), m=Math.floor((totalSec%3600)/60), s=totalSec%60;
+    return [h,m,s].map(v=>String(v).padStart(2,'0')).join(':');
+  };
+  const numOr0 = v => Number.isFinite(Number(v)) ? Number(v) : 0;
+
+  function resetRcCells() {
+    setText('inboundCalls',     '🔄 Loading...');
+    setText('outboundCalls',    '🔄 Loading...');
+    setText('inboundDuration',  '🔄 Loading...');
+    setText('outboundDuration', '🔄 Loading...');
+  }
+
+  function applyTotals() {
+    // read ricochet (left column) + rc (middle) and update totals (right column)
+    const toInt  = (id) => numOr0($(id)?.textContent);
+    const toSecs = (id) => secFromHHMMSS($(id)?.textContent);
+
+    const ri_in_calls = toInt('ri_inbounds');
+    const ri_out_calls= toInt('ri_outbounds');
+    const ri_in_sec   = toSecs('ri_in_time');
+    const ri_out_sec  = toSecs('ri_out_time');
+
+    const rc_in_calls = toInt('inboundCalls');
+    const rc_out_calls= toInt('outboundCalls');
+    const rc_in_sec   = toSecs('inboundDuration');
+    const rc_out_sec  = toSecs('outboundDuration');
+
+    setText('tt_inbounds',  String(ri_in_calls + rc_in_calls));
+    setText('tt_outbounds', String(ri_out_calls + rc_out_calls));
+    setText('tt_in_time',   fmtHMS(ri_in_sec + rc_in_sec));
+    setText('tt_out_time',  fmtHMS(ri_out_sec + rc_out_sec));
+  }
+
+  async function fetchJSON(url, options = {}) {
+    const res = await fetch(url, { credentials:'same-origin', ...options });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    return res.json();
+  }
+
+  async function loadRcFromRange(startYMD, endYMD, employeeVal) {
+    const isAll = !employeeVal || String(employeeVal).toLowerCase() === 'all';
+    const params = new URLSearchParams({ start: startYMD, end: endYMD });
+
+    if (isAll) {
+      if (window.MANAGER_ID) params.set('manager_id', String(window.MANAGER_ID));
+    } else {
+      // send the specific user only (match backend)
+      params.set('employee_id', String(employeeVal));
+      // optional compat (if backend accepts user_id)
+      params.set('user_id',     String(employeeVal));
+    }
+
+    const data = await fetchJSON(`/api/call-metrics/range?${params.toString()}`);
+    // { inbound_count, outbound_count, inbound_duration, outbound_duration }
+    const inCalls  = numOr0(data.inbound_count);
+    const outCalls = numOr0(data.outbound_count);
+    const inSec    = secFromHHMMSS(data.inbound_duration);
+    const outSec   = secFromHHMMSS(data.outbound_duration);
+
+    setText('inboundCalls',     String(inCalls));
+    setText('outboundCalls',    String(outCalls));
+    setText('inboundDuration',  fmtHMS(inSec));
+    setText('outboundDuration', fmtHMS(outSec));
+    applyTotals();
+  }
+
+  async function loadRcSummary(employeeVal) {
+    const isAll = !employeeVal || String(employeeVal).toLowerCase() === 'all';
+    const payload = {
+      date_range: 'today',
+      manager_id: window.MANAGER_ID || 0
+    };
+    if (!isAll) {
+      payload.employee_id = String(employeeVal);
+      payload.user_id     = String(employeeVal); // compat
+    }
+
+    const data = await fetchJSON('/api/call-metrics-summary', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify(payload)
+    });
+    // { inbound_count, outbound_count, inbound_duration, outbound_duration }
+    const inCalls  = numOr0(data.inbound_count);
+    const outCalls = numOr0(data.outbound_count);
+    const inSec    = secFromHHMMSS(data.inbound_duration);
+    const outSec   = secFromHHMMSS(data.outbound_duration);
+
+    setText('inboundCalls',     String(inCalls));
+    setText('outboundCalls',    String(outCalls));
+    setText('inboundDuration',  fmtHMS(inSec));
+    setText('outboundDuration', fmtHMS(outSec));
+    applyTotals();
+  }
+
+  function getDates() {
+    const startRaw = $('#cm-start')?.value;  // mm/dd/yyyy
+    const endRaw   = $('#cm-end')?.value;
+    const startYMD = startRaw ? toYMD(startRaw) : todayYMD();
+    const endYMD   = endRaw   ? toYMD(endRaw)   : startYMD;
+    return { startYMD, endYMD };
+  }
+
+  async function refreshCallStats() {
+    resetRcCells();
+
+    const raw = $('#employeeSelect')?.value || 'all';
+    const employeeVal = String(raw).toLowerCase() === 'all' ? 'all' : raw;
+
+    const { startYMD, endYMD } = getDates();
+
+    // Use range endpoint when dates present, otherwise summary fallback
+    if (startYMD && endYMD) {
+      await loadRcFromRange(startYMD, endYMD, employeeVal);
+    } else {
+      await loadRcSummary(employeeVal);
+    }
+  }
+
+  // Wire events
+  document.addEventListener('DOMContentLoaded', () => {
+    refreshCallStats().catch(console.error);
+
+    $('#cm-apply')?.addEventListener('click', (e) => {
+      e.preventDefault();
+      refreshCallStats().catch(console.error);
+    });
+
+    const empSel = $('#employeeSelect');
+    if (empSel) {
+      let t;
+      const queue = () => { clearTimeout(t); t = setTimeout(()=> refreshCallStats().catch(console.error), 120); };
+      empSel.addEventListener('change', queue);
+      empSel.addEventListener('input',  queue);
+    }
+
+    ['cm-start','cm-end','employeeSelect'].forEach(k => {
+      const el = $(k);
+      el && el.addEventListener('keydown', e => { if (e.key === 'Enter') refreshCallStats().catch(console.error); });
+    });
+  });
+})();
+</script>
+
+<!-- 🔁 Ricochet-only updater + totals (works alongside bundle RC) -->
+<script>
+(() => {
+  const $ = id => document.getElementById(id);
+  const setText = (id, v) => { const el = $(id); if (el) el.textContent = v; };
+
+  // Find the Ricochet status badge (supports old markup without id)
+  const getRicoBadge = () =>
+    document.getElementById('ricochetStatus') ||
+    document.querySelector('#callStatsWidget .badge-muted');
+
+  // Parse mm/dd/yyyy -> yyyy-mm-dd
+  const toYMD = (mdy) => {
+    if (!mdy) return '';
+    const m = String(mdy).match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+    return m ? `${m[3]}-${m[1].padStart(2,'0')}-${m[2].padStart(2,'0')}` : String(mdy);
+  };
+  const todayYMD = () => {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+  };
+
+  const numOr0 = v => Number.isFinite(Number(v)) ? Number(v) : 0;
+
+  // "01:23:45" or seconds -> seconds
+  const sec = (v) => {
+    if (v == null) return 0;
+    if (typeof v === 'number') return v|0;
+    const s = String(v).trim();
+    const parts = s.split(':').map(Number);
+    if (parts.every(Number.isFinite)) {
+      if (parts.length === 3) { const [h,m,ss]=parts; return h*3600 + m*60 + ss; }
+      if (parts.length === 2) { const [m,ss]=parts;   return m*60 + ss; }
+    }
+    const n = Number(s);
+    return Number.isFinite(n) ? n|0 : 0;
+  };
+  const fmtHMS = (totalSec) => {
+    totalSec = Math.max(0, totalSec|0);
+    const h=Math.floor(totalSec/3600), m=Math.floor((totalSec%3600)/60), s=totalSec%60;
+    return [h,m,s].map(v=>String(v).padStart(2,'0')).join(':');
+  };
+
+  // Recompute totals by reading both columns
+  function applyTotals() {
+    const toInt  = id => numOr0($(id)?.textContent);
+    const toSecs = id => sec($(id)?.textContent);
+
+    const ri_in_calls = toInt('ri_inbounds');
+    const ri_out_calls= toInt('ri_outbounds');
+    const ri_in_sec   = toSecs('ri_in_time');
+    const ri_out_sec  = toSecs('ri_out_time');
+
+    const rc_in_calls = toInt('inboundCalls');
+    const rc_out_calls= toInt('outboundCalls');
+    const rc_in_sec   = toSecs('inboundDuration');
+    const rc_out_sec  = toSecs('outboundDuration');
+
+    setText('tt_inbounds',  String(ri_in_calls + rc_in_calls));
+    setText('tt_outbounds', String(ri_out_calls + rc_out_calls));
+    setText('tt_in_time',   fmtHMS(ri_in_sec + rc_in_sec));
+    setText('tt_out_time',  fmtHMS(ri_out_sec + rc_out_sec));
+  }
+
+  async function fetchJSON(url, options = {}) {
+    const res = await fetch(url, { credentials:'same-origin', cache:'no-store', ...options });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    return res.json();
+  }
+
+  function getRangeAndUser() {
+    const startRaw = document.getElementById('cm-start')?.value;
+    const endRaw   = document.getElementById('cm-end')?.value;
+    const startYMD = startRaw ? toYMD(startRaw) : todayYMD();
+    const endYMD   = endRaw   ? toYMD(endRaw)   : startYMD;
+
+    const raw = document.getElementById('employeeSelect')?.value || 'all';
+    const isAll = String(raw).toLowerCase() === 'all';
+    const user_key = isAll ? 'ALL' : raw; // union API expects 'ALL' for everyone
+
+    return { startYMD, endYMD, isAll, user_key };
+  }
+
+  // 🔹 The one and only Ricochet fetch (ignores RC from this endpoint)
+  let fetchAbort = null, fetchSeq = 0;
+  async function refreshRicochet() {
+    const { startYMD, endYMD, isAll, user_key } = getRangeAndUser();
+
+    if (fetchAbort) { try{ fetchAbort.abort(); }catch{} }
+    fetchAbort = new AbortController();
+    const signal = fetchAbort.signal;
+    const mySeq = ++fetchSeq;
+
+    const params = new URLSearchParams({
+      from: startYMD,
+      to:   endYMD,
+      user_key,
+      ts:   String(Date.now()) // cache buster
+    });
+    if (isAll && window.MANAGER_ID) params.set('manager_id', String(window.MANAGER_ID));
+
+    try {
+      const data = await fetchJSON(`/api/calls/summary?${params.toString()}`, { signal });
+      if (signal.aborted || mySeq !== fetchSeq) return;
+
+      const ri = data?.ricochet || {};
+      const ri_in_calls  = (ri.inbound_calls     === undefined) ? null : numOr0(ri.inbound_calls);
+      const ri_out_calls = (ri.outbound_calls    === undefined) ? null : numOr0(ri.outbound_calls);
+      const ri_in_sec    = (ri.inbound_talk_sec  === undefined) ? null : numOr0(ri.inbound_talk_sec);
+      const ri_out_sec   = (ri.outbound_talk_sec === undefined) ? null : numOr0(ri.outbound_talk_sec);
+
+      if (ri_in_calls  !== null) setText('ri_inbounds',  String(ri_in_calls));
+      if (ri_out_calls !== null) setText('ri_outbounds', String(ri_out_calls));
+      if (ri_in_sec    !== null) setText('ri_in_time',   fmtHMS(ri_in_sec));
+      if (ri_out_sec   !== null) setText('ri_out_time',  fmtHMS(ri_out_sec));
+
+      const badge = getRicoBadge();
+      if (badge) {
+        const allZero = (ri_in_calls ?? 0)===0 && (ri_out_calls ?? 0)===0 && (ri_in_sec ?? 0)===0 && (ri_out_sec ?? 0)===0;
+        badge.textContent = allZero ? 'Not connected' : 'Connected';
+      }
+
+      applyTotals();
+    } catch (e) {
+      if (e.name !== 'AbortError') console.error('Ricochet refresh error', e);
+    }
+  }
+
+  // 🧩 Keep totals in sync when the bundle updates RC later
+  function observeRcCells() {
+    const ids = ['inboundCalls','outboundCalls','inboundDuration','outboundDuration'];
+    const obs = new MutationObserver(applyTotals);
+    ids.forEach(id => {
+      const el = $(id);
+      if (el) obs.observe(el, { characterData:true, subtree:true, childList:true });
+    });
+  }
+
+  // Wire events similar to the bundle
+  document.addEventListener('DOMContentLoaded', () => {
+    refreshRicochet().catch(console.error);
+    observeRcCells();
+
+    const applyBtn = document.getElementById('cm-apply');
+    applyBtn && applyBtn.addEventListener('click', e => { e.preventDefault(); refreshRicochet().catch(console.error); });
+
+    const empSel = document.getElementById('employeeSelect');
+    if (empSel) {
+      let t; const queue = () => { clearTimeout(t); t = setTimeout(() => refreshRicochet().catch(console.error), 120); };
+      empSel.addEventListener('change', queue);
+      empSel.addEventListener('input',  queue);
+    }
+
+    ['cm-start','cm-end','employeeSelect'].forEach(k => {
+      const el = document.getElementById(k);
+      el && el.addEventListener('keydown', e => { if (e.key === 'Enter') refreshRicochet().catch(console.error); });
+      if (k!=='employeeSelect' && el) el.addEventListener('change', () => refreshRicochet().catch(console.error));
+    });
+  });
+})();
+</script>
+
+<!-- 🔗 Auto-refresh RingCentral when dates change -->
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  const startEl = document.getElementById('cm-start');
+  const endEl   = document.getElementById('cm-end');
+  const applyBtn = document.getElementById('cm-apply');
+
+  function triggerRC() {
+    // Make sure the bundle owns RC (not 'inline')
+    if (window.__CALLSTATS_SINGLETON !== 'inline') {
+      if (typeof window.applyDateRangeFetch === 'function') {
+        window.applyDateRangeFetch();     // call the bundle’s range updater directly
+      } else if (applyBtn) {
+        applyBtn.click();                 // fallback: simulate clicking Apply
+      }
+    }
+  }
+
+  [startEl, endEl].forEach(el => {
+    if (!el) return;
+    el.addEventListener('change', triggerRC);
+    el.addEventListener('keydown', e => { if (e.key === 'Enter') triggerRC(); });
+  });
+});
+</script>
+
+<!-- 🔗 Auto-refresh RingCentral when dates change -->
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  const startEl = document.getElementById('cm-start');
+  const endEl   = document.getElementById('cm-end');
+  const applyBtn = document.getElementById('cm-apply');
+
+  function triggerRC() {
+    // Make sure the bundle owns RC (not 'inline')
+    if (window.__CALLSTATS_SINGLETON !== 'inline') {
+      if (typeof window.applyDateRangeFetch === 'function') {
+        window.applyDateRangeFetch();     // call the bundle’s range updater directly
+      } else if (applyBtn) {
+        applyBtn.click();                 // fallback: simulate clicking Apply
+      }
+    }
+  }
+
+  [startEl, endEl].forEach(el => {
+    if (!el) return;
+    el.addEventListener('change', triggerRC);
+    el.addEventListener('keydown', e => { if (e.key === 'Enter') triggerRC(); });
+  });
+});
+</script>
+
+{% endblock %}

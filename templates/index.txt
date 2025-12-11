@@ -1,0 +1,8 @@
+User List
+{% for user in users %} {% endfor %}
+ID
+Email
+Password
+{{ user[0] }}
+{{ user[1] }}
+{{ user[2] }}

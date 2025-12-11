@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Activity Tracker Dashboard</title>
+    <script>
+        async function fetchLogs() {
+            const response = await fetch('/get_logs');
+            const logs = await response.json();
+            const logsTable = document.getElementById("logs-table-body");
+
+            logsTable.innerHTML = ""; // Clear previous logs
+
+            logs.forEach(log => {
+                const row = `<tr>
+                    <td>${log.timestamp}</td>
+                    <td>${log.user_id}</td>
+                    <td>${log.mouse_distance.toFixed(2)} px</td>
+                    <td>${log.keystrokes}</td>
+                    <td>${log.mouse_clicks}</td>
+                    <td>${log.idle_count}</td>
+                </tr>`;
+                logsTable.innerHTML += row;
+            });
+        }
+
+        setInterval(fetchLogs, 5000); // Refresh logs every 5 seconds
+        window.onload = fetchLogs; // Load logs on page load
+    </script>
+</head>
+<body>
+    <h1>📊 Activity Tracker Dashboard</h1>
+    <table border="1">
+        <thead>
+            <tr>
+                <th>Timestamp</th>
+                <th>User ID</th>
+                <th>Mouse Distance</th>
+                <th>Keystrokes</th>
+                <th>Mouse Clicks</th>
+                <th>Idle Count</th>
+            </tr>
+        </thead>
+        <tbody id="logs-table-body">
+            <!-- Logs will be inserted here -->
+        </tbody>
+    </table>
+</body>
+</html>

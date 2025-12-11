@@ -1,0 +1,239 @@
+<!DOCTYPE html> 
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Web Logs</title>
+  <style>
+    /* RESET / GLOBAL STYLES */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #1f1f1f;
+      color: #fff;
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+    }
+    /* TOP BANNER */
+    .top-banner {
+      position: fixed;
+      top: 0;
+      left: 0;
+      z-index: 1000;
+      width: 100%;
+      height: 50px;
+      background-color: #000000;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      color: white;
+    }
+    .top-banner img {
+      height: 40px;
+    }
+    /* SIDEBAR */
+    .sidebar {
+      position: fixed;
+      top: 50px;
+      left: 0;
+      height: calc(100vh - 50px);
+      overflow-y: auto;
+      width: 170px;
+      min-width: 170px;
+      background-color: #000000;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding-top: 10px;
+    }
+    .sidebar h2 {
+      color: #00c8d7;
+      margin-bottom: 10px;
+      font-size: 1.2em;
+      white-space: nowrap;
+    }
+    .sidebar a {
+      display: block;
+      min-width: 140px;
+      white-space: nowrap;
+      text-decoration: none;
+      color: #fff;
+      background-color: #333;
+      padding: 8px;
+      margin: 8px auto;
+      border-radius: 5px;
+      font-weight: bold;
+      font-size: 0.9em;
+      text-align: center;
+    }
+    .sidebar a:hover {
+      background-color: #555;
+    }
+    /* ACTIVE TAB */
+    .sidebar a.active {
+      background-color: #00c8d7 !important;
+      color: black !important;
+    }
+    /* MAIN CONTENT */
+    .main-content {
+      margin-left: 180px;
+      margin-top: 60px;
+      flex: 1;
+      padding: 20px;
+      min-width: 600px;
+      overflow-x: auto;
+    }
+    .top-bar h1 {
+      color: #00c8d7;
+      font-size: 1.5em;
+      white-space: nowrap;
+      margin-bottom: 10px;
+    }
+    /* NAVIGATION & EXPORT BUTTON CONTAINER */
+    .nav-container {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+    nav.nav-top {
+      text-align: center;
+    }
+    nav.nav-top a {
+      margin: 0 10px;
+      text-decoration: none;
+      color: #00c8d7;
+      font-weight: bold;
+    }
+    nav.nav-top span {
+      color: #ccc;
+    }
+    /* EXPORT BUTTON */
+    .export-btn {
+      background-color: #00c8d7;
+      color: black;
+      text-decoration: none;
+      padding: 8px 15px;
+      border-radius: 5px;
+      font-weight: bold;
+      display: inline-block;
+    }
+    .export-btn:hover {
+      background-color: #28cc00;
+    }
+    /* TABLE */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 20px;
+      background-color: #2c2c2c;
+      table-layout: fixed;
+    }
+    th, td {
+      border: 1px solid #444;
+      padding: 8px;
+      text-align: left;
+      color: #fff;
+      vertical-align: middle;
+      word-wrap: break-word;
+    }
+    th {
+      background-color: #333;
+      color: #00c8d7;
+    }
+    tr:nth-child(even) {
+      background-color: #3a3a3a;
+    }
+  </style>
+</head>
+<body>
+  <!-- TOP BANNER -->
+  <div class="top-banner">
+    <img src="{{ url_for('static', filename='reflexx_logo.png') }}" alt="Reflexx Logo">
+  </div>
+  
+  <div style="display: flex; flex: 1;">
+    <!-- SIDEBAR -->
+    <div class="sidebar">
+      <h2>Reflexx</h2>
+      <a href="{{ url_for('dashboard') }}" class="{% if request.path == url_for('dashboard') %}active{% endif %}">Dashboard</a>
+      <a href="{{ url_for('general_logs') }}" class="{% if request.path == url_for('general_logs') %}active{% endif %}">General Logs</a>
+      <a href="{{ url_for('weblogs') }}" class="{% if request.path == url_for('weblogs') %}active{% endif %}">Web Logs</a>
+      <a href="{{ url_for('download_tracker') }}">Download Tracker</a>
+      <a href="{{ url_for('logout') }}" style="background-color: red;">Logout</a>
+    </div>
+    
+    <!-- MAIN CONTENT -->
+    <div class="main-content">
+      <div class="top-bar">
+        <h1>Web Logs</h1>
+      </div>
+      <div class="nav-container">
+        <nav class="nav-top">
+          {% if page > 1 %}
+            <a href="{{ url_for('weblogs', page=page-1) }}">« Previous</a>
+          {% else %}
+            <span class="disabled">« Previous</span>
+          {% endif %}
+          <span>Page {{ page }} of {{ total_pages }}</span>
+          {% if page < total_pages %}
+            <a href="{{ url_for('weblogs', page=page+1) }}">Next »</a>
+          {% else %}
+            <span class="disabled">Next »</span>
+          {% endif %}
+        </nav>
+        <div style="text-align: right;">
+          <a href="{{ url_for('export_weblogs_csv') }}" class="export-btn">📥 Export CSV</a>
+        </div>
+      </div>
+      {% if logs %}
+        <table>
+          <thead>
+            <tr>
+              <th>Timestamp</th>
+              <th>Gateway TT</th>
+              <th>Gateway %</th>
+              <th>AdvisorPro TT</th>
+              <th>AdvisorPro %</th>
+              <th>Eagent TT</th>
+              <th>Eagent %</th>
+              <th>Outlook TT</th>
+              <th>Outlook %</th>
+              <th>PolicyView TT</th>
+              <th>PolicyView %</th>
+              <th>Other TT</th>
+              <th>Other %</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for log in logs %}
+            <tr>
+              <td>{{ log.timestamp }}</td>
+              <td>{{ log.page_time.Gateway or 0 }}</td>
+              <td>{{ log.page_percentage.Gateway or 0 }}%</td>
+              <td>{{ log.page_time.AdvisorPro or 0 }}</td>
+              <td>{{ log.page_percentage.AdvisorPro or 0 }}%</td>
+              <td>{{ log.page_time.Eagent or 0 }}</td>
+              <td>{{ log.page_percentage.Eagent or 0 }}%</td>
+              <td>{{ log.page_time.Outlook or 0 }}</td>
+              <td>{{ log.page_percentage.Outlook or 0 }}%</td>
+              <td>{{ log.page_time.PolicyView or 0 }}</td>
+              <td>{{ log.page_percentage.PolicyView or 0 }}%</td>
+              <td>{{ log.page_time.Other or 0 }}</td>
+              <td>{{ log.page_percentage.Other or 0 }}%</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      {% else %}
+        <p>No web tracking data available.</p>
+      {% endif %}
+    </div>
+  </div>
+</body>
+</html>

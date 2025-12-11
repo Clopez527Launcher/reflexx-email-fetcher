@@ -1,0 +1,723 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard (New){% endblock %}
+
+{% block content %}
+<div class="page-wrapper" style="max-width: 1100px; margin: 0 auto; padding-top: 40px;">
+  <h1 style="color:#fff; margin-bottom: 10px;">Dashboard (New)</h1>
+  <p style="color:#ccc;">
+    This is a simple placeholder for the new dashboard.
+  </p>
+
+  <!-- 📞 Call Stats Today Widget -->
+  <div style="margin-top:40px; padding:16px; background:#141414; border:1px solid #00ffff; border-radius:10px; color:#fff; width:100%; box-sizing:border-box;">
+
+    <h2 style="margin-top:0; color:#00ffff; margin-bottom: 10px;">Call Stats Today</h2>
+
+				<!-- Status + Employee filter row -->
+				<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; gap:12px;">
+						<div id="cs-today-status" style="color:#aaa; font-size: 0.9rem;">
+								Loading today’s call stats...
+						</div>
+
+						<div style="font-size:0.9rem; color:#ccc;">
+								<label for="cs-today-employee" style="margin-right:6px;">Employee:</label>
+								<select id="cs-today-employee" onchange="loadCallStatsToday()" style="background:#000; color:#fff; border:1px solid #00ffff; border-radius:4px; padding:2px 6px;">
+										<option value="all">All Employees</option>
+										<!-- 👇 Replace these sample options with your real user IDs and names -->
+										<!-- <option value="12">Chris</option> -->
+										<!-- <option value="27">Nada</option> -->
+								</select>
+						</div>
+				</div>
+
+				<table style="width:100%; border-collapse:collapse; font-size:0.95rem;">
+
+      <thead>
+        <tr>
+          <th style="text-align:left; padding:6px 4px;"></th>
+          <th style="text-align:center; padding:6px 4px;">Ricochet<br><span style="font-size:0.8rem; color:#888;">Connected</span></th>
+          <th style="text-align:center; padding:6px 4px;">RingCentral</th>
+          <th style="text-align:center; padding:6px 4px;">Total</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td style="padding:4px 4px;">Inbounds</td>
+          <td id="cs-today-rico-in"   style="text-align:center; padding:4px 4px;">–</td>
+          <td id="cs-today-rc-in"     style="text-align:center; padding:4px 4px;">–</td>
+          <td id="cs-today-total-in"  style="text-align:center; padding:4px 4px;">–</td>
+        </tr>
+        <tr>
+          <td style="padding:4px 4px;">Outbounds</td>
+          <td id="cs-today-rico-out"   style="text-align:center; padding:4px 4px;">–</td>
+          <td id="cs-today-rc-out"     style="text-align:center; padding:4px 4px;">–</td>
+          <td id="cs-today-total-out"  style="text-align:center; padding:4px 4px;">–</td>
+        </tr>
+        <tr>
+          <td style="padding:4px 4px;">Inbound Time</td>
+          <td id="cs-today-rico-ib"    style="text-align:center; padding:4px 4px;">–</td>
+          <td id="cs-today-rc-ib"      style="text-align:center; padding:4px 4px;">–</td>
+          <td id="cs-today-total-ib"   style="text-align:center; padding:4px 4px;">–</td>
+        </tr>
+        <tr>
+          <td style="padding:4px 4px;">Outbound Time</td>
+          <td id="cs-today-rico-ob"    style="text-align:center; padding:4px 4px;">–</td>
+          <td id="cs-today-rc-ob"      style="text-align:center; padding:4px 4px;">–</td>
+          <td id="cs-today-total-ob"   style="text-align:center; padding:4px 4px;">–</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- 📞 Call Stats Yesterday Widget -->
+  <div style="margin-top:20px; padding:16px; background:#141414; border:1px solid #00ffff; border-radius:10px; color:#fff; width:100%; box-sizing:border-box;">
+
+    <h2 style="margin-top:0; color:#00ffff; margin-bottom: 10px;">Call Stats Yesterday</h2>
+
+    <!-- Status + Employee filter row -->
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; gap:12px;">
+      <div id="cs-yest-status" style="color:#aaa; font-size: 0.9rem;">
+        Loading yesterday’s call stats...
+      </div>
+
+      <div style="font-size:0.9rem; color:#ccc;">
+        <label for="cs-yest-employee" style="margin-right:6px;">Employee:</label>
+        <select id="cs-yest-employee" onchange="loadCallStatsYesterday()" style="background:#000; color:#fff; border:1px solid #00ffff; border-radius:4px; padding:2px 6px;">
+          <option value="all">All Employees</option>
+        </select>
+      </div>
+    </div>
+
+    <table style="width:100%; border-collapse:collapse; font-size:0.95rem;">
+      <thead>
+        <tr>
+          <th style="text-align:left; padding:6px 4px;"></th>
+          <th style="text-align:center; padding:6px 4px;">Ricochet<br><span style="font-size:0.8rem; color:#888;">Connected</span></th>
+          <th style="text-align:center; padding:6px 4px;">RingCentral</th>
+          <th style="text-align:center; padding:6px 4px;">Total</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td style="padding:4px 4px;">Inbounds</td>
+          <td id="cs-yest-rico-in"   style="text-align:center; padding:4px 4px;">–</td>
+          <td id="cs-yest-rc-in"     style="text-align:center; padding:4px 4px;">–</td>
+          <td id="cs-yest-total-in"  style="text-align:center; padding:4px 4px;">–</td>
+        </tr>
+        <tr>
+          <td style="padding:4px 4px;">Outbounds</td>
+          <td id="cs-yest-rico-out"   style="text-align:center; padding:4px 4px;">–</td>
+          <td id="cs-yest-rc-out"     style="text-align:center; padding:4px 4px;">–</td>
+          <td id="cs-yest-total-out"  style="text-align:center; padding:4px 4px;">–</td>
+        </tr>
+        <tr>
+          <td style="padding:4px 4px;">Inbound Time</td>
+          <td id="cs-yest-rico-ib"    style="text-align:center; padding:4px 4px;">–</td>
+          <td id="cs-yest-rc-ib"      style="text-align:center; padding:4px 4px;">–</td>
+          <td id="cs-yest-total-ib"   style="text-align:center; padding:4px 4px;">–</td>
+        </tr>
+        <tr>
+          <td style="padding:4px 4px;">Outbound Time</td>
+          <td id="cs-yest-rico-ob"    style="text-align:center; padding:4px 4px;">–</td>
+          <td id="cs-yest-rc-ob"      style="text-align:center; padding:4px 4px;">–</td>
+          <td id="cs-yest-total-ob"   style="text-align:center; padding:4px 4px;">–</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- 📊 Advisor Pro – Last 7 Days -->
+  <div style="margin-top:20px; padding:16px; background:#141414; border:1px solid #00ffff; border-radius:10px; color:#fff; width:100%; box-sizing:border-box;">
+
+    <h2 style="margin-top:0; color:#00ffff; margin-bottom: 10px;">Advisor Pro – Last 7 Days</h2>
+
+    <!-- Status + Employee filter -->
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; gap:12px;">
+      <div id="ap-status" style="color:#aaa; font-size: 0.9rem;">
+        Loading Advisor Pro usage...
+      </div>
+
+      <div style="font-size:0.9rem; color:#ccc;">
+        <label for="ap-employee-select" style="margin-right:6px;">Employee:</label>
+        <select id="ap-employee-select" style="background:#000; color:#fff; border:1px solid #00ffff; border-radius:4px; padding:2px 6px;">
+          <option value="all">All Employees</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Chart Canvas -->
+    <div style="height:230px; max-height:230px; min-height:230px; overflow:hidden;">
+						<canvas id="apChart"></canvas>
+				</div>
+  </div> 
+		
+	 <!-- 📈 CE Performance Buckets (Phone / Quote / Movement) -->
+  <div style="margin-top:20px; padding:16px; background:#141414; border:1px solid #00ffff; border-radius:10px; color:#fff; width:100%; box-sizing:border-box;">
+
+    <h2 style="margin-top:0; color:#00ffff; margin-bottom: 10px;">Performance Buckets</h2>
+
+    <!-- 3 columns inside one card -->
+    <div style="display:flex; gap:20px; flex-wrap:wrap;">
+      <!-- Phone Bucket -->
+      <div style="flex:1; min-width:220px;">
+        <div style="display:flex; flex-direction:column; gap:4px;">
+          <div style="display:flex; flex-direction:column;">
+            <span style="font-weight:600;">Phone Performance</span>
+            <span id="ce-phone-date" style="font-size:0.8rem; color:#aaa;">Showing for --</span>
+          </div>
+          <ul id="ce-phone-list"
+              class="bucket-leaderboard"
+              style="list-style:none; margin:6px 0 0; padding:0; font-size:0.9rem;">
+            <!-- Filled by JS -->
+          </ul>
+        </div>
+      </div>
+
+      <!-- Quote Bucket -->
+      <div style="flex:1; min-width:220px;">
+        <div style="display:flex; flex-direction:column; gap:4px;">
+          <div style="display:flex; flex-direction:column;">
+            <span style="font-weight:600;">Quote Performance</span>
+            <span id="ce-quote-date" style="font-size:0.8rem; color:#aaa;">Showing for --</span>
+          </div>
+          <ul id="ce-quote-list"
+              class="bucket-leaderboard"
+              style="list-style:none; margin:6px 0 0; padding:0; font-size:0.9rem;">
+            <!-- Filled by JS -->
+          </ul>
+        </div>
+      </div>
+
+      <!-- Movement Bucket -->
+      <div style="flex:1; min-width:220px;">
+        <div style="display:flex; flex-direction:column; gap:4px;">
+          <div style="display:flex; flex-direction:column;">
+            <span style="font-weight:600;">Movement Performance</span>
+            <span id="ce-move-date" style="font-size:0.8rem; color:#aaa;">Showing for --</span>
+          </div>
+          <ul id="ce-move-list"
+              class="bucket-leaderboard"
+              style="list-style:none; margin:6px 0 0; padding:0; font-size:0.9rem;">
+            <!-- Filled by JS -->
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+
+
+
+
+<!-- 🔌 Simple JS for "Call Stats Today" (fixed to today) -->
+<script>
+  // When the page loads, first load employees, then today's call stats + CE buckets
+  document.addEventListener("DOMContentLoaded", function () {
+    initCallStatsToday();
+    loadCeBuckets();   // 🔥 new line to load CE performance buckets
+  });
+
+
+  // 👉 Step 1: Fill BOTH Employee dropdowns from /manager-employees
+  function initCallStatsToday() {
+    const empSelectToday = document.getElementById("cs-today-employee");
+    const empSelectYest  = document.getElementById("cs-yest-employee");
+
+    // If neither select exists, just try loading stats and bail
+    if (!empSelectToday && !empSelectYest) {
+      loadCallStatsToday();
+      loadCallStatsYesterday();
+      return;
+    }
+
+    fetch("/manager-employees")
+      .then(resp => resp.json())
+      .then(data => {
+        console.log("[Call Stats] /manager-employees response:", data);
+
+        const selects = [];
+        if (empSelectToday) selects.push(empSelectToday);
+        if (empSelectYest)  selects.push(empSelectYest);
+
+        selects.forEach(sel => {
+          // Reset options
+          sel.innerHTML = "";
+
+          // Add "All Employees"
+          const optAll = document.createElement("option");
+          optAll.value = "all";
+          optAll.textContent = "All Employees";
+          sel.appendChild(optAll);
+
+          // Add each employee (id + nickname/email)
+          if (Array.isArray(data)) {
+            data.forEach(emp => {
+              const opt = document.createElement("option");
+              opt.value = emp.id;  // users.id → employee_id
+              opt.textContent = emp.nickname || emp.email || `User ${emp.id}`;
+              sel.appendChild(opt);
+            });
+          }
+        });
+
+        // After dropdowns are ready, load stats for today & yesterday
+        loadCallStatsToday();
+        loadCallStatsYesterday();
+      })
+      .catch(err => {
+        console.error("[Call Stats] employees error:", err);
+        // Even if employees fail, still try loading stats for all
+        loadCallStatsToday();
+        loadCallStatsYesterday();
+      });
+  }
+
+
+  // 👉 Step 2: Load today's call stats (optionally filtered by employee)
+  function loadCallStatsToday() {
+    const statusEl = document.getElementById("cs-today-status");
+    if (!statusEl) return;
+
+    // Build today's date as YYYY-MM-DD (local time)
+    const now = new Date();
+    const yyyy = now.getFullYear();
+    const mm = String(now.getMonth() + 1).padStart(2, "0");
+    const dd = String(now.getDate()).padStart(2, "0");
+    const todayStr = `${yyyy}-${mm}-${dd}`;
+
+    // Read selected employee (or "all")
+    const empSelect   = document.getElementById("cs-today-employee");
+    const employeeId  = empSelect ? empSelect.value : "all";
+
+    // Build URL: always today's date, plus optional employee_id
+    let url = `/api/call-stats?date=${todayStr}`;
+    if (employeeId && employeeId !== "all") {
+      url += `&employee_id=${encodeURIComponent(employeeId)}`;
+    }
+
+    fetch(url)
+      .then(resp => resp.json())
+      .then(data => {
+        console.log("[Call Stats Today] raw response:", data);
+
+        if (!data || data.error) {
+          statusEl.textContent = "No call stats available for today.";
+          return;
+        }
+
+        // Expected data shape from /api/call-stats:
+        // {
+        //   inbound_count,
+        //   outbound_count,
+        //   inbound_duration,
+        //   outbound_duration,
+        //   rc_inbound_count,
+        //   rc_outbound_count,
+        //   rc_inbound_duration,
+        //   rc_outbound_duration,
+        //   date
+        // }
+
+        const d = data;
+
+        // Ricochet column (currently 0 / placeholder until we wire real rico data)
+        setText("cs-today-rico-in",  d.rc_inbound_count);
+        setText("cs-today-rico-out", d.rc_outbound_count);
+        setText("cs-today-rico-ib",  d.rc_inbound_duration);
+        setText("cs-today-rico-ob",  d.rc_outbound_duration);
+
+        // RingCentral column (from call_metrics)
+        setText("cs-today-rc-in",  d.inbound_count);
+        setText("cs-today-rc-out", d.outbound_count);
+        setText("cs-today-rc-ib",  d.inbound_duration);
+        setText("cs-today-rc-ob",  d.outbound_duration);
+
+
+        // Totals = Ricochet + RingCentral (counts)
+        const totalIn  = (d.inbound_count  || 0) + (d.rc_inbound_count  || 0);
+        const totalOut = (d.outbound_count || 0) + (d.rc_outbound_count || 0);
+
+        // Totals = Ricochet + RingCentral (time)
+        const totalIbSeconds =
+          hmsToSeconds(d.inbound_duration) + hmsToSeconds(d.rc_inbound_duration);
+        const totalObSeconds =
+          hmsToSeconds(d.outbound_duration) + hmsToSeconds(d.rc_outbound_duration);
+
+        const totalIb = secondsToHMS(totalIbSeconds);
+        const totalOb = secondsToHMS(totalObSeconds);
+
+        setText("cs-today-total-in",  totalIn);
+        setText("cs-today-total-out", totalOut);
+        setText("cs-today-total-ib",  totalIb);
+        setText("cs-today-total-ob",  totalOb);
+
+        // Status text with employee name
+        let empLabel = "All Employees";
+        if (empSelect && empSelect.value !== "all") {
+          empLabel = empSelect.options[empSelect.selectedIndex].text;
+        }
+
+        statusEl.textContent = `Showing call stats for ${d.date || todayStr} — ${empLabel}`;
+      })
+      .catch(err => {
+        console.error("[Call Stats Today] error:", err);
+        statusEl.textContent = "Error loading call stats for today.";
+      });
+  }
+		
+		// 👉 Step 3: Load yesterday's call stats (optionally filtered by employee)
+  function loadCallStatsYesterday() {
+    const statusEl = document.getElementById("cs-yest-status");
+    if (!statusEl) return;
+
+    // Build yesterday's date as YYYY-MM-DD (local time)
+    const d = new Date();
+    d.setDate(d.getDate() - 1); // go back one day
+    const yyyy = d.getFullYear();
+    const mm   = String(d.getMonth() + 1).padStart(2, "0");
+    const dd   = String(d.getDate()).padStart(2, "0");
+    const yestStr = `${yyyy}-${mm}-${dd}`;
+
+    // Read selected employee (or "all")
+    const empSelect   = document.getElementById("cs-yest-employee");
+    const employeeId  = empSelect ? empSelect.value : "all";
+
+    // Build URL: always yesterday's date, plus optional employee_id
+    let url = `/api/call-stats?date=${yestStr}`;
+    if (employeeId && employeeId !== "all") {
+      url += `&employee_id=${encodeURIComponent(employeeId)}`;
+    }
+
+    fetch(url)
+      .then(resp => resp.json())
+      .then(data => {
+        console.log("[Call Stats Yesterday] raw response:", data);
+
+        if (!data || data.error) {
+          statusEl.textContent = "No call stats available for yesterday.";
+          return;
+        }
+
+        const dResp = data;
+
+        // Ricochet column
+        setText("cs-yest-rico-in",  dResp.rc_inbound_count);
+        setText("cs-yest-rico-out", dResp.rc_outbound_count);
+        setText("cs-yest-rico-ib",  dResp.rc_inbound_duration);
+        setText("cs-yest-rico-ob",  dResp.rc_outbound_duration);
+
+        // RingCentral column
+        setText("cs-yest-rc-in",  dResp.inbound_count);
+        setText("cs-yest-rc-out", dResp.outbound_count);
+        setText("cs-yest-rc-ib",  dResp.inbound_duration);
+        setText("cs-yest-rc-ob",  dResp.outbound_duration);
+
+        // Totals = Ricochet + RingCentral (counts)
+        const totalIn  = (dResp.inbound_count  || 0) + (dResp.rc_inbound_count  || 0);
+        const totalOut = (dResp.outbound_count || 0) + (dResp.rc_outbound_count || 0);
+
+        // Totals = Ricochet + RingCentral (time)
+        const totalIbSeconds =
+          hmsToSeconds(dResp.inbound_duration) + hmsToSeconds(dResp.rc_inbound_duration);
+        const totalObSeconds =
+          hmsToSeconds(dResp.outbound_duration) + hmsToSeconds(dResp.rc_outbound_duration);
+
+        const totalIb = secondsToHMS(totalIbSeconds);
+        const totalOb = secondsToHMS(totalObSeconds);
+
+        setText("cs-yest-total-in",  totalIn);
+        setText("cs-yest-total-out", totalOut);
+        setText("cs-yest-total-ib",  totalIb);
+        setText("cs-yest-total-ob",  totalOb);
+
+        // Status text with employee name
+        let empLabel = "All Employees";
+        if (empSelect && empSelect.value !== "all") {
+          empLabel = empSelect.options[empSelect.selectedIndex].text;
+        }
+
+        statusEl.textContent = `Showing call stats for ${dResp.date || yestStr} — ${empLabel}`;
+      })
+      .catch(err => {
+        console.error("[Call Stats Yesterday] error:", err);
+        statusEl.textContent = "Error loading call stats for yesterday.";
+      });
+  }
+
+  // ---- time helpers: "HH:MM:SS" <-> seconds ----
+  function hmsToSeconds(str) {
+    if (!str || typeof str !== "string") return 0;
+    const parts = str.split(":");
+    if (parts.length !== 3) return 0;
+    const h = parseInt(parts[0], 10) || 0;
+    const m = parseInt(parts[1], 10) || 0;
+    const s = parseInt(parts[2], 10) || 0;
+    return h * 3600 + m * 60 + s;
+  }
+
+  function secondsToHMS(sec) {
+    if (!sec || sec <= 0) return "00:00:00";
+    sec = Math.floor(sec);
+    const h = Math.floor(sec / 3600);
+    const m = Math.floor((sec % 3600) / 60);
+    const s = sec % 60;
+    const pad = (n) => String(n).padStart(2, "0");
+    return `${pad(h)}:${pad(m)}:${pad(s)}`;
+  }
+
+  // Small helper to safely put text in cells
+  function setText(id, value) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.textContent = (value === undefined || value === null || value === "") ? "0" : value;
+  }
+
+  // ---------- CE helper: turn z-score into label ----------
+  function zToLabel(z) {
+    if (z === null || z === undefined || isNaN(z)) {
+      return "No Data";
+    }
+
+    const zNum = Number(z);
+
+    if (zNum > 1.5) return "Excellent";
+    if (zNum > 0.5) return "Above Average";
+    if (zNum >= -0.5) return "Average";
+    if (zNum >= -1.5) return "Below Average";
+    return "Poor";
+  }
+
+  // ---------- CE helper: render one bucket list ----------
+  function renderCeBucket(listId, dateLabelId, rows, zField, latestDate) {
+    const ul = document.getElementById(listId);
+    const dateLabel = document.getElementById(dateLabelId);
+
+    if (!ul) return;
+
+    // Set "Showing for YYYY-MM-DD"
+    if (dateLabel && latestDate) {
+      dateLabel.textContent = `Showing for ${latestDate}`;
+    }
+
+    ul.innerHTML = "";
+
+    if (!rows || !rows.length) {
+      ul.innerHTML = "<li>No data</li>";
+      return;
+    }
+
+    // Sort by z-score (highest first), nulls treated as very low
+    const sorted = [...rows].sort((a, b) => {
+      const za = a[zField] == null ? -999 : a[zField];
+      const zb = b[zField] == null ? -999 : b[zField];
+      return zb - za;
+    });
+
+    // Take top 5
+    sorted.slice(0, 5).forEach((row, idx) => {
+      const li = document.createElement("li");
+      li.className = "bucket-item";
+
+      const rankSpan = document.createElement("span");
+      rankSpan.className = "lb-rank";
+      rankSpan.textContent = `${idx + 1}.`;
+
+      const nameSpan = document.createElement("span");
+      nameSpan.className = "lb-name";
+      nameSpan.textContent = row.user_name || "Unknown";
+
+      const labelSpan = document.createElement("span");
+      labelSpan.className = "lb-score";
+      labelSpan.textContent = zToLabel(row[zField]);
+
+      li.appendChild(rankSpan);
+      li.appendChild(nameSpan);
+      li.appendChild(labelSpan);
+
+      ul.appendChild(li);
+    });
+  }
+
+  // ---------- CE: load all three buckets for Dashboard (New) ----------
+  function loadCeBuckets() {
+    fetch("/api/ce-buckets")
+      .then((res) => res.json())
+      .then((data) => {
+        console.log("[CE Buckets] raw response:", data);
+
+        const latestDate = data.date || "";
+        const rows = data.rows || [];
+
+        // Phone bucket
+        renderCeBucket(
+          "ce-phone-list",
+          "ce-phone-date",
+          rows,
+          "phone_ce_l7_z",
+          latestDate
+        );
+
+        // Quote bucket
+        renderCeBucket(
+          "ce-quote-list",
+          "ce-quote-date",
+          rows,
+          "quote_ce_l7_z",
+          latestDate
+        );
+
+        // Movement bucket
+        renderCeBucket(
+          "ce-move-list",
+          "ce-move-date",
+          rows,
+          "move_ce_l7_z",
+          latestDate
+        );
+      })
+      .catch((err) => {
+        console.error("[CE Buckets] error:", err);
+      });
+  }
+		
+// ----------------------------------------------------
+// Advisor Pro – Load Employees
+// ----------------------------------------------------
+async function loadApEmployees() {
+  const sel = document.getElementById("ap-employee-select");
+  if (!sel) return;
+
+  try {
+    const resp = await fetch("/manager-employees");
+    const data = await resp.json();
+
+    // Reset to just "All Employees"
+    sel.innerHTML = "";
+    const optAll = document.createElement("option");
+    optAll.value = "all";
+    optAll.textContent = "All Employees";
+    sel.appendChild(optAll);
+
+    // Add employees
+    if (Array.isArray(data)) {
+      data.forEach(emp => {
+        const opt = document.createElement("option");
+        opt.value = emp.id;
+        opt.textContent = emp.nickname || emp.email || `User ${emp.id}`;
+        sel.appendChild(opt);
+      });
+    }
+  } catch (err) {
+    console.error("[AdvisorPro] Error loading employees:", err);
+  }
+}
+
+// ----------------------------------------------------
+// Advisor Pro – Load Chart Data
+// ----------------------------------------------------
+let apChart = null;
+
+async function loadApSeries() {
+  const sel = document.getElementById("ap-employee-select");
+  const emp = sel ? sel.value : "all";
+
+  const statusEl = document.getElementById("ap-status");
+  if (statusEl) statusEl.textContent = "Loading...";
+
+  const url = `/api/analytics/advisor-pro-series?employee_id=${emp}`;
+  try {
+    const resp = await fetch(url);
+    const json = await resp.json();
+
+    const labels = json.data.map(r => `${r.date} (${r.weekday})`);
+    const minutes = json.data.map(r => r.minutes);
+
+    const ctx = document.getElementById("apChart").getContext("2d");
+
+    // Destroy previous chart
+    if (apChart) {
+      apChart.destroy();
+    }
+
+    // Build new chart
+    apChart = new Chart(ctx, {
+      type: "bar",
+      data: {
+        labels: labels,
+        datasets: [{
+          label: "Minutes in Advisor Pro",
+          data: minutes,
+          backgroundColor: "rgba(0, 255, 255, 0.4)",
+          borderColor: "#00ffff",
+          borderWidth: 2
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        layout: {
+          padding: { top: 10, right: 20, bottom: 25, left: 10 }
+        },
+        scales: {
+          y: {
+            beginAtZero: true,
+            ticks: {
+              color: "#ccc",
+              font: { size: 10 }
+            },
+            grid: {
+              color: "rgba(255,255,255,0.08)"
+            }
+          },
+          x: {
+            ticks: {
+              color: "#ccc",
+              font: { size: 10 },
+              maxRotation: 0,
+              minRotation: 0
+            },
+            grid: {
+              display: false
+            }
+          }
+        },
+        plugins: {
+          legend: {
+            labels: {
+              color: "#ccc",
+              font: { size: 11 }
+            },
+            position: "top"
+          }
+        }
+      }
+    });
+
+    if (statusEl) {
+      let label = emp === "all"
+        ? "All Employees"
+        : sel.options[sel.selectedIndex].text;
+      statusEl.textContent = `Advisor Pro activity for last 7 days — ${label}`;
+    }
+  } catch (err) {
+    console.error("[AdvisorPro] Load error:", err);
+    if (statusEl) statusEl.textContent = "Error loading Advisor Pro data.";
+  }
+}
+
+// ----------------------------------------------------
+// Advisor Pro – INIT
+// ----------------------------------------------------
+document.addEventListener("DOMContentLoaded", function () {
+  loadApEmployees().then(() => {
+    loadApSeries();
+  });
+
+  const sel = document.getElementById("ap-employee-select");
+  if (sel) {
+    sel.addEventListener("change", loadApSeries);
+  }
+});		
+</script>
+{% endblock %}
+

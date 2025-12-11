@@ -1,0 +1,649 @@
+{% extends 'base.html' %}
+
+{% block title %}Business Metrics – Reflexx{% endblock %}
+
+{% block content %}
+
+<style>
+  /* ===== Business Metrics / Uploads styles (no layout hacks) ===== */
+
+  /* 🔹 Use lighter navy background like Dashboard + pull sidebar up */
+  body,
+  .content,
+  .content-wrapper,
+  .page-wrapper {
+    background:#12243b !important;
+    color:#e9f6ff;
+  }
+
+  /* Bring sidebar up on this page ONLY */
+  .app-layout > .floating-nav {
+    top: 70px !important;   /* tweak this number if you want a hair higher/lower */
+  }
+
+
+
+  .card-dark {
+    background:#0e151d; border:1px solid #1f2a36; border-radius:12px;
+    padding:16px; color:#e9f6ff;
+  }
+  .muted { color:#9ab; }
+
+  /* Section inside the page-wrapper – DON'T center with margin:auto */
+  .bm-section {
+    margin: 0;
+    padding-left: 6px;   /* line up with Dashboard's h1/cards */
+    padding-right: 0;
+  }
+
+  .bm-h1 { color:#fff; margin:0 0 12px; font-size:32px; font-weight:500; }
+
+  /* 🔹 Pull "Business Metric Trends" up closer to the File: row */
+  .bm-h2 {
+    color:#fff;
+    margin: 0;              /* let the header row control the spacing */
+    font-size:24px;
+    font-weight:700;
+  }
+
+  /* New header row: title on left, upload controls on right */
+  .bm-header-row {
+    display:flex;
+    justify-content:space-between;
+    align-items:flex-end;   /* keep title baseline lined up with controls */
+    gap:16px;
+    flex-wrap:wrap;
+    margin: 6px 0 16px;    /* 🔹 a bit more space under the row for the charts */
+  }
+
+
+  /* Controls row: inside the header, no extra outer margin */
+  .bm-controls {
+    display:flex;
+    align-items:center;
+    gap:14px;
+    flex-wrap:wrap;
+    margin:0;               /* no vertical margin – header row handles it */
+    justify-content:flex-end;
+  }
+
+
+
+  .bm-controls .left {
+    display:flex;
+    gap:8px;
+    align-items:center;
+    flex-wrap:wrap;
+  }
+		
+		.bm-controls .mid {
+    display:flex;
+    justify-content:flex-start;  /* ✅ no more centering across the row */
+  }
+
+  .bm-controls label { color:#cfe8ff; }
+
+  /* Upload buttons – match "Apply" button style */
+  .bm-upload .glow-btn {
+    background:#0e151d;                 /* dark base, not solid purple */
+    color:#e9f6ff;
+    border:1px solid #2b3240;
+    border-radius:12px;
+    padding:10px 20px;
+    font-weight:700;
+    cursor:pointer;
+    box-shadow:
+      0 0 0 0 rgba(138,92,255,.50),
+      0 0 18px 2px rgba(138,92,255,.35) inset;
+    transition:
+      transform .1s ease,
+      box-shadow .15s ease,
+      background .15s ease;
+  }
+
+  .bm-upload .glow-btn:hover {
+    background:#8a5cff;                 /* 🔮 on hover they turn purple */
+    transform: translateY(-1px);
+    box-shadow:
+      0 0 22px 6px rgba(138,92,255,.45),
+      0 0 18px 2px rgba(138,92,255,.45) inset;
+  }
+		
+		/* Pager buttons (Prev / Next arrows) – subtle, not glowy */
+  .bm-upload .q-mini-btn {
+    background:#0e151d;
+    color:#cfe8ff;
+    border:1px solid #2b3240;
+    border-radius:4px;
+    padding:4px 8px;
+    min-width:26px;
+    font-size:12px;
+    font-weight:600;
+    cursor:pointer;
+    box-shadow:none;
+  }
+
+  .bm-upload .q-mini-btn:hover:enabled {
+    background:#182230;
+    border-color:#3a4a60;
+  }
+
+  .bm-upload .q-mini-btn:disabled {
+    opacity:0.4;
+    cursor:default;
+  }
+
+
+  /* Grid for the 3 metric cards */
+  .bm-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(260px, 1fr));
+
+
+		/* Grid for the 3 metric cards */
+  .bm-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(260px, 1fr));
+    gap: 16px;
+  }
+
+  @media (max-width: 1100px) {
+    .bm-grid {
+      grid-template-columns: repeat(2, minmax(260px, 1fr));
+    }
+  }
+
+  @media (max-width: 720px) {
+    .bm-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  .bm-card-title {
+    margin: 0 0 8px;
+    font-size: 16px;
+    color: #cfe8ff;
+  }
+
+  .bm-legend {
+    font-size: 12px;
+    color: #9ab;
+    margin-bottom: 6px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .bm-swatch {
+    width: 28px;
+    height: 10px;
+    border: 2px solid #00c0ff;
+    border-radius: 3px;
+    display: inline-block;
+  }
+
+  .bm-canvas-wrap {
+    position: relative;
+    width: 100%;
+    height: 180px;   /* 🔽 keeps charts compact */
+  }
+
+  /* make a card span the whole grid width (columns 1 → last) */
+  .bm-span-all {
+    grid-column: 1 / -1;
+  }
+
+</style>
+
+<!-- ✅ SAME WRAPPER AS DASHBOARD_NEW -->
+<div class="page-wrapper" style="
+  width: 100%;
+  max-width: none;
+  margin: 0;
+  padding-top: 8px;       /* was 40px – pulls everything WAY up */
+
+  padding-left: 0px;
+  padding-right: 26px;
+
+  transform: translateX(-14px);
+  box-sizing: border-box;
+">
+
+
+    <h1 style="
+										color:#fff;
+										text-align:left;
+										padding-left: 6px;
+										margin-top: 60px;   /* ⬅️ was 12px */
+										margin-bottom: 8px; /* keep this small so it doesn’t add big gap to charts */
+				">
+						Uploads
+				</h1>
+
+
+
+  <section class="bm-section bm-upload">
+    <!-- ========================= -->
+    <!-- HEADER ROW: TITLE + UPLOAD CONTROLS -->
+    <!-- ========================= -->
+    <div class="bm-header-row">
+      <h2 class="bm-h2">Business Metric Trends</h2>
+
+      <!-- 1) MAIN BUSINESS METRICS UPLOAD -->
+      <form id="metricsForm" enctype="multipart/form-data">
+        <div class="bm-controls">
+          <div class="left">
+            <label>
+              File:
+              <input type="file" name="file" accept=".xlsx" required />
+            </label>
+
+            <label for="month">Month:
+              <select name="month" id="month" required>
+                <option value="">Select Month</option>
+                {% set months = ['January','February','March','April','May','June','July','August','September','October','November','December'] %}
+                {% for m in months %}
+                  <option value="{{ loop.index }}">{{ m }}</option>
+                {% endfor %}
+              </select>
+            </label>
+
+            <label for="year">Year:
+              <select name="year" id="year" required>
+                {% for y in range(2024, 2031) %}
+                  <option value="{{ y }}">{{ y }}</option>
+                {% endfor %}
+              </select>
+            </label>
+          </div>
+
+          <div class="mid">
+            <button type="submit" class="glow-btn">Upload Report</button>
+          </div>
+
+          <div style="width:1px;"></div>
+        </div>
+      </form>
+    </div>
+
+    <!-- (Business metrics upload history kept for JS, but hidden in UI) -->
+    <ul id="uploadHistory" style="display:none;">
+      <!-- JS will still prepend history here, but it's hidden -->
+    </ul>
+
+    <!-- ========================= -->
+    <!-- 4) BUSINESS METRIC TRENDS -->
+    <!-- ========================= -->
+    <div class="bm-grid">
+
+      <!-- Net Retention -->
+      <div class="card-dark">
+        <h4 class="bm-card-title">Net Retention</h4>
+        <div class="bm-legend"><span class="bm-swatch"></span> Net Retention</div>
+        <div class="bm-canvas-wrap"><canvas id="bm-net"></canvas></div>
+      </div>
+
+      <!-- W&A Premium -->
+      <div class="card-dark">
+        <h4 class="bm-card-title">W&A Premium</h4>
+        <div class="bm-legend"><span class="bm-swatch"></span> W&A Premium</div>
+        <div class="bm-canvas-wrap"><canvas id="bm-wa"></canvas></div>
+      </div>
+
+      <!-- 12MM Loss Ratio -->
+      <div class="card-dark">
+        <h4 class="bm-card-title">12MM Loss Ratio</h4>
+        <div class="bm-legend"><span class="bm-swatch"></span> 12MM Loss Ratio</div>
+        <div class="bm-canvas-wrap"><canvas id="bm-loss"></canvas></div>
+      </div>
+
+      <!-- New Business Details Upload (widget) -->
+      <div class="card-dark bm-span-all" id="nb-widget">
+        <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
+          <h4 class="bm-card-title" style="margin-right:auto;">New Business Details</h4>
+
+          <!-- Hidden file input inside form -->
+          <form id="nbDetailsForm" enctype="multipart/form-data" style="margin:0;">
+            <input
+              id="nb-file"
+              type="file"
+              name="file"
+              accept=".xlsx"
+              style="display:none;"
+              required
+            />
+            <button type="button" id="nb-upload-btn" class="glow-btn">
+              Upload
+            </button>
+          </form>
+        </div>
+
+        <div class="muted" style="margin-top:10px;">
+          <div style="font-size:14px; margin-bottom:6px;">Status</div>
+          <div id="nbStatus" style="font-size:13px; margin-bottom:10px;">
+            No NB upload yet.
+          </div>
+
+          <div style="font-size:14px; margin-bottom:6px;">Recent NB uploads</div>
+          <ul id="nb-ul" style="margin:0; padding-left:16px; max-height:150px; overflow:auto;"></ul>
+
+          <div id="nb-pager" style="display:flex; gap:6px; align-items:center; justify-content:flex-end; margin-top:8px;">
+            <button id="nb-prev" class="q-mini-btn" disabled>&lt;</button>
+            <span id="nb-page" class="muted">Page 1 of 1</span>
+            <button id="nb-next" class="q-mini-btn" disabled>&gt;</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Quotes Uploads -->
+						<div class="card-dark bm-span-all" id="quotes-widget">
+								<div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap; justify-content:space-between; width:100%;">
+										<h4 class="bm-card-title">Total Serious Quotes Detail</h4>
+										<div>
+												<input id="quotes-file" type="file" style="display:none;" />
+												<button id="quotes-upload-btn" class="glow-btn">Upload</button>
+										</div>
+								</div>
+
+        <div id="quotes-list" class="muted" style="margin-top:10px;">
+          <div style="font-size:14px; margin-bottom:6px;">Recent uploads</div>
+          <ul id="quotes-ul" style="margin:0; padding-left:16px; max-height:180px; overflow:auto;"></ul>
+          <div id="quotes-pager" style="display:flex; gap:6px; align-items:center; justify-content:flex-end; margin-top:8px;">
+            <button id="quotes-prev" class="q-mini-btn" disabled>&lt;</button>
+            <span id="quotes-page" class="muted">Page 1 of 1</span>
+            <button id="quotes-next" class="q-mini-btn" disabled>&gt;</button>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+  </section>
+
+</div> <!-- close page-wrapper -->
+
+<script>
+  // ===== Upload handler (New Business Details / sales) =====
+  (function setupNbDetailsUpload() {
+    const form = document.getElementById("nbDetailsForm");
+    if (!form) return;
+
+    const fileInput = document.getElementById("nb-file");
+    const btn       = document.getElementById("nb-upload-btn");
+
+    // Click button -> open file picker
+    if (btn && fileInput) {
+      btn.addEventListener("click", () => fileInput.click());
+
+      // When a file is chosen -> submit the form
+      fileInput.addEventListener("change", () => {
+        if (fileInput.files && fileInput.files[0]) {
+          form.dispatchEvent(new Event("submit", { bubbles: true, cancelable: true }));
+        }
+      });
+    }
+
+    form.addEventListener("submit", async function (e) {
+      e.preventDefault();
+
+      const formData = new FormData(this);
+      const statusEl = document.getElementById("nbStatus");
+      if (statusEl) statusEl.textContent = "Uploading…";
+
+      try {
+        const res = await fetch("/upload_nb_details", {
+          method: "POST",
+          body: formData
+        });
+
+        const result = await res.json();
+
+        if (result.success) {
+          if (statusEl) {
+            statusEl.textContent = `Imported ${result.rows_inserted} rows into NB detail reports.`;
+          }
+          // refresh NB list after a good upload
+          refreshNbUploads(1);
+        } else {
+          const msg = "Error: " + (result.error || "Upload failed");
+          if (statusEl) statusEl.textContent = msg;
+          alert(msg);
+        }
+      } catch (err) {
+        console.error(err);
+        if (statusEl) statusEl.textContent = "Error uploading file.";
+        alert("Error uploading file.");
+      }
+    });
+  })();
+
+  // ===== Analytics-style chart factory =====
+  function mkAnalyticsLine(ctx, label, yTickFmt) {
+    return new Chart(ctx, {
+      type: 'line',
+      data: { labels: [], datasets: [{
+        label,
+        data: [],
+        tension: 0.35,
+        pointRadius: 2,
+        borderColor: '#00c0ff',
+        backgroundColor: '#12243b',
+        fill: true
+      }]},
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { display: false },
+          tooltip: { intersect: false, mode: 'index' }
+        },
+        scales: {
+          x: {
+            ticks: {
+              color: '#9ab',
+              maxRotation: 35,
+              minRotation: 35,
+              callback: function(v){
+                const lbl = this.getLabelForValue(v);
+                return (typeof lbl === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(lbl)) ? lbl.slice(5) : lbl; // MM-DD
+              }
+            },
+            grid: { color: '#1f2a36' }
+          },
+          y: {
+            ticks: { color: '#9ab', callback: yTickFmt || (v => v) },
+            grid: { color: '#1f2a36' }
+          }
+        }
+      }
+    });
+  }
+
+  const fmtPct = v => (typeof v === 'number' ? Math.round(v) + '%' : v);
+  const usdCompact = new Intl.NumberFormat('en-US', {
+    style:'currency', currency:'USD', notation:'compact', maximumFractionDigits:1
+  }).format;
+
+  const netChart  = mkAnalyticsLine(document.getElementById('bm-net').getContext('2d'),  'Net Retention', fmtPct);
+  const waChart   = mkAnalyticsLine(document.getElementById('bm-wa').getContext('2d'),   'W&A Premium',  v => usdCompact(v));
+  const lossChart = mkAnalyticsLine(document.getElementById('bm-loss').getContext('2d'), '12MM Loss Ratio', fmtPct);
+
+  async function loadTrends() {
+    const res = await fetch("/api/metrics-trend");
+    const data = await res.json();
+
+    if (data["Net Retention"]) {
+      netChart.data.labels = data["Net Retention"].labels || [];
+      netChart.data.datasets[0].data = data["Net Retention"].values || [];
+      netChart.update();
+    }
+    if (data["W&A Premium"]) {
+      waChart.data.labels = data["W&A Premium"].labels || [];
+      waChart.data.datasets[0].data = data["W&A Premium"].values || [];
+      waChart.update();
+    }
+    if (data["12MM Loss Ratio"]) {
+      lossChart.data.labels = data["12MM Loss Ratio"].labels || [];
+      lossChart.data.datasets[0].data = data["12MM Loss Ratio"].values || [];
+      lossChart.update();
+    }
+  }
+
+  // ===== Quotes widget logic =====
+  let QUOTES_PAGE = 1;
+		let NB_PAGE = 1;
+
+  async function refreshQuotes(page = QUOTES_PAGE) {
+    QUOTES_PAGE = page;
+
+    try {
+      const r = await fetch(`/api/quotes/list?page=${page}`, { credentials: "same-origin" });
+      const j = await r.json();
+
+      const ul = document.getElementById("quotes-ul");
+      if (!ul) return;
+      ul.innerHTML = "";
+
+      const fmtPT = new Intl.DateTimeFormat("en-US", {
+        timeZone: "America/Los_Angeles",
+        year: "numeric", month: "short", day: "2-digit",
+        hour: "2-digit", minute: "2-digit"
+      });
+
+      (j.items || []).forEach(it => {
+        const whenDate = it.uploaded_at ? new Date(it.uploaded_at) : null;
+        const when = (whenDate && !isNaN(whenDate)) ? fmtPT.format(whenDate) : "—";
+        const kb = Math.round((Number(it.file_size) || 0) / 1024);
+
+        const li = document.createElement("li");
+        li.style.margin = "4px 0";
+
+        const a = document.createElement("a");
+        a.href = `/quotes/view/${it.id}`;
+        a.textContent = `${it.original_name} — ${when} (${kb} KB)`;
+        a.target = "_blank";
+        a.style.color = "#a8c7ff";
+
+        li.appendChild(a);
+        ul.appendChild(li);
+      });
+
+      if (!j.items || j.items.length === 0) {
+        ul.innerHTML = "<li>No uploads yet.</li>";
+      }
+
+      const prevBtn = document.getElementById("quotes-prev");
+      const nextBtn = document.getElementById("quotes-next");
+      const pageLbl = document.getElementById("quotes-page");
+
+      if (pageLbl) pageLbl.textContent = `Page ${j.page} of ${j.total_pages}`;
+      if (prevBtn) {
+        prevBtn.disabled = (j.page <= 1);
+        prevBtn.onclick = () => refreshQuotes(j.page - 1);
+      }
+      if (nextBtn) {
+        nextBtn.disabled = (j.page >= j.total_pages);
+        nextBtn.onclick = () => refreshQuotes(j.page + 1);
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  }
+		
+		async function refreshNbUploads(page = NB_PAGE) {
+    NB_PAGE = page;
+
+    try {
+      const r = await fetch(`/api/nb_uploads/list?page=${page}`, { credentials: "same-origin" });
+      const j = await r.json();
+
+      const ul = document.getElementById("nb-ul");
+      if (!ul) return;
+      ul.innerHTML = "";
+
+      const fmtPT = new Intl.DateTimeFormat("en-US", {
+        timeZone: "America/Los_Angeles",
+        year: "numeric", month: "short", day: "2-digit",
+        hour: "2-digit", minute: "2-digit"
+      });
+
+      (j.items || []).forEach(it => {
+        const whenDate = it.uploaded_at ? new Date(it.uploaded_at) : null;
+        const when = (whenDate && !isNaN(whenDate)) ? fmtPT.format(whenDate) : "—";
+        const kb = Math.round((Number(it.file_size) || 0) / 1024);
+
+        const li = document.createElement("li");
+        li.style.margin = "4px 0";
+
+        const a = document.createElement("a");
+        a.href = `/nb_uploads/download/${it.id}`;
+        a.textContent = `${it.original_name} — ${when} (${kb} KB)`;
+        a.target = "_blank";
+        a.style.color = "#a8c7ff";   // ✅ same color as quotes widget
+
+        li.appendChild(a);
+        ul.appendChild(li);
+      });
+
+
+      if (!j.items || j.items.length === 0) {
+        ul.innerHTML = "<li>No NB uploads yet.</li>";
+      }
+
+      const prevBtn = document.getElementById("nb-prev");
+      const nextBtn = document.getElementById("nb-next");
+      const pageLbl = document.getElementById("nb-page");
+
+      if (pageLbl) pageLbl.textContent = `Page ${j.page} of ${j.total_pages}`;
+      if (prevBtn) {
+        prevBtn.disabled = (j.page <= 1);
+        prevBtn.onclick = () => refreshNbUploads(j.page - 1);
+      }
+      if (nextBtn) {
+        nextBtn.disabled = (j.page >= j.total_pages);
+        nextBtn.onclick = () => refreshNbUploads(j.page + 1);
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  }
+
+
+  (function setupQuotesWidget(){
+    const btn  = document.getElementById("quotes-upload-btn");
+    const file = document.getElementById("quotes-file");
+    if (!btn || !file) return;
+
+    btn.addEventListener("click", () => file.click());
+    file.addEventListener("change", async () => {
+      if (!file.files || !file.files[0]) return;
+      const fd = new FormData();
+      fd.append("file", file.files[0]);
+      try {
+        const r = await fetch("/api/quotes/upload", { method: "POST", body: fd, credentials: "same-origin" });
+        const j = await r.json();
+        if (j.success) {
+          file.value = "";
+          await refreshQuotes(1);
+        } else {
+          alert(j.error || "Upload failed");
+        }
+      } catch (e) {
+        console.error(e);
+        alert("Upload failed");
+      }
+    });
+  })();
+
+  // ✅ DOM ready: just load data for this page
+  window.addEventListener("DOMContentLoaded", () => {
+    loadTrends();
+    refreshQuotes(1);
+    refreshNbUploads(1);  // 👈 load NB uploads on page load
+  });
+
+</script>
+
+{% endblock %}
+
+

@@ -1,0 +1,39 @@
+🚀 Activity Log Dashboard
+
+{% if logs %}
+<table>
+    <thead>
+        <tr>
+            <th>ID</th>
+            <th>User ID</th>
+            <th>Mouse Distance</th>
+            <th>Keystrokes</th>
+            <th>Mouse Clicks</th>
+            <th>Idle Count</th>
+            <th>Timestamp</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for log in logs %}
+        <tr>
+            <td>{{ log.id }}</td>
+            <td>{{ log.user_id }}</td>
+            <td>{{ log.mouse_distance }}</td>
+            <td>{{ log.keystrokes }}</td>
+            <td>{{ log.mouse_clicks }}</td>
+            <td>{{ log.idle_count }}</td>
+            <td>{{ log.formatted_time }}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% else %}
+<p>No activity logs available.</p>
+{% endif %}
+
+<!-- Download Tracker Button -->
+<a href="https://github.com/Clopez527Launcher/tracker-download/releases/download/v1.0/tracker_script.exe" download>
+    <button style="padding: 10px 20px; font-size: 16px; background-color: blue; color: white; border: none; cursor: pointer;">
+        📥 Download Tracker
+    </button>
+</a>

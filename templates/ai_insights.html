@@ -1,0 +1,263 @@
+<!-- ================= Reflexx: AI Actionable Insights (single file) ================= -->
+<section id="ai-insights" class="rx-card rx-ai-insights">
+  <style>
+    /* ==== Tile frame: EXACT match to other widgets ==== */
+    .rx-card.rx-ai-insights{
+						background:transparent;       /* the widget frame provides the bg */
+						border:none;                  /* use the widget border */
+						border-radius:0;              /* radius from the widget */
+						padding:20px;                 /* keep inner spacing consistent */
+						color:#e6f1f4;
+						width:100%;
+						box-sizing:border-box;
+						overflow:hidden;
+						box-shadow:none;              /* no extra glow – avoid double glow */
+				}
+
+    /* ===== Inner layout ===== */
+    .rx-ai-header h2{
+      margin:0 0 10px 0;
+      font-size:clamp(18px,1.6vw,22px);
+      letter-spacing:.3px;
+      text-align:center;
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
+    }
+
+    /* Stacked: Strengths (top) + Weaknesses (bottom) */
+    .rx-ai-content{
+      display:flex;
+      flex-direction:column;
+      gap:16px;
+      border-top:1px solid rgba(0,255,255,.18); /* theme divider */
+      padding-top:12px;
+    }
+
+    .rx-ai-section{
+      display:flex;
+      flex-direction:column;
+      gap:10px;
+      min-width:0;
+    }
+
+    .rx-ai-title{
+      margin:0;
+      font-size:clamp(14px,1.2vw,18px);
+      text-align:center;
+    }
+    .rx-good{ color:#24d36a; }
+    .rx-bad{  color:#00d5ff; }
+
+    /* Lists */
+    .rx-list{
+      list-style:decimal inside;
+      margin:0;
+      padding:0;
+      display:flex;
+      flex-direction:column;
+      gap:10px;
+      min-width:0;
+    }
+
+    /* Rows */
+    .rx-row{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:12px;
+      padding:12px 12px;
+      border:1px solid rgba(255,255,255,.07);
+      border-radius:12px;
+      background:rgba(255,255,255,.02);
+      width:100%;
+      box-sizing:border-box;
+      min-width:0;
+    }
+    .rx-row .rx-text{
+      flex:1 1 auto;
+      min-width:0;
+      font-size:.96rem;
+      line-height:1.28rem;
+      word-wrap:break-word;
+    }
+
+    /* Actions: keep buttons on one line */
+    .rx-actions{
+      display:flex;
+      gap:8px;
+      flex:0 0 auto;
+      flex-wrap:nowrap;
+      justify-content:flex-end;
+    }
+
+    /* Compact buttons */
+    .rx-btn{
+      padding:5px 10px;
+      border-radius:999px;
+      border:1px solid rgba(0,255,255,.35);
+      background:transparent;
+      color:#c6f9ff;
+      cursor:pointer;
+      font-size:.78rem;
+      line-height:1rem;
+      white-space:nowrap;
+    }
+    .rx-btn:hover{ border-color:rgba(0,255,255,.6); }
+    .rx-btn.primary{
+      border-color:rgba(0,255,255,.8);
+      background:rgba(0,255,255,.08);
+    }
+				/* Left-side info icon button */
+    .rx-info-btn{
+						width:30px;
+						height:30px;
+						min-width:30px;
+						min-height:30px;
+						display:flex;
+						align-items:center;
+						justify-content:center;
+						border-radius:999px;
+						border:1px solid rgba(0,255,255,.55);
+						background:rgba(0,255,255,.06);
+						color:#c6f9ff;
+						cursor:pointer;
+						font-weight:700;
+						font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,sans-serif;
+						font-size:14px;                /* keep the “i” crisp at 30px */
+						line-height:1;
+						box-shadow:0 0 10px rgba(0,255,255,.15) inset;
+						transition:transform .12s ease, border-color .12s ease, box-shadow .12s ease;
+				}
+    .rx-info-btn:hover{
+      border-color:rgba(0,255,255,.9);
+      box-shadow:0 0 16px rgba(0,255,255,.35) inset, 0 0 8px rgba(0,255,255,.25);
+      transform:translateY(-1px);
+    }
+    .rx-info-btn:focus{ outline:none; box-shadow:0 0 0 2px rgba(0,255,255,.3), 0 0 10px rgba(0,255,255,.4) inset; }
+
+    /* Row layout: info icon (left) + text (middle) + actions (right) */
+    .rx-row{
+      display:flex;
+      align-items:center;
+      gap:12px;                 /* space between icon, text, actions */
+      padding:12px 12px;
+      border:1px solid rgba(255,255,255,.07);
+      border-radius:12px;
+      background:rgba(255,255,255,.02);
+      width:100%;
+      box-sizing:border-box;
+      min-width:0;
+    }
+    .rx-row .rx-text{
+      flex:1 1 auto;           /* text expands in the middle */
+      min-width:0;
+      font-size:.96rem;
+      line-height:1.28rem;
+      word-wrap:break-word;
+    }
+
+    /* Tighter on smaller widths */
+    @media (max-width:1100px){
+      .rx-row{ padding:10px; }
+      .rx-btn{ padding:4px 9px; font-size:.76rem; }
+    }
+    @media (max-width:980px){
+      .rx-row{ padding:9px; }
+      .rx-btn{ padding:4px 8px; font-size:.74rem; }
+    }
+  </style>
+
+  <div class="rx-ai-header">
+    <h2>AI Actionable Insights</h2>
+  </div>
+
+  <div class="rx-ai-content">
+    <!-- Strengths -->
+    <section class="rx-ai-section" aria-labelledby="ai-strengths-title">
+      <h3 id="ai-strengths-title" class="rx-ai-title rx-good">Strengths</h3>
+      <ol id="ai-strengths" class="rx-list"></ol>
+    </section>
+
+    <!-- Weaknesses -->
+    <section class="rx-ai-section" aria-labelledby="ai-weaknesses-title">
+      <h3 id="ai-weaknesses-title" class="rx-ai-title rx-bad">Weaknesses</h3>
+      <ol id="ai-weaknesses" class="rx-list"></ol>
+    </section>
+  </div>
+
+  <script>
+    /* Self-contained demo data (replace with real fetch later) */
+    const demoData = {
+      strengths: [
+        { text: "Eman closed 10 policies this week (+18% vs norm)" },
+        { text: "Nedda’s outbound calls were up 20% yesterday" },
+        { text: "Nina’s quotes increased 12% over the last 3 days" }
+      ],
+      weaknesses: [
+        { agent:"Eman", metric:"talk_time", text:"Eman’s talk time is down 15% over last 7 days" },
+        { agent:"Zach", metric:"quotes_unique", text:"Zach has only 3 quotes over the last 5 days" },
+        { agent:"Nada", metric:"idle_time", text:"Nada’s idle time averages 2 hrs/day this month" }
+      ]
+    };
+
+    window.ReflexxAIInsights = {
+      load(data){ renderLists(data || demoData); },
+      seeInsight(agent, metric){ alert(`See Insight Data → ${agent||"N/A"} • ${metric||"N/A"}`); },
+      createWorkflow(agent, metric, text){
+        alert(`Create Workflow → ${agent} • ${metric}\n\n"${text}"`);
+      }
+    };
+
+    function renderLists(data){
+      const strengthsEl = document.getElementById("ai-strengths");
+      const weaknessesEl = document.getElementById("ai-weaknesses");
+      if(!strengthsEl || !weaknessesEl) return;
+      strengthsEl.innerHTML = "";
+      weaknessesEl.innerHTML = "";
+      (data.strengths||[]).forEach(item => strengthsEl.appendChild(rowEl(item.text)));
+      (data.weaknesses||[]).forEach(item => weaknessesEl.appendChild(rowEl(item.text, item.agent, item.metric, {showWorkflow:true})));
+    }
+
+    function rowEl(text, agent, metric, opts){
+      const li = document.createElement("li");
+      li.className = "rx-row";
+
+      // LEFT: info icon button (opens the same "See Insight Data" action)
+      const infoBtn = document.createElement("button");
+      infoBtn.className = "rx-info-btn";
+      infoBtn.setAttribute("aria-label", "See insight data");
+      infoBtn.title = "See insight data";
+      infoBtn.textContent = "i";
+      infoBtn.addEventListener("click", () => window.ReflexxAIInsights.seeInsight(agent, metric));
+
+      // MIDDLE: text
+      const span = document.createElement("div");
+      span.className = "rx-text";
+      span.textContent = text;
+
+      // RIGHT: actions (only Workflow now)
+      const actions = document.createElement("div");
+      actions.className = "rx-actions";
+
+      if (opts?.showWorkflow){
+        const wfBtn = document.createElement("button");
+        wfBtn.className = "rx-btn primary";
+        wfBtn.textContent = "Create Workflow";
+        wfBtn.addEventListener("click", () => window.ReflexxAIInsights.createWorkflow(agent, metric, text));
+        actions.appendChild(wfBtn);
+      }
+
+      // order: icon | text | actions
+      li.appendChild(infoBtn);
+      li.appendChild(span);
+      li.appendChild(actions);
+      return li;
+    }
+
+    document.addEventListener("DOMContentLoaded", () => {
+      if (document.getElementById("ai-insights")) window.ReflexxAIInsights.load(demoData);
+    });
+  </script>
+</section>
+<!-- ================= /Reflexx: AI Actionable Insights ================= -->

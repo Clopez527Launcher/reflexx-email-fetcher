@@ -1,0 +1,247 @@
+{% extends "base.html" %}
+
+{% block title %}Graphs – Reflexx{% endblock %}
+
+{% block content %}
+
+<!-- ======================= PAGE LAYOUT + POSITION FIXES ======================= -->
+<style>
+		/* Match Dashboard (New) background */
+  body,
+  .content,
+  .content-wrapper,
+  .page-wrapper {
+      background: #12243b !important;  /* same as --page-navy on Dashboard */
+      color: #e9f6ff;                  /* optional: match light text */
+  }
+  .analytics-page-wrapper {
+    width: 100%;
+    max-width: none;
+    margin-left: 0;
+    margin-right: 0;
+
+    /* Push Analytics down to match Dashboard */
+    padding-top: 40px;
+
+    /* Match Dashboard horizontal position */
+    padding-right: 26px;
+    transform: translateX(-10px);
+
+    box-sizing: border-box;
+  }
+
+  .analytics-h1 {
+    color:#fff;
+    text-align:left;
+    padding-left: 6px;
+    margin-top: 26px;
+    margin-bottom: 16px;
+    font-size: 32px;
+    font-weight: 700;
+  }
+
+  .analytics-section {
+    margin: 0;
+    padding-left: 6px;
+    padding-right: 0;
+  }
+
+  /* ================= Employee Trends widget styles ================= */
+  .emp-card {
+    background:#0e151d;
+    border:1px solid #1f2a36;
+    border-radius:12px;
+    padding:16px;
+    color:#e9f6ff;
+    margin-top:18px;
+  }
+
+  .emp-controls {
+    display:flex;
+    gap:12px;
+    align-items:center;
+    flex-wrap:wrap;
+  }
+
+  .emp-controls h3 {
+    margin:0;
+    font-weight:700;
+    flex:1 1 220px;
+    text-align:center;
+  }
+
+  .emp-controls .right {
+    margin-left:auto;
+    display:flex;
+    gap:10px;
+    align-items:center;
+  }
+
+  .emp-input,
+  .emp-select,
+  .emp-btn {
+    border:1px solid #1f2a36;
+    background:#0e151d;
+    color:#dff;
+    border-radius:8px;
+    padding:8px 10px;
+  }
+
+  .emp-btn { cursor:pointer; }
+
+  .emp-grid {
+    display:grid;
+    grid-template-columns: repeat(2, minmax(260px, 1fr));
+    gap:16px;
+    margin-top:16px;
+  }
+
+  .emp-chart {
+    background:#0b131a;
+    border:1px solid #1f2a36;
+    border-radius:10px;
+    padding:12px;
+    min-height:220px;
+    display:flex;
+    flex-direction:column;
+    gap:8px;
+  }
+
+  .emp-chart h4 {
+    margin:0;
+    font-size:16px;
+    color:#cfe8ff;
+  }
+
+  .emp-canvas-wrap {
+    position:relative;
+    width:100%;
+    height:180px;
+  }
+</style>
+
+<!-- ======================= PAGE WRAPPER (THE FIX YOU NEEDED) ======================= -->
+<div class="analytics-page-wrapper">
+
+  <h1 class="analytics-h1">Graphs</h1>
+
+  <section class="analytics-section">
+
+    <div id="empTrends" class="emp-card">
+      <div class="emp-controls">
+        <input id="emp-start" class="emp-input" type="date" />
+        <input id="emp-end" class="emp-input" type="date" />
+
+        <h3>Movement Trends</h3>
+
+        <div class="right">
+          <select id="emp-user" class="emp-select">
+            <option value="">Loading employees…</option>
+          </select>
+          <button id="emp-apply" class="emp-btn">Apply</button>
+        </div>
+      </div>
+
+      <div class="emp-grid">
+        <div class="emp-chart">
+          <h4>Mouse Distance</h4>
+          <div class="emp-canvas-wrap"><canvas id="emp-mouse"></canvas></div>
+        </div>
+
+        <div class="emp-chart">
+          <h4>Keystrokes</h4>
+          <div class="emp-canvas-wrap"><canvas id="emp-keys"></canvas></div>
+        </div>
+
+        <div class="emp-chart">
+          <h4>Clicks</h4>
+          <div class="emp-canvas-wrap"><canvas id="emp-clicks"></canvas></div>
+        </div>
+
+        <div class="emp-chart">
+          <h4>Idle Time</h4>
+          <div class="emp-canvas-wrap"><canvas id="emp-idle"></canvas></div>
+        </div>
+      </div>
+    </div>
+
+  </section>
+</div>
+
+<!-- Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<!-- ======================= EMPLOYEE TRENDS LOGIC ======================= -->
+<script>
+(() => {
+  const toYMD = (d) =>
+    `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+
+  const startEl = document.getElementById('emp-start');
+  const endEl   = document.getElementById('emp-end');
+  const userSel = document.getElementById('emp-user');
+  const apply   = document.getElementById('emp-apply');
+
+  const today = new Date();
+  endEl.value = toYMD(today);
+  startEl.value = toYMD(new Date(today.getTime() - 6*86400000));
+
+  const mkLine = (ctx, label) => new Chart(ctx, {
+    type: 'line',
+    data: { labels: [], datasets: [{ label, data: [], tension:0.35, pointRadius:0,
+      borderColor:'#00c0ff', backgroundColor:'rgba(0,192,255,0.08)', fill:true }] },
+    options: {
+      responsive:true, maintainAspectRatio:false,
+      plugins:{ legend:{ display:false }},
+      scales:{
+        x:{ ticks:{ color:'#9ab',
+          callback(value){ const label=this.getLabelForValue(value);
+            return /^\d{4}-\d{2}-\d{2}$/.test(label) ? label.slice(5) : label; }},
+          grid:{ color:'#1f2a36' }},
+        y:{ ticks:{ color:'#9ab' }, grid:{ color:'#1f2a36' }}
+      }
+    }
+  });
+
+  const cMouse  = mkLine(document.getElementById('emp-mouse'), 'Mouse Distance');
+  const cKeys   = mkLine(document.getElementById('emp-keys'),  'Keystrokes');
+  const cClicks = mkLine(document.getElementById('emp-clicks'),'Clicks');
+  const cIdle   = mkLine(document.getElementById('emp-idle'),  'Idle');
+
+  async function j(url){ const r=await fetch(url,{credentials:'same-origin'}); return r.json(); }
+
+  async function loadEmployees(){
+    try{
+      const list = await j('/manager-employees');
+      const pick = (u) => (u.nickname && u.nickname.trim()) || u.email;
+      userSel.innerHTML = list.sort((a,b)=>pick(a).localeCompare(pick(b)))
+        .map(u => `<option value="${u.id}">${pick(u)}</option>`).join('');
+    }catch(e){
+      userSel.innerHTML = `<option value="">(failed to load)</option>`;
+      console.error(e);
+    }
+  }
+
+  async function refresh(){
+    const uid = userSel.value;
+    if(!uid) return;
+    const s=startEl.value, e=endEl.value;
+
+    try{
+      const data = await j(`/api/analytics/employee-series?user_id=${uid}&start=${s}&end=${e}`);
+      const L = data.labels || [];
+      const set = (chart, arr) => { chart.data.labels=L; chart.data.datasets[0].data=arr||[]; chart.update(); };
+
+      set(cMouse,  data.mouse_distance);
+      set(cKeys,   data.keystrokes);
+      set(cClicks, data.mouse_clicks);
+      set(cIdle,   data.idle_count);
+    }catch(e){ console.error(e); }
+  }
+
+  apply.addEventListener('click', refresh);
+  loadEmployees().then(refresh);
+})();
+</script>
+
+{% endblock %}

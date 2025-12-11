@@ -1,0 +1,429 @@
+{% extends "base.html" %}
+
+{% block title %}AI Insights – Reflexx{% endblock %}
+
+{% block content %}
+<style>
+  /* 🟦 Make the floating sidebar sit at the same height as other tabs */
+  .floating-nav {
+    top: 70px !important;
+  }
+
+  /* 🟦 Use the lighter navy background like Dashboard (#12243b) */
+  body,
+  .content,
+  .content-wrapper,
+  .main-content.timekeeping-layout {
+    background: #12243b !important;
+    color: #e9f6ff;
+  }
+
+  /* 🟦 Give the whole page a little top padding so ALL content sits lower */
+  .main-content.timekeeping-layout {
+    padding-top: 20px;
+  }
+
+  /* 🟦 AI Insights header – bigger + moved down + aligned left like Dashboard */
+  .timekeeping-layout .top-bar {
+    margin-bottom: 0;
+  }
+
+  .timekeeping-layout .top-bar h1 {
+    margin-top: 40px;        /* move title further down */
+    margin-bottom: 18px;     /* gap before the run list */
+    padding-left: 6px;       /* nudge left to match cards */
+    text-align: left;
+    font-size: 34px;         /* 🔍 make "AI Insights" word bigger */
+    font-weight: 700;
+  }
+</style>
+
+<div class="main-content timekeeping-layout">
+  <div class="top-bar">
+    <h1>AI Insights</h1>
+  </div>
+
+  <!-- =============================== -->
+  <!-- 🤖 AI INSIGHTS TAB (History) -->
+  <!-- =============================== -->
+  <!-- ✅ AI Insights layout fix -->
+		<style>
+				/* This wrapper controls how far left + how wide the run bars go */
+				.ai-insights-wrap{
+								width: 100%;
+								max-width: none;
+								box-sizing: border-box;
+
+								/* Let the header spacing control vertical position */
+								margin-top: 0;
+								padding-top: 0;
+
+								/* Keep right edge consistent with other tabs */
+								padding-right: 26px;
+
+								/* Nudge left similar to Dashboard / Analytics */
+								padding-left: 0;
+								transform: translateX(-10px);
+
+								padding-bottom: 20px;
+				}
+
+
+				/* Make sure the list fills the wrapper */
+				#ai-run-list{
+								width: 100%;
+								display: flex;
+								flex-direction: column;
+								margin-top: 14px;
+								gap: 12px;
+				}
+		</style>
+
+		<div class="ai-insights-wrap">
+
+
+    <p style="color:#aaa; margin-top:0;">
+      Click a run to expand. Then pick a window to view all insights.
+    </p>
+
+    <!-- Run list (big stacked bars) -->
+    <div id="ai-run-list">
+      <div style="color:#777;">Loading insight runs...</div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+  // ------------------------------
+  // State
+  // ------------------------------
+  let AI_OPEN_RUN_ID = null;             // which run is expanded
+  let AI_OPEN_WINDOW_BY_RUN = {};        // { run_id: "last_7_days" | "last_14_days" | "last_30_days" }
+  let AI_CACHE_BY_RUN_WINDOW = {};       // { `${run_id}|${window}`: rows[] }
+
+  // ------------------------------
+  // On load
+  // ------------------------------
+  document.addEventListener("DOMContentLoaded", () => {
+    loadAiRuns();
+  });
+
+  // ------------------------------
+  // Load runs (big bars)
+  // ------------------------------
+  async function loadAiRuns() {
+    const runList = document.getElementById("ai-run-list");
+    if (!runList) return;
+
+    runList.innerHTML = "<div style='color:#777;'>Loading insight runs...</div>";
+
+    try {
+      const res = await fetch("/api/ai-insight-runs");
+      const runs = await res.json();
+
+      if (!Array.isArray(runs) || !runs.length) {
+        runList.innerHTML = "<div style='color:#777;'>No insight runs yet.</div>";
+        return;
+      }
+
+      runList.innerHTML = "";
+
+      runs.forEach(r => {
+        const runCard = buildRunCard(r);
+        runList.appendChild(runCard);
+      });
+
+    } catch (err) {
+      console.error("[AI Runs] error:", err);
+      runList.innerHTML = "<div style='color:#ff9999;'>Error loading insight runs.</div>";
+    }
+  }
+
+  // ------------------------------
+  // Build one run bar + collapsible window tabs + content area
+  // ------------------------------
+  function buildRunCard(runObj) {
+    const runId = runObj.run_id;
+    const label = runObj.label || runId;
+
+    const wrapper = document.createElement("div");
+    wrapper.style.cssText = `
+      background:#1b3b8a;
+      border-radius:10px;
+      overflow:hidden;
+      border:1px solid rgba(255,255,255,0.06);
+    `;
+
+    // The big clickable bar (with right-side actions)
+				const bar = document.createElement("button");
+				bar.style.cssText = `
+						width:100%;
+						background:transparent;
+						color:#fff;
+						border:none;
+						padding:14px 16px;
+						text-align:left;
+						font-weight:800;
+						font-size:15px;
+						cursor:pointer;
+						display:flex;
+						align-items:center;
+						justify-content:space-between;
+				`;
+
+				const leftLabel = document.createElement("span");
+				leftLabel.textContent = label;
+
+				// Right-side area (download + caret)
+				const rightBox = document.createElement("div");
+				rightBox.style.cssText = "display:flex; align-items:center; gap:10px;";
+
+				// ONE download button for whole run (text style)
+				const dlRun = document.createElement("button");
+				dlRun.textContent = "Download CSV";
+				dlRun.title = "Download ALL windows (CSV)";
+				dlRun.style.cssText = `
+						background:transparent;
+						color:#fff;
+						border:none;
+						padding:4px 6px;
+						cursor:pointer;
+						font-weight:800;
+						font-size:12px;
+						opacity:0.9;
+						text-decoration:underline;
+				`;
+				dlRun.addEventListener("click", (e) => {
+						e.stopPropagation(); // don’t collapse run
+						const url = `/api/ai-insight-run.csv?run_id=${encodeURIComponent(runId)}`;
+						window.location.href = url;
+				});
+
+
+				// caret
+				const caret = document.createElement("span");
+				caret.textContent = "▾";
+				caret.style.fontSize = "14px";
+
+				rightBox.appendChild(dlRun);
+				rightBox.appendChild(caret);
+
+				bar.appendChild(leftLabel);
+				bar.appendChild(rightBox);
+
+    // The collapsible body
+    const body = document.createElement("div");
+    body.id = `ai-run-body-${runId}`;
+    body.style.display = "none";
+    body.style.background = "#0f0f0f";
+    body.style.padding = "12px 12px 6px 12px";
+
+    // Window tabs row
+    const tabs = document.createElement("div");
+    tabs.style.cssText = `
+      display:flex;
+      gap:8px;
+      margin-bottom:10px;
+    `;
+
+    const tab7  = buildWindowTab(runId, "last_7_days",  "7-Day Insights");
+    const tab14 = buildWindowTab(runId, "last_14_days", "14-Day Insights");
+    const tab30 = buildWindowTab(runId, "last_30_days", "30-Day Insights");
+
+    tabs.appendChild(tab7);
+    tabs.appendChild(tab14);
+    tabs.appendChild(tab30);
+
+    // Content area for insights
+    const content = document.createElement("div");
+    content.id = `ai-run-content-${runId}`;
+    content.style.cssText = `
+      padding:8px 4px 10px 4px;
+      color:#ddd;
+      font-size:14px;
+    `;
+    content.innerHTML = "<div style='color:#777;'>Pick a window above.</div>";
+
+    body.appendChild(tabs);
+    body.appendChild(content);
+
+    // Click to expand/collapse run
+    bar.addEventListener("click", () => toggleRun(runId));
+
+    wrapper.appendChild(bar);
+    wrapper.appendChild(body);
+
+    return wrapper;
+  }
+
+  // ------------------------------
+  // Window sub-tab builder
+  // ------------------------------
+  function buildWindowTab(runId, windowLabel, text) {
+				const btn = document.createElement("button");
+				btn.textContent = text;
+				btn.dataset.runId = runId;
+				btn.dataset.window = windowLabel;
+
+				btn.style.cssText = `
+						background:#000;
+						color:#fff;
+						border:1px solid #00ffff;
+						border-radius:7px;
+						padding:6px 10px;
+						cursor:pointer;
+						font-weight:700;
+						font-size:12px;
+						opacity:0.85;
+				`;
+
+				btn.addEventListener("click", (e) => {
+						e.stopPropagation(); // don’t collapse run
+						selectWindow(runId, windowLabel);
+				});
+
+				return btn;
+		}
+
+
+  // ------------------------------
+  // Expand/collapse a run
+  // ------------------------------
+  function toggleRun(runId) {
+    // Close old one if different
+    if (AI_OPEN_RUN_ID && AI_OPEN_RUN_ID !== runId) {
+      const oldBody = document.getElementById(`ai-run-body-${AI_OPEN_RUN_ID}`);
+      if (oldBody) oldBody.style.display = "none";
+    }
+
+    const body = document.getElementById(`ai-run-body-${runId}`);
+    if (!body) return;
+
+    const isOpen = body.style.display === "block";
+    body.style.display = isOpen ? "none" : "block";
+
+    AI_OPEN_RUN_ID = isOpen ? null : runId;
+  }
+
+  // ------------------------------
+  // Select a window inside a run
+  // ------------------------------
+  async function selectWindow(runId, windowLabel) {
+    AI_OPEN_WINDOW_BY_RUN[runId] = windowLabel;
+
+    // Highlight active window tab
+    const body = document.getElementById(`ai-run-body-${runId}`);
+    if (body) {
+      body.querySelectorAll("button[data-window]").forEach(b => {
+        const active = b.dataset.window === windowLabel;
+        b.style.background = active ? "#00ffff" : "#000";
+        b.style.color = active ? "#000" : "#fff";
+        b.style.opacity = active ? "1" : "0.85";
+      });
+    }
+
+    // Load candidates for that run/window
+    await loadCandidatesForRunWindow(runId, windowLabel);
+  }
+
+  // ------------------------------
+  // Fetch candidates for run/window
+  // ------------------------------
+  async function loadCandidatesForRunWindow(runId, windowLabel) {
+    const key = `${runId}|${windowLabel}`;
+    const content = document.getElementById(`ai-run-content-${runId}`);
+    if (!content) return;
+
+    // If cached, render instantly
+    if (AI_CACHE_BY_RUN_WINDOW[key]) {
+      renderCandidates(content, AI_CACHE_BY_RUN_WINDOW[key], windowLabel);
+      return;
+    }
+
+    content.innerHTML = "<div style='color:#777;'>Loading insights...</div>";
+
+    try {
+      const url = `/api/ai-insight-candidates?run_id=${encodeURIComponent(runId)}&window_label=${encodeURIComponent(windowLabel)}`;
+      const res = await fetch(url);
+      const json = await res.json();
+
+      const rows = json.rows || [];
+      AI_CACHE_BY_RUN_WINDOW[key] = rows;
+
+      renderCandidates(content, rows, windowLabel);
+
+    } catch (err) {
+      console.error("[AI Candidates] error:", err);
+      content.innerHTML = "<div style='color:#ff9999;'>Error loading insights.</div>";
+    }
+  }
+
+  // ------------------------------
+  // Render strengths + weaknesses lists
+  // ------------------------------
+  function renderCandidates(container, rows, windowLabel) {
+    container.innerHTML = "";
+
+    if (!rows.length) {
+      container.innerHTML = "<div style='color:#777;'>No insights for this window.</div>";
+      return;
+    }
+
+    const strengths = rows.filter(r => r.polarity === "strength");
+    const weaknesses = rows.filter(r => r.polarity === "weakness");
+
+    const makeSection = (title, color, items) => {
+      const sec = document.createElement("div");
+      sec.style.marginBottom = "12px";
+
+      const h = document.createElement("div");
+      h.textContent = title;
+      h.style.cssText = `font-weight:800; color:${color}; margin:6px 0 8px 0; font-size:14px;`;
+      sec.appendChild(h);
+
+      if (!items.length) {
+        const none = document.createElement("div");
+        none.textContent = "None";
+        none.style.color = "#777";
+        sec.appendChild(none);
+        return sec;
+      }
+
+      items.forEach(item => {
+        const row = document.createElement("div");
+        row.style.cssText = `
+          background:#141414;
+          border:1px solid #222;
+          border-radius:8px;
+          padding:10px 10px 8px 10px;
+          margin-bottom:8px;
+        `;
+
+        const name = document.createElement("div");
+        name.textContent = item.full_name || item.user_name || "Unknown";
+        name.style.cssText = `font-weight:800; color:${color}; margin-bottom:4px;`;
+
+        const msg = document.createElement("div");
+        msg.textContent = item.raw_message || "";
+        msg.style.cssText = "color:#ddd; line-height:1.35; font-size:13px;";
+
+        const meta = document.createElement("div");
+        meta.style.cssText = "color:#777; font-size:11px; margin-top:6px;";
+        meta.textContent = `${item.insight_type} • sev ${Number(item.severity_score || 0).toFixed(2)} • ${windowLabel}`;
+
+        row.appendChild(name);
+        row.appendChild(msg);
+        row.appendChild(meta);
+
+        sec.appendChild(row);
+      });
+
+      return sec;
+    };
+
+    container.appendChild(makeSection("Strengths", "#00ffaa", strengths));
+    container.appendChild(makeSection("Weaknesses", "#ff6666", weaknesses));
+  }
+</script>
+{% endblock %}

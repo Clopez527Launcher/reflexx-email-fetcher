@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+
+{% block title %}Reports – Reflexx{% endblock %}
+
+{% block content %}
+  <div class="main-content reports-layout">
+    <div class="top-bar" style="display: flex; justify-content: space-between; align-items: center;">
+      <h1>Reports</h1>
+      <form action="{{ url_for('generate_report_now') }}" method="post" style="margin: 0;">
+        <button type="submit"
+                style="background-color: #00e6e6; color: black; font-weight: bold; padding: 8px 16px; border: none; border-radius: 5px; cursor: pointer;">
+          📝 Generate New Report
+        </button>
+      </form>
+    </div>
+
+    <!-- ✅ Calendar Filter -->
+    <form method="get" action="{{ url_for('reports') }}" style="margin: 30px 0 20px;">
+      <label for="date" style="color: white; margin-right: 10px;">📅 Filter by Date:</label>
+      <input type="date" id="date" name="date"
+             value="{{ selected_date }}"
+             style="padding: 5px; border-radius: 4px; background: #222; color: #00e6e6; border: 1px solid #00e6e6;">
+      <button type="submit"
+              style="margin-left: 10px; padding: 6px 12px; border: none; border-radius: 4px; background-color: #00e6e6; color: black; font-weight: bold; cursor: pointer;">
+        Apply
+      </button>
+      {% if selected_date %}
+        <a href="{{ url_for('reports') }}"
+           style="margin-left: 10px; color: #ff6666; font-weight: bold; text-decoration: none;">Clear</a>
+      {% endif %}
+    </form>
+
+    <div style="margin-top: 20px;">
+      {% if reports %}
+        <ul style="list-style-type: none; padding: 0;">
+          {% for report in reports %}
+            <li style="margin-bottom: 12px;">
+              <a href="{{ url_for('download_report', report_id=report.id) }}"
+                 target="_blank"
+                 rel="noopener noreferrer"
+                 style="color: #00e6e6; text-decoration: none; font-weight: bold;">
+                 📄 {{ report.filename }}
+              </a>
+            </li>
+          {% endfor %}
+        </ul>
+
+        <!-- ✅ Always-Visible Pagination Controls -->
+        <div style="margin-top: 30px; display: flex; align-items: center; gap: 10px;">
+          <a href="{{ url_for('reports', page=1, date=selected_date) }}"
+             style="color: #00e6e6; text-decoration: none; font-weight: bold;">⏮ First</a>
+
+          <a href="{{ url_for('reports', page=page-1 if page > 1 else 1, date=selected_date) }}"
+             style="color: #00e6e6; text-decoration: none; font-weight: bold;">⟵ Prev</a>
+
+          <span style="color: white;">Page {{ page }} of {{ total_pages }}</span>
+
+          <a href="{{ url_for('reports', page=page+1 if page < total_pages else total_pages, date=selected_date) }}"
+             style="color: #00e6e6; text-decoration: none; font-weight: bold;">Next ⟶</a>
+
+          <a href="{{ url_for('reports', page=total_pages, date=selected_date) }}"
+             style="color: #00e6e6; text-decoration: none; font-weight: bold;">Last ⏭</a>
+        </div>
+      {% else %}
+        <p style="color: #ccc;">No reports found{{ " for this date" if selected_date else "" }}.</p>
+      {% endif %}
+    </div>
+  </div>
+{% endblock %}
+
+
+
