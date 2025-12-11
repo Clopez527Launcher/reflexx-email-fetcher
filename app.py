@@ -261,9 +261,9 @@ def api_reflexx_kpi():
     # Period from query string, default to 7d
     period = request.args.get("period", "7d")
 
-    # Map period → column names in elite_calls_master
+    # For "yesterday", use the daily row itself (daily_elite_per_minute, etc.)
     ratio_columns = {
-        "yesterday": "w_yesterday_ratio",
+        "yesterday": "daily_elite_per_minute",  # ⬅️ yesterday = latest day's per-minute index
         "7d": "w_7d_ratio",
         "14d": "w_14d_ratio",
         "30d": "w_30d_ratio",
@@ -271,7 +271,7 @@ def api_reflexx_kpi():
     }
 
     calls_columns = {
-        "yesterday": "w_yesterday_elite_calls",
+        "yesterday": "daily_elite_calls",       # ⬅️ raw daily count
         "7d": "w_7d_elite_calls",
         "14d": "w_14d_elite_calls",
         "30d": "w_30d_elite_calls",
@@ -279,12 +279,13 @@ def api_reflexx_kpi():
     }
 
     talk_columns = {
-        "yesterday": "w_yesterday_talk_seconds",
+        "yesterday": "daily_talk_seconds",      # ⬅️ raw daily talk seconds
         "7d": "w_7d_talk_seconds",
         "14d": "w_14d_talk_seconds",
         "30d": "w_30d_talk_seconds",
         "60d": "w_60d_talk_seconds",
     }
+
 
     # Safety: default to 7d if something weird comes in
     if period not in ratio_columns:
@@ -297,7 +298,7 @@ def api_reflexx_kpi():
     # 🔹 Use manager_id from the logged-in user so each manager only sees their team
     manager_id = current_user.id
 
-    # Use REAL calendar today, not MAX(day)
+    # Use the latest day in the table as the anchor (this is "yesterday" when you log in next morning)
     query = f"""
         SELECT 
             user_id,
@@ -307,16 +308,16 @@ def api_reflexx_kpi():
             {talk_col} AS talk_seconds
         FROM elite_calls_master
         WHERE
-            day = %s
+            day = (SELECT MAX(day) FROM elite_calls_master)
             AND {ratio_col} IS NOT NULL
             AND {calls_col} > 0
         ORDER BY ratio DESC;
     """
 
+
     from datetime import date
 
-    today = date.today()
-    cursor.execute(query, (today,))
+    cursor.execute(query)
 
     rows = cursor.fetchall()
 
