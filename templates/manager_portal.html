@@ -643,18 +643,59 @@
     </div>
     -->
 
-    <!-- BELOW: New Analytics Widget -->
-    <div class="widget" id="newAnalyticsWidget"
-         style="min-height:220px;padding:18px 20px;display:flex;flex-direction:column;gap:8px;">
-      <h3>New Analytics Widget</h3>
-      <p style="color:#9ab;font-size:0.95rem;margin:0;">
-        This is a placeholder for your next feature. We can plug in elite-call stats,
-        insights, or any custom metric you like here.
-      </p>
-      <p style="color:#6f8aa5;font-size:0.85rem;margin:0;">
-        Tell me what you want this card to show and we’ll wire it up.
-      </p>
+    <!-- BELOW: Elite Daily Index Widget -->
+    <div class="widget" id="eliteIndexWidget"
+         style="min-height:260px;padding:18px 20px;display:flex;flex-direction:column;">
+
+      <!-- Header + download button -->
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+        <h3 style="margin:0;">Elite Calls Index (Daily)</h3>
+        <button id="elite-export-btn"
+                style="font-size:0.8rem;padding:4px 10px;border-radius:6px;
+                       border:1px solid #00ffff;background:transparent;
+                       color:#00ffff;cursor:pointer;">
+          Download to Excel
+        </button>
+      </div>
+
+      <!-- Column labels -->
+      <div style="display:grid;
+                  grid-template-columns:110px 1fr 80px;
+                  font-size:0.8rem;
+                  color:#9ab;
+                  padding:4px 0;
+                  border-bottom:1px solid rgba(255,255,255,0.08);">
+        <span>Date</span>
+        <span>Agent</span>
+        <span style="text-align:right;">Score</span>
+      </div>
+
+      <!-- Scrollable list body -->
+      <div id="elite-list-body"
+           style="margin-top:4px;max-height:220px;overflow-y:auto;font-size:0.9rem;">
+        <div style="padding:6px 0;color:#9ab;">Loading…</div>
+      </div>
+
+      <!-- Pagination controls -->
+      <div style="display:flex;justify-content:space-between;align-items:center;
+                  margin-top:8px;font-size:0.8rem;">
+        <button id="elite-prev-btn"
+                style="padding:4px 8px;border-radius:4px;
+                       border:1px solid #1f2a36;background:#111827;
+                       color:#e9f6ff;cursor:pointer;">
+          Prev
+        </button>
+        <span id="elite-page-label">Page 1 of 1</span>
+        <button id="elite-next-btn"
+                style="padding:4px 8px;border-radius:4px;
+                       border:1px solid #1f2a36;background:#111827;
+                       color:#e9f6ff;cursor:pointer;">
+          Next
+        </button>
+      </div>
+
     </div>
+
 
   </div> <!-- /left-column -->
 
@@ -717,6 +758,111 @@
 </div> <!-- /dashboard-container -->
 
 </div> <!-- /main-content -->
+
+<script>
+  // Elite Daily Index widget – fetch + render + pagination + export
+  document.addEventListener('DOMContentLoaded', function () {
+    var bodyEl = document.getElementById('elite-list-body');
+    var prevBtn = document.getElementById('elite-prev-btn');
+    var nextBtn = document.getElementById('elite-next-btn');
+    var pageLabel = document.getElementById('elite-page-label');
+    var exportBtn = document.getElementById('elite-export-btn');
+
+    if (!bodyEl || !prevBtn || !nextBtn || !pageLabel) {
+      return;  // widget not on this page
+    }
+
+    var PAGE_SIZE = 25;
+    var currentPage = 1;
+    var totalPages = 1;
+
+    function renderRows(rows) {
+      bodyEl.innerHTML = '';
+
+      if (!rows || rows.length === 0) {
+        var empty = document.createElement('div');
+        empty.textContent = 'No data for the last 30 days yet.';
+        empty.style.padding = '6px 0';
+        empty.style.color = '#9ab';
+        bodyEl.appendChild(empty);
+        return;
+      }
+
+      rows.forEach(function (r) {
+        var row = document.createElement('div');
+        row.style.display = 'grid';
+        row.style.gridTemplateColumns = '110px 1fr 80px';
+        row.style.padding = '4px 0';
+        row.style.borderBottom = '1px solid rgba(255,255,255,0.05)';
+
+        var d = document.createElement('span');
+        d.textContent = r.day;
+
+        var name = document.createElement('span');
+        name.textContent = r.user_name;
+
+        var score = document.createElement('span');
+        score.textContent = (r.score != null ? r.score.toFixed(3) : '0.000');
+        score.style.textAlign = 'right';
+
+        row.appendChild(d);
+        row.appendChild(name);
+        row.appendChild(score);
+
+        bodyEl.appendChild(row);
+      });
+    }
+
+    function updatePagination(page, total) {
+      currentPage = page;
+      totalPages = total || 1;
+      pageLabel.textContent = 'Page ' + currentPage + ' of ' + totalPages;
+      prevBtn.disabled = (currentPage <= 1);
+      nextBtn.disabled = (currentPage >= totalPages);
+    }
+
+    function loadPage(page) {
+      bodyEl.innerHTML = '<div style="padding:6px 0;color:#9ab;">Loading…</div>';
+
+      fetch('/api/elite_daily_index?page=' + page + '&page_size=' + PAGE_SIZE)
+        .then(function (resp) { return resp.json(); })
+        .then(function (data) {
+          if (data.status !== 'ok') {
+            bodyEl.innerHTML = '<div style="padding:6px 0;color:#f88;">Error loading data.</div>';
+            return;
+          }
+          renderRows(data.rows || []);
+          updatePagination(data.page || 1, data.total_pages || 1);
+        })
+        .catch(function (err) {
+          console.error('elite_daily_index error', err);
+          bodyEl.innerHTML = '<div style="padding:6px 0;color:#f88;">Error loading data.</div>';
+        });
+    }
+
+    prevBtn.addEventListener('click', function () {
+      if (currentPage > 1) {
+        loadPage(currentPage - 1);
+      }
+    });
+
+    nextBtn.addEventListener('click', function () {
+      if (currentPage < totalPages) {
+        loadPage(currentPage + 1);
+      }
+    });
+
+    if (exportBtn) {
+      exportBtn.addEventListener('click', function () {
+        window.location.href = '/api/elite_daily_index_export';
+      });
+    }
+
+    // Initial load
+    loadPage(1);
+  });
+</script>
+
 
 <!-- bucket / scorecard detail modal -->
 <div id="scorecard-modal"

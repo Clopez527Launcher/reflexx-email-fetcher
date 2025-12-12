@@ -5,6 +5,7 @@ import json
 import csv
 from uuid import uuid4
 from datetime import datetime, timedelta, date
+import csv, io
 
 import pytz
 import openai
@@ -364,6 +365,186 @@ def api_reflexx_kpi():
         "rows": leaderboard,
         "team_index_avg": team_index_avg
     })
+
+@app.route("/api/elite_daily_index")
+@login_required
+def api_elite_daily_index():
+    """
+    Paginated list of daily elite-per-minute scores for the last 30 days
+    (anchored to California "yesterday" in Pacific time).
+
+    Returns JSON:
+    {
+      status: "ok",
+      page: 1,
+      page_size: 25,
+      total_rows: N,
+      total_pages: M,
+      rows: [
+        { "day": "2025-12-10", "user_id": 7, "user_name": "Jocelyn", "score": 0.23 },
+        ...
+      ]
+    }
+    """
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    # Pagination inputs
+    try:
+        page = int(request.args.get("page", "1"))
+    except ValueError:
+        page = 1
+
+    try:
+        page_size = int(request.args.get("page_size", "25"))
+    except ValueError:
+        page_size = 25
+
+    if page < 1:
+        page = 1
+    # Hard cap page size so nobody accidentally asks for huge pages
+    if page_size < 1:
+        page_size = 25
+    if page_size > 100:
+        page_size = 100
+
+    # Anchor to California yesterday (Pacific-ish)
+    utc_now = datetime.utcnow()
+    pst_like_now = utc_now - timedelta(hours=8)
+    anchor_day = pst_like_now.date() - timedelta(days=1)
+
+    # 30-day window including anchor_day
+    start_day = anchor_day - timedelta(days=29)
+
+    # 1) Count total rows in the window (for pagination)
+    count_sql = """
+        SELECT COUNT(*) AS cnt
+        FROM elite_calls_master
+        WHERE day BETWEEN %s AND %s
+          AND daily_elite_per_minute IS NOT NULL
+    """
+    cursor.execute(count_sql, (start_day, anchor_day))
+    count_row = cursor.fetchone()
+    total_rows = count_row["cnt"] if count_row and "cnt" in count_row else 0
+
+    if total_rows == 0:
+        cursor.close()
+        conn.close()
+        return jsonify({
+            "status": "ok",
+            "page": page,
+            "page_size": page_size,
+            "total_rows": 0,
+            "total_pages": 1,
+            "rows": []
+        })
+
+    # Calculate pages
+    total_pages = (total_rows + page_size - 1) // page_size
+    if page > total_pages:
+        page = total_pages
+
+    offset = (page - 1) * page_size
+
+    # 2) Pull page of rows ordered by day DESC, then score DESC
+    data_sql = """
+        SELECT
+            day,
+            user_id,
+            user_name,
+            daily_elite_per_minute
+        FROM elite_calls_master
+        WHERE day BETWEEN %s AND %s
+          AND daily_elite_per_minute IS NOT NULL
+        ORDER BY day DESC, daily_elite_per_minute DESC
+        LIMIT %s OFFSET %s
+    """
+    cursor.execute(data_sql, (start_day, anchor_day, page_size, offset))
+    rows = cursor.fetchall()
+
+    result_rows = []
+    for r in rows:
+        val = r["daily_elite_per_minute"]
+        score = float(val) if val is not None else 0.0
+        result_rows.append({
+            "day": r["day"].isoformat() if hasattr(r["day"], "isoformat") else str(r["day"]),
+            "user_id": r["user_id"],
+            "user_name": r["user_name"],
+            "score": round(score, 3)
+        })
+
+    cursor.close()
+    conn.close()
+
+    return jsonify({
+        "status": "ok",
+        "page": page,
+        "page_size": page_size,
+        "total_rows": total_rows,
+        "total_pages": total_pages,
+        "anchor_day": anchor_day.isoformat(),
+        "rows": result_rows
+    })
+
+
+@app.route("/api/elite_daily_index_export")
+@login_required
+def api_elite_daily_index_export():
+    """
+    Export last 30 days of daily elite-per-minute scores to CSV
+    (Excel-friendly).
+    """
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    # Same anchor logic as the JSON endpoint
+    utc_now = datetime.utcnow()
+    pst_like_now = utc_now - timedelta(hours=8)
+    anchor_day = pst_like_now.date() - timedelta(days=1)
+    start_day = anchor_day - timedelta(days=29)
+
+    export_sql = """
+        SELECT
+            day,
+            user_id,
+            user_name,
+            daily_elite_per_minute
+        FROM elite_calls_master
+        WHERE day BETWEEN %s AND %s
+          AND daily_elite_per_minute IS NOT NULL
+        ORDER BY day DESC, user_name ASC
+    """
+    cursor.execute(export_sql, (start_day, anchor_day))
+    rows = cursor.fetchall()
+
+    # Build CSV in memory
+    output = io.StringIO()
+    writer = csv.writer(output)
+    writer.writerow(["Day", "User ID", "User Name", "Daily Elite per Minute"])
+
+    for r in rows:
+        val = r["daily_elite_per_minute"]
+        score = float(val) if val is not None else 0.0
+        writer.writerow([
+            r["day"].isoformat() if hasattr(r["day"], "isoformat") else str(r["day"]),
+            r["user_id"],
+            r["user_name"],
+            round(score, 3)
+        ])
+
+    csv_data = output.getvalue()
+    output.close()
+
+    cursor.close()
+    conn.close()
+
+    # Return as downloadable CSV (Excel will open it fine)
+    from flask import Response
+    resp = Response(csv_data, mimetype="text/csv")
+    resp.headers["Content-Disposition"] = (
+        "attachment; filename=elite_daily_index_last_30_days.csv"
+    )
+    return resp
 
 
 
