@@ -350,9 +350,19 @@ document.addEventListener("DOMContentLoaded", function () {
 						}
 						toggleNoDataOverlay('weblogsChart','weblogsNoData', false);
 
-						// 🔹 figure out the biggest % so the longest bar hits the right edge
+						// 🔹 figure out the biggest % and choose a nice rounded axis max
 						const maxPercent = Math.max(...percents);
-						const axisMax    = maxPercent > 0 ? maxPercent * 1.05 : 1;  // small 5% buffer
+
+						let axisMax;
+						if (maxPercent <= 10)      axisMax = 10;
+						else if (maxPercent <= 20) axisMax = 20;
+						else if (maxPercent <= 25) axisMax = 25;
+						else if (maxPercent <= 30) axisMax = 30;
+						else if (maxPercent <= 40) axisMax = 40;
+						else if (maxPercent <= 50) axisMax = 50;
+						else if (maxPercent <= 75) axisMax = 75;
+						else                       axisMax = 100;
+
 
 						const canvas = document.getElementById("weblogsChart");
 						if (!canvas) return;
@@ -387,7 +397,10 @@ document.addEventListener("DOMContentLoaded", function () {
 												x: {
 														beginAtZero: true,
 														max: axisMax,                          // 🔥 dynamic max instead of 100
-														ticks: { callback: v => v + "%", color: "#ccc" },
+														ticks: { 
+                callback: v => Math.round(v) + "%", 
+                color: "#ccc" 
+              },
 														grid: { color: "rgba(255,255,255,0.1)" }
 												},
 												y: {
