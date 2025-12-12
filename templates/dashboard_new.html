@@ -1569,13 +1569,17 @@ document.addEventListener("DOMContentLoaded", function () {
           avgEl.textContent = avg.toFixed(1);
         }
 
-        // 3) Adjusted Index (server-computed)
+        // 3) Adjusted Index (server-computed) + bake in coefficient (.85)
 								if (adjEl) {
-										const v = (typeof data.team_adjusted_index === "number")
+										const base = (typeof data.team_adjusted_index === "number")
 												? data.team_adjusted_index
 												: parseFloat(data.team_adjusted_index || "0");
 
-										adjEl.textContent = (isNaN(v) ? 0 : v).toFixed(1);
+										const safeBase = isNaN(base) ? 0 : base;
+
+										const adjustedFinal = safeBase * 0.85;
+
+										adjEl.textContent = adjustedFinal.toFixed(1);
 								}
       })
       .catch((err) => {
