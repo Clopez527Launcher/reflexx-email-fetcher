@@ -5,18 +5,22 @@
 {% block content %}
 
 <style>
-  /* Make bottom-row widgets the same taller height */
+  /* Make bottom-row widgets the SAME fixed height */
   #eliteIndexWidget,
   #webUsageWidget {
-    min-height: 180px;
+    height: 200px;               /* 👈 tweak this number up/down if you want */
+    display: flex;
+    flex-direction: column;
   }
 
-  /* Let the Index list body stretch to fill the card */
+  /* Let the Index list body fill and scroll inside the fixed card */
   #eliteIndexWidget #elite-list-body {
     flex: 1;
-    max-height: 200;
+    overflow-y: auto;
+    max-height: none;            /* flex + fixed card height does the limiting */
   }
 </style>
+
 
 <style>
   /* Make the old dashboard line up with Analytics / new dashboard */
