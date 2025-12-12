@@ -334,27 +334,48 @@ def api_reflexx_kpi():
 
     # 5) Build leaderboard + compute team average index (ratio * 100)
     leaderboard = []
-    total_index = 0.0
-    count = 0
+
+    sum_index_scores = 0.0
+    count_users = 0
+
+    # Adjusted Index uses SUM(calls) / SUM(minutes) * 100
+    sum_calls = 0.0
+    sum_talk_seconds = 0.0
 
     for r in rows:
-        # Treat NULL ratio as 0.0 so everyone shows up
+        # ----- Per-user INDEX (ratio * 100) -----
         raw_ratio = r["ratio"]
         ratio_value = float(raw_ratio) if raw_ratio is not None else 0.0
+        index_score = ratio_value * 100
 
-        index_score = ratio_value * 100  # Multiply by 100
+        # ----- Per-user calls + talk seconds (window-specific) -----
+        calls = float(r["elite_calls"]) if r["elite_calls"] is not None else 0.0
+        talk_seconds = float(r["talk_seconds"]) if r["talk_seconds"] is not None else 0.0
+        talk_minutes = (talk_seconds / 60.0) if talk_seconds > 0 else 0.0
 
         leaderboard.append({
             "user_id": r["user_id"],
             "user_name": r["user_name"],
-            "index": round(index_score, 1)   # One decimal place
+            "index": round(index_score, 1),
+
+            # ✅ send these so JS can show details if you want
+            "elite_calls": calls,
+            "talk_seconds": talk_seconds,
+            "talk_minutes": round(talk_minutes, 1),
         })
 
-        total_index += index_score
-        count += 1
+        sum_index_scores += index_score
+        count_users += 1
 
-    team_index_avg = (total_index / count) if count > 0 else 0.0
+        # ✅ THIS is the important part: totals for the chosen window
+        sum_calls += calls
+        sum_talk_seconds += talk_seconds
 
+    team_index_avg = (sum_index_scores / count_users) if count_users > 0 else 0.0
+
+    team_minutes = (sum_talk_seconds / 60.0) if sum_talk_seconds > 0 else 0.0
+    team_adjusted_index = (sum_calls / team_minutes) * 100 if team_minutes > 0 else 0.0
+    
     cursor.close()
     conn.close()
 
@@ -363,8 +384,11 @@ def api_reflexx_kpi():
         "period": period,
         "anchor_day": anchor_day.isoformat(),  # for debugging
         "rows": leaderboard,
-        "team_index_avg": team_index_avg
+        "team_index_avg": team_index_avg,
+        "team_adjusted_index": team_adjusted_index
     })
+
+
 
 @app.route("/api/elite_daily_index")
 @login_required
