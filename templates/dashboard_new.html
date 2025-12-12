@@ -1569,48 +1569,13 @@ document.addEventListener("DOMContentLoaded", function () {
           avgEl.textContent = avg.toFixed(1);
         }
 
-        // 3) Adjusted Index (team-weighted by minutes, window ends YESTERDAY)
+        // 3) Adjusted Index (server-computed)
 								if (adjEl) {
-										// Pick which fields to use based on the dropdown
-										// (We always want the window to end yesterday — not include today.)
-										let callsKey = null;
-										let talkSecKey = null;
+										const v = (typeof data.team_adjusted_index === "number")
+												? data.team_adjusted_index
+												: parseFloat(data.team_adjusted_index || "0");
 
-										if (period === "yesterday") {
-												// use yesterday's daily values
-												callsKey = "daily_elite_calls";
-												talkSecKey = "daily_talk_seconds";
-										} else if (period === "7d") {
-												callsKey = "w_7d_elite_calls";
-												talkSecKey = "w_7d_talk_seconds";
-										} else if (period === "14d") {
-												callsKey = "w_14d_elite_calls";
-												talkSecKey = "w_14d_talk_seconds";
-										} else if (period === "30d") {
-												callsKey = "w_30d_elite_calls";
-												talkSecKey = "w_30d_talk_seconds";
-										} else if (period === "60d") {
-												callsKey = "w_60d_elite_calls";
-												talkSecKey = "w_60d_talk_seconds";
-										}
-
-										let totalCalls = 0;
-										let totalTalkSeconds = 0;
-
-										rows.forEach((row) => {
-												const calls = parseFloat(row?.[callsKey] ?? 0);
-												const talkSec = parseFloat(row?.[talkSecKey] ?? 0);
-
-												if (!isNaN(calls)) totalCalls += calls;
-												if (!isNaN(talkSec)) totalTalkSeconds += talkSec;
-										});
-
-										const totalMins = totalTalkSeconds / 60;
-
-										// AGI = (calls / minutes) * 100  -> gives ~3.8, not 0.038
-										const adjusted = totalMins > 0 ? (totalCalls / totalMins) * 100 : 0;
-
-										adjEl.textContent = adjusted.toFixed(1);
+										adjEl.textContent = (isNaN(v) ? 0 : v).toFixed(1);
 								}
       })
       .catch((err) => {
