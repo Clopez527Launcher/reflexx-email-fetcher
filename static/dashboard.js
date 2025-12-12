@@ -313,80 +313,91 @@ document.addEventListener("DOMContentLoaded", function () {
   }
 
   // ✅ Fetch Web Usage % for calendar range and update chart.
-  async function updateWeblogsChart() {
-    const employeeId = document.getElementById("employeeSelect")?.value || "all";
-    const startRaw   = document.getElementById("cm-start")?.value; // mm/dd/yyyy
-    const endRaw     = document.getElementById("cm-end")?.value;
-    if (!startRaw || !endRaw) return;
+		async function updateWeblogsChart() {
+				const employeeId = document.getElementById("employeeSelect")?.value || "all";
+				const startRaw   = document.getElementById("cm-start")?.value; // mm/dd/yyyy
+				const endRaw     = document.getElementById("cm-end")?.value;
+				if (!startRaw || !endRaw) return;
 
-    const startYMD = toYMD(startRaw);
-    const endYMD   = toYMD(endRaw);
+				const startYMD = toYMD(startRaw);
+				const endYMD   = toYMD(endRaw);
 
-    // guard on invalid range
-    const errEl = document.getElementById("cm-error");
-    if (endYMD < startYMD) {
-      if (errEl) { errEl.textContent = "End date must be after start date."; errEl.style.display = "inline"; }
-      return;
-    } else if (errEl) errEl.style.display = "none";
+				// guard on invalid range
+				const errEl = document.getElementById("cm-error");
+				if (endYMD < startYMD) {
+						if (errEl) { errEl.textContent = "End date must be after start date."; errEl.style.display = "inline"; }
+						return;
+				} else if (errEl) errEl.style.display = "none";
 
-    try {
-      const params = new URLSearchParams({ start: startYMD, end: endYMD, employee: employeeId });
-      if (employeeId === "all") params.set("manager_id", MANAGER_ID);
+				try {
+						const params = new URLSearchParams({ start: startYMD, end: endYMD, employee: employeeId });
+						if (employeeId === "all") params.set("manager_id", MANAGER_ID);
 
-      const payload = await safeFetchJSON(`/api/web-usage?${params.toString()}`);
+						const payload = await safeFetchJSON(`/api/web-usage?${params.toString()}`);
 						console.log("WEB-USAGE payload:", payload?.data?.[0], payload);
 
-      // shape → { data: [{ label, percent }, ...] }
-      const labels   = (payload.data || []).map(d => d.label);
-      const percents = (payload.data || []).map(d => Number(d.percent || 0));
-      const hasData  = labels.length && percents.some(v => v > 0);
+						// shape → { data: [{ label, percent }, ...] }
+						const labels   = (payload.data || []).map(d => d.label);
+						const percents = (payload.data || []).map(d => Number(d.percent || 0));
+						const hasData  = labels.length && percents.some(v => v > 0);
 						// Also grab time for tooltip (try common server field names)
 						const secondsOrHms = (payload.data || []).map(d => Number(d.seconds || 0));
 
+						if (!hasData) {
+								if (weblogsChartInstance) { weblogsChartInstance.destroy(); weblogsChartInstance = null; }
+								toggleNoDataOverlay('weblogsChart','weblogsNoData', true);
+								return;
+						}
+						toggleNoDataOverlay('weblogsChart','weblogsNoData', false);
 
-      if (!hasData) {
-        if (weblogsChartInstance) { weblogsChartInstance.destroy(); weblogsChartInstance = null; }
-        toggleNoDataOverlay('weblogsChart','weblogsNoData', true);
-        return;
-      }
-      toggleNoDataOverlay('weblogsChart','weblogsNoData', false);
+						// 🔹 figure out the biggest % so the longest bar hits the right edge
+						const maxPercent = Math.max(...percents);
+						const axisMax    = maxPercent > 0 ? maxPercent * 1.05 : 1;  // small 5% buffer
 
-      const canvas = document.getElementById("weblogsChart");
-      if (!canvas) return;
-      const ctx = canvas.getContext("2d");
-      if (weblogsChartInstance) weblogsChartInstance.destroy();
+						const canvas = document.getElementById("weblogsChart");
+						if (!canvas) return;
+						const ctx = canvas.getContext("2d");
+						if (weblogsChartInstance) weblogsChartInstance.destroy();
 
-      weblogsChartInstance = new Chart(ctx, {
-        type: "bar",
-        data: {
-          labels,
-          datasets: [{
-            label: "Web Usage %",
-            data: percents,
-            backgroundColor: (ctx) => {
-              const chart = ctx.chart;
-              const { left, right } = chart.chartArea || {};
-              if (!left || !right) return "#00f0ff";
-              const gradient = chart.ctx.createLinearGradient(left, 0, right, 0);
-              gradient.addColorStop(0.00, "rgba(0, 255, 150, 1)");
-              gradient.addColorStop(0.15, "rgba(0, 200, 200, 1)");
-              gradient.addColorStop(1.00, "rgba(0, 100, 255, 1)");
-              return gradient;
-            },
-            borderRadius: 10,
-            barThickness: 20
-												, metaTime: secondsOrHms
-          }]
-        },
-        options: {
-          indexAxis: "y",
-          scales: {
-            x: { beginAtZero: true, max: 100, ticks: { callback: v => v + "%", color: "#ccc" }, grid: { color: "rgba(255,255,255,0.1)" } },
-            y: { ticks: { color: "#fff", font: { weight: "bold" } }, grid: { display: false } }
-          },
-          plugins: {
-            legend: { display: false },
-            tooltip: {
+						weblogsChartInstance = new Chart(ctx, {
+								type: "bar",
+								data: {
+										labels,
+										datasets: [{
+												label: "Web Usage %",
+												data: percents,
+												backgroundColor: (ctx) => {
+														const chart = ctx.chart;
+														const { left, right } = chart.chartArea || {};
+														if (!left || !right) return "#00f0ff";
+														const gradient = chart.ctx.createLinearGradient(left, 0, right, 0);
+														gradient.addColorStop(0.00, "rgba(0, 255, 150, 1)");
+														gradient.addColorStop(0.15, "rgba(0, 200, 200, 1)");
+														gradient.addColorStop(1.00, "rgba(0, 100, 255, 1)");
+														return gradient;
+												},
+												borderRadius: 10,
+												barThickness: 20,
+												metaTime: secondsOrHms
+										}]
+								},
+								options: {
+										indexAxis: "y",
+										scales: {
+												x: {
+														beginAtZero: true,
+														max: axisMax,                          // 🔥 dynamic max instead of 100
+														ticks: { callback: v => v + "%", color: "#ccc" },
+														grid: { color: "rgba(255,255,255,0.1)" }
+												},
+												y: {
+														ticks: { color: "#fff", font: { weight: "bold" } },
+														grid: { display: false }
+												}
+										},
+										plugins: {
+												legend: { display: false },
+												tooltip: {
 														enabled: true,
 														backgroundColor: "#1a1a1a",
 														titleColor: "#00f0ff",
@@ -400,17 +411,18 @@ document.addEventListener("DOMContentLoaded", function () {
 																}
 														}
 												}
-          },
-          maintainAspectRatio: false
-        }
-      });
-    } catch (error) {
-      if (handleSessionMaybe(error)) return;
-      console.error("❌ Error updating weblogs chart:", error);
-      if (weblogsChartInstance) { weblogsChartInstance.destroy(); weblogsChartInstance = null; }
-      toggleNoDataOverlay('weblogsChart','weblogsNoData', true);
-    }
-  }
+										},
+										maintainAspectRatio: false
+								}
+						});
+				} catch (error) {
+						if (handleSessionMaybe(error)) return;
+						console.error("❌ Error updating weblogs chart:", error);
+						if (weblogsChartInstance) { weblogsChartInstance.destroy(); weblogsChartInstance = null; }
+						toggleNoDataOverlay('weblogsChart','weblogsNoData', true);
+				}
+		}
+
 
   // ✅ Fetch Call Stats Summary for Dashboard Widget (old dropdown flow)
   async function fetchCallMetricsSummary() {
