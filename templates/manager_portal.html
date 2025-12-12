@@ -8,7 +8,7 @@
   /* Make bottom-row widgets the SAME fixed height */
   #eliteIndexWidget,
   #webUsageWidget {
-    height: 200px;               /* 👈 tweak this number up/down if you want */
+    height: 360px;               /* 👈 tweak this number up/down if you want */
     display: flex;
     flex-direction: column;
   }
@@ -404,17 +404,20 @@
   /* 🔧 Make Call Statistics the SAME fixed height as the KPI cards
      so its bottom lines up with the Movement card */
   #callStatsWidget {
-    height: 285px;                  /* fixed height to match Movement row */
-    display: flex;
-    flex-direction: column;
-    justify-content: flex-start;    /* keep the table snug to the top */
-    box-sizing: border-box;
-  }
+				height: 285px;                  /* fixed height to match Movement row */
+				display: flex;
+				flex-direction: column;
+				justify-content: flex-start;
+				box-sizing: border-box;
 
-  /* small tweak so the table doesn't push things down too much */
-  #callStatsWidget h3 {
-    margin-bottom: 8px;
-  }
+				/* 👇 add this to push the title + table down */
+				padding-top: 18px;
+		}
+
+		/* keep the small gap under the title */
+		#callStatsWidget h3 {
+				margin-bottom: 8px;
+		}
 
   /* tighten table rows a bit so it fits nicely in that height */
   .callstats-table th,
