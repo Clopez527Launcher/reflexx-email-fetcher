@@ -8,7 +8,7 @@
   /* Make bottom-row widgets the same taller height */
   #eliteIndexWidget,
   #webUsageWidget {
-    min-height: 320px;
+    min-height: 200px;
   }
 
   /* Let the Index list body stretch to fill the card */
@@ -720,27 +720,31 @@
          style="padding:18px 20px;display:flex;flex-direction:column;">
 
       <!-- Header + download button -->
-      <div style="display:flex;align-items:center;justify-content:flex-start;margin-bottom:8px;">
-        <h3 style="margin:0;flex:1;">Index Scores (Daily)</h3>
-        <button id="elite-export-btn"
-                style="font-size:0.8rem;padding:4px 10px;border-radius:6px;
-                       border:1px solid #00ffff;background:transparent;
-                       color:#00ffff;cursor:pointer;margin-left:auto;">
-          Download to Excel
-        </button>
-      </div>
+						<div style="position:relative;display:flex;align-items:center;justify-content:center;margin-bottom:8px;">
+								<h3 style="margin:0;text-align:center;">Index Scores (Daily)</h3>
+
+								<!-- absolutely-positioned button on the right -->
+								<button id="elite-export-btn"
+																style="position:absolute;right:0;top:50%;transform:translateY(-50%);
+																							font-size:0.8rem;padding:4px 10px;border-radius:6px;
+																							border:1px solid #00ffff;background:transparent;
+																							color:#00ffff;cursor:pointer;">
+										Download to Excel
+								</button>
+						</div>
 
       <!-- Column labels -->
-      <div style="display:grid;
-                  grid-template-columns:110px 1fr 80px;
-                  font-size:0.8rem;
-                  color:#9ab;
-                  padding:4px 0;
-                  border-bottom:1px solid rgba(255,255,255,0.08);">
-        <span>Date</span>
-        <span>Agent</span>
-        <span style="text-align:right;">Score</span>
-      </div>
+						<div style="display:grid;
+																		grid-template-columns:110px 1fr 80px;
+																		font-size:0.8rem;
+																		color:#9ab;
+																		padding:4px 0;
+																		border-bottom:1px solid rgba(255,255,255,0.08);">
+								<span>Date</span>
+								<span style="padding-left:6px;">Agent</span>
+								<span style="text-align:right;padding-right:12px;">Score</span>
+						</div>
+
 
       <!-- Scrollable list body -->
 						<div id="elite-list-body"
