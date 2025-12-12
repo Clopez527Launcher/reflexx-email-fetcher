@@ -53,7 +53,7 @@
     align-items:flex-end;   /* keep title baseline lined up with controls */
     gap:16px;
     flex-wrap:wrap;
-    margin: 2px 0 16px;    /* 🔹 a bit more space under the row for the charts */
+    margin: 0px 0 16px;    /* 🔹 a bit more space under the row for the charts */
   }
 
 
@@ -195,34 +195,6 @@
 
 </style>
 
-.bm-file-label {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  color: #cfe8ff;
-}
-
-.bm-file-btn {
-  align-self: flex-start;
-  padding: 4px 10px;
-  border-radius: 4px;
-  border: 1px solid #888;
-  background: #fff;
-  color: #000;
-  cursor: pointer;
-  font-size: 14px;
-}
-
-.bm-file-btn:hover {
-  background: #f0f0f0;
-}
-
-.bm-file-name {
-  font-size: 12px;
-  color: #cfe8ff;
-}
-
-
 <!-- ✅ SAME WRAPPER AS DASHBOARD_NEW -->
 <div class="page-wrapper" style="
   width: 100%;
@@ -261,29 +233,10 @@
       <form id="metricsForm" enctype="multipart/form-data">
         <div class="bm-controls">
           <div class="left">
-            <label class="bm-file-label">
-														Business Metric File:
-
-														<!-- Custom choose button -->
-														<button type="button" id="metrics-file-btn" class="bm-file-btn">
-																Choose File
-														</button>
-
-														<!-- Filename under the button -->
-														<div id="metrics-file-name" class="bm-file-name">
-																No file chosen
-														</div>
-
-														<!-- Hidden real file input -->
-														<input
-																type="file"
-																id="metrics-file"
-																name="file"
-																accept=".xlsx"
-																required
-																style="display:none;"
-														/>
-												</label>
+            <label>
+              Business Metric File:
+              <input type="file" name="file" accept=".xlsx" required />
+            </label>
 
             <label for="month">Month:
               <select name="month" id="month" required>
@@ -688,25 +641,7 @@
     refreshQuotes(1);
     refreshNbUploads(1);  // 👈 load NB uploads on page load
   });
-		
-		(function () {
-				const realInput = document.getElementById("metrics-file");
-				const btn       = document.getElementById("metrics-file-btn");
-				const nameEl    = document.getElementById("metrics-file-name");
 
-				if (!realInput || !btn || !nameEl) return;
-
-				// Open file picker when user clicks our custom button
-				btn.addEventListener("click", () => {
-						realInput.click();
-				});
-
-				// Update text under the button when a file is chosen
-				realInput.addEventListener("change", () => {
-						const file = realInput.files && realInput.files[0];
-						nameEl.textContent = file ? file.name : "No file chosen";
-				});
-		})();
 </script>
 
 {% endblock %}
