@@ -5,6 +5,20 @@
 {% block content %}
 
 <style>
+  /* Make bottom-row widgets the same taller height */
+  #eliteIndexWidget,
+  #webUsageWidget {
+    min-height: 320px;
+  }
+
+  /* Let the Index list body stretch to fill the card */
+  #eliteIndexWidget #elite-list-body {
+    flex: 1;
+    max-height: none;
+  }
+</style>
+
+<style>
   /* Make the old dashboard line up with Analytics / new dashboard */
   .dashboard-layout {
     width: 100%;
@@ -703,7 +717,7 @@
 
     <!-- Elite Daily Index Widget -->
     <div class="widget" id="eliteIndexWidget"
-         style="min-height:360px;padding:18px 20px;display:flex;flex-direction:column;">
+         style="padding:18px 20px;display:flex;flex-direction:column;">
 
       <!-- Header + download button -->
       <div style="display:flex;align-items:center;justify-content:flex-start;margin-bottom:8px;">
@@ -756,7 +770,7 @@
 
     <!-- Web Usage Widget -->
 				<div class="widget" id="webUsageWidget"
-									style="min-height:300px;padding:18px 20px;display:flex;flex-direction:column;">
+									style="padding:18px 20px;display:flex;flex-direction:column;">
 						<h3 style="margin:0 0 8px 0;">Web Usage</h3>
 						<div style="width:100%;flex:1;min-height:200px;">
 								<canvas id="weblogsChart"></canvas>
