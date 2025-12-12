@@ -1569,32 +1569,49 @@ document.addEventListener("DOMContentLoaded", function () {
           avgEl.textContent = avg.toFixed(1);
         }
 
-        // 3) Adjusted Index (weighted by minutes) = SUM(calls) / SUM(minutes)
-        // NOTE: If you want "3.8" instead of "0.0", multiply by 100 below.
-        if (adjEl) {
-          let totalCalls = 0;
-          let totalMins = 0;
+        // 3) Adjusted Index (team-weighted by minutes, window ends YESTERDAY)
+								if (adjEl) {
+										// Pick which fields to use based on the dropdown
+										// (We always want the window to end yesterday — not include today.)
+										let callsKey = null;
+										let talkSecKey = null;
 
-          rows.forEach((row) => {
-            const calls = (typeof row.elite_calls === "number")
-              ? row.elite_calls
-              : parseFloat(row.elite_calls || "0");
+										if (period === "yesterday") {
+												// use yesterday's daily values
+												callsKey = "daily_elite_calls";
+												talkSecKey = "daily_talk_seconds";
+										} else if (period === "7d") {
+												callsKey = "w_7d_elite_calls";
+												talkSecKey = "w_7d_talk_seconds";
+										} else if (period === "14d") {
+												callsKey = "w_14d_elite_calls";
+												talkSecKey = "w_14d_talk_seconds";
+										} else if (period === "30d") {
+												callsKey = "w_30d_elite_calls";
+												talkSecKey = "w_30d_talk_seconds";
+										} else if (period === "60d") {
+												callsKey = "w_60d_elite_calls";
+												talkSecKey = "w_60d_talk_seconds";
+										}
 
-            const mins = (typeof row.talk_minutes === "number")
-              ? row.talk_minutes
-              : parseFloat(row.talk_minutes || "0");
+										let totalCalls = 0;
+										let totalTalkSeconds = 0;
 
-            if (!isNaN(calls)) totalCalls += calls;
-            if (!isNaN(mins)) totalMins += mins;
-          });
+										rows.forEach((row) => {
+												const calls = parseFloat(row?.[callsKey] ?? 0);
+												const talkSec = parseFloat(row?.[talkSecKey] ?? 0);
 
-          let adjusted = totalMins > 0 ? (totalCalls / totalMins) : 0;
+												if (!isNaN(calls)) totalCalls += calls;
+												if (!isNaN(talkSec)) totalTalkSeconds += talkSec;
+										});
 
-          // ✅ UNCOMMENT THIS if your UI index is scaled like 3.8 instead of 0.038
-          adjusted = adjusted * 100;
+										const totalMins = totalTalkSeconds / 60;
 
-          adjEl.textContent = adjusted.toFixed(1);
-        }
+										// AGI = (calls / minutes) * 100  -> gives ~3.8, not 0.038
+										const adjusted = totalMins > 0 ? (totalCalls / totalMins) * 100 : 0;
+
+										adjEl.textContent = adjusted.toFixed(1);
+								}
       })
       .catch((err) => {
         console.error("Error loading KPI:", err);
