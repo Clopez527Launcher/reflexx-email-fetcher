@@ -520,7 +520,7 @@ def api_elite_daily_index_export():
     # Build CSV in memory
     output = io.StringIO()
     writer = csv.writer(output)
-    writer.writerow(["Day", "User ID", "User Name", "Daily Elite per Minute"])
+    writer.writerow(["Day", "User ID", "User Name", "Score"])
 
     for r in rows:
         val = r["daily_elite_per_minute"]

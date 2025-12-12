@@ -648,15 +648,16 @@
          style="min-height:260px;padding:18px 20px;display:flex;flex-direction:column;">
 
       <!-- Header + download button -->
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
-        <h3 style="margin:0;">Elite Calls Index (Daily)</h3>
+      <div style="display:flex;align-items:center;justify-content:flex-start;margin-bottom:8px;">
+        <h3 style="margin:0;flex:1;">Index Scores (Daily)</h3>
         <button id="elite-export-btn"
                 style="font-size:0.8rem;padding:4px 10px;border-radius:6px;
                        border:1px solid #00ffff;background:transparent;
-                       color:#00ffff;cursor:pointer;">
+                       color:#00ffff;cursor:pointer;margin-left:auto;">
           Download to Excel
         </button>
       </div>
+
 
       <!-- Column labels -->
       <div style="display:grid;
@@ -672,7 +673,8 @@
 
       <!-- Scrollable list body -->
       <div id="elite-list-body"
-           style="margin-top:4px;max-height:220px;overflow-y:auto;font-size:0.9rem;">
+           style="margin-top:4px;max-height:220px;overflow-y:auto;font-size:0.9rem;padding-right:12px;">
+
         <div style="padding:6px 0;color:#9ab;">Loading…</div>
       </div>
 
