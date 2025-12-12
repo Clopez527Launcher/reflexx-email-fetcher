@@ -566,84 +566,142 @@
     </div>
   </div>
 
-<div class="dashboard-container">
+  <div class="dashboard-container">
 
-  <!-- LEFT: 2/3 WIDTH -->
-  <div class="left-column">
+    <!-- LEFT: 2/3 WIDTH -->
+    <div class="left-column">
 
-    <!-- TOP: Phone / Quoting / Movement in one row -->
-    <div style="display:grid;
-                grid-template-columns:repeat(3, minmax(0,1fr));
-                gap:20px;
-                margin-bottom:20px;">
+      <!-- TOP: Phone / Quoting / Movement in one row -->
+      <div style="display:grid;
+                  grid-template-columns:repeat(3, minmax(0,1fr));
+                  gap:20px;
+                  margin-bottom:20px;">
 
-      <!-- PHONE -->
-      <div class="widget kpi-card" id="phoneWidget"
-           style="min-height:285px;display:flex;flex-direction:column;">
-        <h3 style="margin:0 0 4px 0;">Phone</h3>
+        <!-- PHONE -->
+        <div class="widget kpi-card" id="phoneWidget"
+             style="min-height:285px;display:flex;flex-direction:column;">
+          <h3 style="margin:0 0 4px 0;">Phone</h3>
 
-        <!-- date range label (pulled up under title) -->
-        <small id="phone-range-label" style="opacity:.5;margin-bottom:8px;">Loading…</small>
+          <!-- date range label (pulled up under title) -->
+          <small id="phone-range-label" style="opacity:.5;margin-bottom:8px;">Loading…</small>
 
-        <!-- main KPI number (hidden for now) -->
-        <div id="phoneKpi"
-             style="font-size:26px;font-weight:700;color:#00ffff;display:none;">&nbsp;</div>
+          <!-- main KPI number (hidden for now) -->
+          <div id="phoneKpi"
+               style="font-size:26px;font-weight:700;color:#00ffff;display:none;">&nbsp;</div>
 
-        <!-- little list inside the card -->
-        <ul id="phone-leaderboard" class="bucket-leaderboard">
-          <li>Loading…</li>
-        </ul>
+          <!-- little list inside the card -->
+          <ul id="phone-leaderboard" class="bucket-leaderboard">
+            <li>Loading…</li>
+          </ul>
+        </div>
+
+        <!-- QUOTING -->
+        <div class="widget kpi-card" id="quotingWidget"
+             style="min-height:285px;display:flex;flex-direction:column;">
+          <h3 style="margin:0 0 4px 0;">Quoting</h3>
+
+          <!-- date range label (pulled up under title) -->
+          <small id="quoting-range-label" style="opacity:.5;margin-bottom:8px;">Loading…</small>
+
+          <!-- main KPI number (hidden for now) -->
+          <div id="quotingKpi"
+               style="font-size:26px;font-weight:700;color:#00ffff;display:none;">&nbsp;</div>
+
+          <ul id="quoting-leaderboard" class="bucket-leaderboard">
+            <li>Loading…</li>
+          </ul>
+        </div>
+
+        <!-- MOVEMENT -->
+        <div class="widget kpi-card" id="movementWidget"
+             style="min-height:285px;display:flex;flex-direction:column;">
+          <h3 style="margin:0 0 4px 0;">Movement</h3>
+
+          <!-- date range label (pulled up under title) -->
+          <small id="movement-range-label" style="opacity:.5;margin-bottom:8px;">Loading…</small>
+
+          <!-- main KPI number (hidden for now) -->
+          <div id="movementKpi"
+               style="font-size:26px;font-weight:700;color:#00ffff;display:none;">&nbsp;</div>
+
+          <ul id="movement-leaderboard" class="bucket-leaderboard">
+            <li>Loading…</li>
+          </ul>
+        </div>
+
+      </div> <!-- end 3-card KPI row -->
+
+      <!-- BELOW: Ask Reflexx AI (Beta) – TEMP HIDDEN
+      <div class="chat-tile-wide">
+        <h3>🤖 Ask Reflexx AI (Beta)</h3>
+        <div id="ai-response" class="ai-response-box-wide"
+             style="height:300px;width:100%;">Ask me something about today's data.</div>
+        <input id="ai-input" type="text"
+               placeholder="e.g., Who had the most idle time?"
+               style="height:60px;margin-top:15px;font-size:1rem;">
+        <button onclick="askAI()" style="margin-top:10px">Submit</button>
+      </div>
+      -->
+
+    </div> <!-- /left-column -->
+
+
+    <!-- RIGHT: 1/3 WIDTH -->
+    <div class="right-column">
+
+      <!-- CALL STATS -->
+      <div class="kpi-pair"
+           style="display:grid;grid-template-columns:1fr;gap:20px;align-items:start;">
+        <div class="widget" id="callStatsWidget" style="grid-column: 1 / -1;">
+          <h3>Call Statistics</h3>
+          <table class="callstats-table">
+            <thead>
+              <tr>
+                <th></th>
+                <th>Ricochet <span id="ricochetStatus" class="badge-muted">Not connected</span></th>
+                <th>RingCentral</th>
+                <th>Total</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Inbounds</td><td><span id="ri_inbounds">0</span></td>
+                <td><span id="inboundCalls">🔄 Loading...</span></td>
+                <td><span id="tt_inbounds">&mdash;</span></td>
+              </tr>
+              <tr>
+                <td>Outbounds</td><td><span id="ri_outbounds">0</span></td>
+                <td><span id="outboundCalls">🔄 Loading...</span></td>
+                <td><span id="tt_outbounds">&mdash;</span></td>
+              </tr>
+              <tr>
+                <td>Inbound Time</td><td><span id="ri_in_time">0:00:00</span></td>
+                <td><span id="inboundDuration">🔄 Loading...</span></td>
+                <td><span id="tt_in_time">&mdash;</span></td>
+              </tr>
+              <tr>
+                <td>Outbound Time</td><td><span id="ri_out_time">0:00:00</span></td>
+                <td><span id="outboundDuration">🔄 Loading...</span></td>
+                <td><span id="tt_out_time">&mdash;</span></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- keep hidden slot -->
+        <div class="widget" id="futureMiniSlot" style="display:none;"></div>
       </div>
 
-      <!-- QUOTING -->
-      <div class="widget kpi-card" id="quotingWidget"
-           style="min-height:285px;display:flex;flex-direction:column;">
-        <h3 style="margin:0 0 4px 0;">Quoting</h3>
+    </div> <!-- /right-column -->
 
-        <!-- date range label (pulled up under title) -->
-        <small id="quoting-range-label" style="opacity:.5;margin-bottom:8px;">Loading…</small>
+  </div> <!-- /dashboard-container -->
 
-        <!-- main KPI number (hidden for now) -->
-        <div id="quotingKpi"
-             style="font-size:26px;font-weight:700;color:#00ffff;display:none;">&nbsp;</div>
 
-        <ul id="quoting-leaderboard" class="bucket-leaderboard">
-          <li>Loading…</li>
-        </ul>
-      </div>
+  <!-- BOTTOM ROW: Index Scores (left) + Web Usage (right) -->
+  <div class="analytics-bottom-row"
+       style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:20px;margin-top:20px;align-items:start;">
 
-      <!-- MOVEMENT -->
-      <div class="widget kpi-card" id="movementWidget"
-           style="min-height:285px;display:flex;flex-direction:column;">
-        <h3 style="margin:0 0 4px 0;">Movement</h3>
-
-        <!-- date range label (pulled up under title) -->
-        <small id="movement-range-label" style="opacity:.5;margin-bottom:8px;">Loading…</small>
-
-        <!-- main KPI number (hidden for now) -->
-        <div id="movementKpi"
-             style="font-size:26px;font-weight:700;color:#00ffff;display:none;">&nbsp;</div>
-
-        <ul id="movement-leaderboard" class="bucket-leaderboard">
-          <li>Loading…</li>
-        </ul>
-      </div>
-
-    </div> <!-- end 3-card KPI row -->
-
-    <!-- BELOW: Ask Reflexx AI (Beta) – TEMP HIDDEN
-    <div class="chat-tile-wide">
-      <h3>🤖 Ask Reflexx AI (Beta)</h3>
-      <div id="ai-response" class="ai-response-box-wide"
-           style="height:300px;width:100%;">Ask me something about today's data.</div>
-      <input id="ai-input" type="text"
-             placeholder="e.g., Who had the most idle time?"
-             style="height:60px;margin-top:15px;font-size:1rem;">
-      <button onclick="askAI()" style="margin-top:10px">Submit</button>
-    </div>
-    -->
-
-    <!-- BELOW: Elite Daily Index Widget -->
+    <!-- Elite Daily Index Widget -->
     <div class="widget" id="eliteIndexWidget"
          style="min-height:260px;padding:18px 20px;display:flex;flex-direction:column;">
 
@@ -657,7 +715,6 @@
           Download to Excel
         </button>
       </div>
-
 
       <!-- Column labels -->
       <div style="display:grid;
@@ -674,7 +731,6 @@
       <!-- Scrollable list body -->
       <div id="elite-list-body"
            style="margin-top:4px;max-height:220px;overflow-y:auto;font-size:0.9rem;padding-right:12px;">
-
         <div style="padding:6px 0;color:#9ab;">Loading…</div>
       </div>
 
@@ -698,68 +754,17 @@
 
     </div>
 
-
-  </div> <!-- /left-column -->
-
-
-  <!-- RIGHT: 1/3 WIDTH -->
-  <div class="right-column">
-
-    <!-- CALL STATS -->
-    <div class="kpi-pair"
-         style="display:grid;grid-template-columns:1fr;gap:20px;align-items:start;">
-      <div class="widget" id="callStatsWidget" style="grid-column: 1 / -1;">
-        <h3>Call Statistics</h3>
-        <table class="callstats-table">
-          <thead>
-            <tr>
-              <th></th>
-              <th>Ricochet <span id="ricochetStatus" class="badge-muted">Not connected</span></th>
-              <th>RingCentral</th>
-              <th>Total</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td>Inbounds</td><td><span id="ri_inbounds">0</span></td>
-              <td><span id="inboundCalls">🔄 Loading...</span></td>
-              <td><span id="tt_inbounds">&mdash;</span></td>
-            </tr>
-            <tr>
-              <td>Outbounds</td><td><span id="ri_outbounds">0</span></td>
-              <td><span id="outboundCalls">🔄 Loading...</span></td>
-              <td><span id="tt_outbounds">&mdash;</span></td>
-            </tr>
-            <tr>
-              <td>Inbound Time</td><td><span id="ri_in_time">0:00:00</span></td>
-              <td><span id="inboundDuration">🔄 Loading...</span></td>
-              <td><span id="tt_in_time">&mdash;</span></td>
-            </tr>
-            <tr>
-              <td>Outbound Time</td><td><span id="ri_out_time">0:00:00</span></td>
-              <td><span id="outboundDuration">🔄 Loading...</span></td>
-              <td><span id="tt_out_time">&mdash;</span></td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-
-      <!-- keep hidden slot -->
-      <div class="widget" id="futureMiniSlot" style="display:none;"></div>
-    </div>
-
-    <!-- WEB USAGE (stacked under Call Stats) -->
+    <!-- Web Usage Widget -->
     <div class="widget" id="webUsageWidget">
       <h3>Web Usage</h3>
       <div style="width:100%;height:250px">
         <canvas id="weblogsChart"></canvas>
       </div>
     </div>
-  </div>
 
-</div> <!-- /dashboard-container -->
+  </div> <!-- /analytics-bottom-row -->
 
-</div> <!-- /main-content -->
+</div> <!-- /dashboard-layout -->
 
 <script>
   // Elite Daily Index widget – fetch + render + pagination + export
