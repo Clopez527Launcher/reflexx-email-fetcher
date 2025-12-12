@@ -359,8 +359,34 @@
     color: #6e8ca7;
   }
 
+  /* ===== Adjusted Index (NEW) ===== */
 
+		.kpi-adj-label {
+				font-size: 13px;
+				letter-spacing: 0.04em;
+				text-transform: uppercase;
+				color: #7fa8c4;
+				margin-bottom: 10px;
+		}
 
+		.kpi-adj-value {
+				font-size: 82px;     /* ✅ MUCH BIGGER than average */
+				font-weight: 800;
+				line-height: 1;
+				color: #ffffff;
+		}
+
+		.kpi-adj-sub {
+				margin-top: 8px;
+				font-size: 12px;
+				color: #6e8ca7;
+		}
+
+		.kpi-avg-divider {
+				width: 90%;
+				margin: 14px auto;
+				border-top: 1px dashed rgba(0,255,255,0.25);
+		}
 
 
 		/* ========================================================================= */
@@ -517,10 +543,19 @@
         </p>
 
         <div class="kpi-avg-card">
-          <div class="kpi-avg-label">Team Index Average</div>
-          <div id="kpi-avg-value" class="kpi-avg-value">--</div>
-          <div class="kpi-avg-sub">Based on selected window</div>
-        </div>
+
+										<!-- ✅ NEW: Adjusted Index (BIG) -->
+										<div class="kpi-adj-label">Adjusted Index</div>
+										<div id="kpi-adj-value" class="kpi-adj-value">--</div>
+										<div class="kpi-adj-sub">Weighted by minutes · Used for projections</div>
+
+										<div class="kpi-avg-divider"></div>
+
+										<!-- Existing: Team Index Average (smaller) -->
+										<div class="kpi-avg-label">Team Index Average</div>
+										<div id="kpi-avg-value" class="kpi-avg-value">--</div>
+										<div class="kpi-avg-sub">Based on selected window</div>
+								</div>
       </div>
     </div>
 
@@ -1415,7 +1450,6 @@ async function loadAiOverallInsights() {
     const data = await res.json();
 
     const rows = data.rows || [];
-
     const strengths = rows.filter(r => r.polarity === "strength");
     const weaknesses = rows.filter(r => r.polarity === "weakness");
 
@@ -1461,13 +1495,14 @@ function renderAiList(ul, items, mode) {
   });
 }
 
+// ----------------------------------------------------
+// 🧠 KPI Leaderboard + Team Index Average + Adjusted Index
+// ----------------------------------------------------
 document.addEventListener("DOMContentLoaded", function () {
   const periodSelect = document.getElementById("kpi-period-select");
   const listEl = document.getElementById("kpi-leaderboard");
 
-  if (!periodSelect || !listEl) {
-    return;
-  }
+  if (!periodSelect || !listEl) return;
 
   function renderKpiRows(rows) {
     listEl.innerHTML = "";
@@ -1481,16 +1516,13 @@ document.addEventListener("DOMContentLoaded", function () {
       const item = document.createElement("div");
       item.className = "kpi-row";
 
-      const indexVal = row.index || 0;
-						const indexText = indexVal.toFixed(1);
-
-      const calls = row.elite_calls || 0;
-      const mins = row.talk_minutes || 0;
+      const indexVal = (typeof row.index === "number") ? row.index : parseFloat(row.index || "0");
+      const indexText = (!isNaN(indexVal) ? indexVal : 0).toFixed(1);
 
       item.innerHTML = `
         <div class="kpi-rank">${index + 1}</div>
         <div class="kpi-main">
-          <div class="kpi-name">${row.user_name}</div>
+          <div class="kpi-name">${row.user_name || "Unknown"}</div>
         </div>
         <div class="kpi-score">${indexText}</div>
       `;
@@ -1506,35 +1538,62 @@ document.addEventListener("DOMContentLoaded", function () {
       .then((resp) => resp.json())
       .then((data) => {
         const avgEl = document.getElementById("kpi-avg-value");
+        const adjEl = document.getElementById("kpi-adj-value");
 
-        if (data.status !== "ok") {
+        if (!data || data.status !== "ok") {
           listEl.innerHTML = '<div class="kpi-empty">Error loading KPI data.</div>';
           if (avgEl) avgEl.textContent = "--";
+          if (adjEl) adjEl.textContent = "--";
           return;
         }
 
-        // 🔹 Fill the leaderboard rows
-        renderKpiRows(data.rows);
+        const rows = Array.isArray(data.rows) ? data.rows : [];
 
-        // 🔹 Compute Team Index Average directly from the row index values
+        // 1) Leaderboard
+        renderKpiRows(rows);
+
+        // 2) Team Index Average (simple average of each person's index)
         if (avgEl) {
-          const rows = Array.isArray(data.rows) ? data.rows : [];
           let sum = 0;
           let count = 0;
 
           rows.forEach((row) => {
-            const val = typeof row.index === "number"
-              ? row.index
-              : parseFloat(row.index || "0");
-            if (!isNaN(val)) {
-              sum += val;
+            const v = (typeof row.index === "number") ? row.index : parseFloat(row.index || "0");
+            if (!isNaN(v)) {
+              sum += v;
               count += 1;
             }
           });
 
           const avg = count > 0 ? (sum / count) : 0;
-          const rounded = Math.round((avg + 0.0000001) * 10) / 10; // 5.65 -> 5.7
-          avgEl.textContent = rounded.toFixed(1);
+          avgEl.textContent = avg.toFixed(1);
+        }
+
+        // 3) Adjusted Index (weighted by minutes) = SUM(calls) / SUM(minutes)
+        // NOTE: If you want "3.8" instead of "0.0", multiply by 100 below.
+        if (adjEl) {
+          let totalCalls = 0;
+          let totalMins = 0;
+
+          rows.forEach((row) => {
+            const calls = (typeof row.elite_calls === "number")
+              ? row.elite_calls
+              : parseFloat(row.elite_calls || "0");
+
+            const mins = (typeof row.talk_minutes === "number")
+              ? row.talk_minutes
+              : parseFloat(row.talk_minutes || "0");
+
+            if (!isNaN(calls)) totalCalls += calls;
+            if (!isNaN(mins)) totalMins += mins;
+          });
+
+          let adjusted = totalMins > 0 ? (totalCalls / totalMins) : 0;
+
+          // ✅ UNCOMMENT THIS if your UI index is scaled like 3.8 instead of 0.038
+          adjusted = adjusted * 100;
+
+          adjEl.textContent = adjusted.toFixed(1);
         }
       })
       .catch((err) => {
@@ -1542,7 +1601,9 @@ document.addEventListener("DOMContentLoaded", function () {
         listEl.innerHTML = '<div class="kpi-empty">Error loading KPI data.</div>';
 
         const avgEl = document.getElementById("kpi-avg-value");
+        const adjEl = document.getElementById("kpi-adj-value");
         if (avgEl) avgEl.textContent = "--";
+        if (adjEl) adjEl.textContent = "--";
       });
   }
 
