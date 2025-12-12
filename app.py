@@ -257,12 +257,12 @@ def api_reflexx_kpi():
     Reflexx KPI / Index Leaderboard API
 
     RULES:
-    - Always anchor to YESTERDAY'S DATE (calendar yesterday), not MAX(day).
+    - Always anchor to CALIFORNIA YESTERDAY (Pacific calendar yesterday), not server MAX(day) or UTC today.
     - For period="yesterday", use these columns:
         - daily_elite_per_minute  -> ratio/index
         - daily_elite_calls       -> elite_calls
         - daily_talk_seconds      -> talk_seconds
-    - For 7d/14d/30d/60d, use the rolling window columns on the YESTERDAY row:
+    - For 7d/14d/30d/60d, use the rolling window columns on that same anchor_day row:
         - w_7d_ratio, w_7d_elite_calls, w_7d_talk_seconds, etc.
     """
     conn = get_db_connection()
@@ -304,10 +304,17 @@ def api_reflexx_kpi():
     calls_col = calls_columns[period]
     talk_col = talk_columns[period]
 
-    # 3) Anchor date: ALWAYS calendar yesterday
-    yesterday = date.today() - timedelta(days=1)
+    # 3) Anchor date: ALWAYS calendar yesterday in Pacific time (PST-ish)
+    #    Railway runs in UTC, so we:
+    #    - get current UTC time
+    #    - shift back 8 hours to approximate Pacific
+    #    - take that calendar date
+    #    - then subtract 1 day for "yesterday"
+    utc_now = datetime.utcnow()
+    pst_like_now = utc_now - timedelta(hours=8)
+    anchor_day = pst_like_now.date() - timedelta(days=1)
 
-    # 4) Pull rows for YESTERDAY ONLY (the fully completed day)
+    # 4) Pull rows for ANCHOR DAY ONLY (the fully completed day in Pacific)
     query = f"""
         SELECT 
             user_id,
@@ -321,7 +328,7 @@ def api_reflexx_kpi():
         ORDER BY {ratio_col} DESC;
     """
 
-    cursor.execute(query, (yesterday,))
+    cursor.execute(query, (anchor_day,))
     rows = cursor.fetchall()
 
     # 5) Build leaderboard + compute team average index (ratio * 100)
@@ -353,10 +360,11 @@ def api_reflexx_kpi():
     return jsonify({
         "status": "ok",
         "period": period,
-        "anchor_day": yesterday.isoformat(),  # for debugging if you ever need it
+        "anchor_day": anchor_day.isoformat(),  # for debugging
         "rows": leaderboard,
         "team_index_avg": team_index_avg
     })
+
 
 
 
