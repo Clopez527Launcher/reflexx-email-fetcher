@@ -2438,12 +2438,17 @@ def api_manager_get_users_email_reminders():
         WHERE manager_id = %s
         ORDER BY display_name ASC
     """, (manager_id,))
+
     rows_raw = cur.fetchall()
 
-    # Convert tuples -> dicts (works with pymysql / non-dict cursors)
-    col_names = [desc[0] for desc in cur.description]
-    rows = [dict(zip(col_names, r)) for r in rows_raw]
-
+    # ✅ IMPORTANT:
+    # Some connectors/cursors return rows as DICTS already.
+    # If we re-map them, we accidentally turn values into column names.
+    if rows_raw and isinstance(rows_raw[0], dict):
+        rows = rows_raw
+    else:
+        col_names = [desc[0] for desc in cur.description]
+        rows = [dict(zip(col_names, r)) for r in rows_raw]
 
     cur.close()
     conn.close()
