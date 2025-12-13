@@ -10,10 +10,10 @@
 </style>
 
 <div class="page-wrapper" style="max-width:1200px; margin:0 auto; padding:20px;">
-  <h1 style="color:#fff; margin: 0 0 16px 0;">Settings</h1>
+  <h1 style="margin: 0 0 16px 0;">Settings</h1>
 
   <div class="card-dark" style="padding:16px; border-radius:12px;">
-    <h3 style="margin:0 0 8px 0; color:#fff;">Daily Login Reminder Emails</h3>
+    <h3 style="margin:0 0 8px 0;">Daily Login Reminder Emails</h3>
     <p class="muted" style="margin:0 0 12px 0;">
       Toggle reminders ON/OFF for each user assigned to you.
     </p>
@@ -32,9 +32,11 @@ async function loadUsers() {
 
   const res = await fetch("/api/manager/users-email-reminders", { credentials: "include" });
   const data = await res.json();
-		console.log("users-email-reminders GET:", data);
 
-  if (!data.users) {
+  console.log("users-email-reminders GET:", data);
+  console.log("first user:", data?.users?.[0]);
+
+  if (!data || !Array.isArray(data.users)) {
     usersList.innerHTML = "Failed to load users ❌";
     return;
   }
@@ -45,50 +47,68 @@ async function loadUsers() {
   }
 
   const rowsHtml = data.users.map(u => {
-    const name = (u.display_name ?? u.email ?? ("User " + u.id));
-    const checked = (u.email_login_reminder_enabled == 1) ? "checked" : "";
+    // ✅ use bracket notation (most defensive)
+    const id = u["id"];
+    const email = u["email"];
+    const displayName = u["display_name"];
+    const enabled = u["email_login_reminder_enabled"];
+
+    const nameText = (displayName || email || ("User " + id));
+    const checked = (enabled == 1) ? "checked" : "";
 
     return `
       <div style="display:flex; align-items:center; justify-content:space-between; padding:10px 0; border-bottom:1px solid #1f2a36;">
         <div style="min-width:0;">
-          <div style="color:#fff; font-weight:600;">${name}</div>
-          <div style="color:#cfe6ff; font-size:12px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:520px;">
-            ${(u.email ?? "")}
+          <div style="font-weight:600;">${nameText}</div>
+          <div class="muted" style="font-size:12px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:520px;">
+            ${email || ""}
           </div>
         </div>
 
         <label style="display:flex; align-items:center; gap:10px; cursor:pointer;">
-          <input type="checkbox"
-                 class="reminderToggle"
-                 data-user-id="${u.id}"
-                 ${checked}
-                 style="transform:scale(1.2);" />
-          <span style="color:#fff;">Reminder</span>
+          <input
+            type="checkbox"
+            class="reminderToggle"
+            data-user-id="${id}"
+            ${checked}
+            style="transform:scale(1.2);"
+          />
+          <span>Reminder</span>
         </label>
       </div>
     `;
   }).join("");
 
-  usersList.innerHTML = `<div>${rowsHtml}</div>`;
+  usersList.innerHTML = rowsHtml;
 
   document.querySelectorAll(".reminderToggle").forEach(cb => {
     cb.addEventListener("change", async (e) => {
-      const userId = parseInt(e.target.getAttribute("data-user-id"), 10);
       const enabled = e.target.checked;
+
+      // ✅ MOST IMPORTANT FIX: dataset read (avoids NaN/null issues)
+      const userId = Number(e.target.dataset.userId);
+
+      // If userId is bad, stop and show it
+      if (!userId || Number.isNaN(userId)) {
+        alert("Bad userId coming from checkbox: " + e.target.dataset.userId);
+        e.target.checked = !enabled;
+        return;
+      }
 
       const r = await fetch("/api/manager/users-email-reminders", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
-        body: JSON.stringify({ user_id: userId, enabled })
+        body: JSON.stringify({ user_id: userId, enabled: enabled })
       });
 
-      const out = await r.json();
+      // ✅ Read JSON even if 400 so we can SEE the error
+      let out = {};
+      try { out = await r.json(); } catch (err) {}
 
-      if (!out.ok) {
-        // revert checkbox if save failed
-        e.target.checked = !enabled;
-        alert("Save failed: " + (out.error || "unknown"));
+      if (!r.ok || !out.ok) {
+        e.target.checked = !enabled; // revert
+        alert("Save failed (" + r.status + "): " + JSON.stringify(out));
         return;
       }
 
@@ -102,3 +122,4 @@ async function loadUsers() {
 document.addEventListener("DOMContentLoaded", loadUsers);
 </script>
 {% endblock %}
+
