@@ -19,67 +19,88 @@
   <!-- ✅ Layout: locked top banner + fixed sidebar + consistent content padding -->
 		<style>
 				:root{
-						--banner-h: 70px;       /* banner height */
-						--sidebar-w: 230px;     /* sidebar width */
-						--sidebar-x: 20px;      /* sidebar distance from left edge */
-						--gap: 18px;            /* space between sidebar and content */
-						--pad-x: 22px;          /* left/right padding inside content */
-						--pad-top: 4px;        /* ✅ makes content higher/lower under banner */
+						--banner-h: 70px;         /* top banner height */
+						--sidebar-w: 215px;       /* ✅ smaller sidebar */
+						--sidebar-x: 16px;        /* left spacing from screen */
+						--content-pad: 18px;      /* inner content padding */
+						--sidebar-top-gap: 10px;  /* gap below banner */
+						--sidebar-bottom-gap: 14px; /* gap above bottom */
+						--scrollbar-pad: 18px;    /* ✅ breathing room near right scrollbar */
 				}
 
-				html, body { margin: 0; padding: 0; }
+				html, body {
+						margin: 0;
+						padding: 0;
+				}
 
-				/* ✅ LOCK banner at top (stays while scrolling) */
+				/* ✅ Banner stays locked on scroll */
 				.top-banner{
-						height: var(--banner-h);
 						position: fixed;
 						top: 0;
 						left: 0;
 						right: 0;
+
+						height: var(--banner-h);
+						min-height: var(--banner-h);
+						max-height: var(--banner-h);
+
 						z-index: 1000;
 				}
 
-				/* ✅ Sidebar fixed under banner (never moves) */
-				.floating-nav{
-						position: fixed !important;
-						top: var(--banner-h) !important;
-						left: var(--sidebar-x) !important;
-						width: var(--sidebar-w) !important;
-						height: calc(100vh - var(--banner-h)) !important;
-						overflow-y: auto;
-						z-index: 900;
+				/* ✅ Push ALL page content just below the fixed banner (NO giant gaps) */
+				body{
+						padding-top: var(--banner-h);
 				}
 
-				/* ✅ Content starts below banner + right of sidebar */
+				/* ✅ Sidebar is fixed and never “moves” */
+				.floating-nav{
+						position: fixed !important;
+						top: calc(var(--sidebar-top-gap)) !important;   /* relative to body padding-top */
+						left: var(--sidebar-x) !important;
+
+						width: var(--sidebar-w) !important;
+						height: calc(100vh - var(--banner-h) - var(--sidebar-top-gap) - var(--sidebar-bottom-gap)) !important;
+
+						overflow-y: auto;
+						z-index: 900;
+
+						/* ✅ helps it not feel cramped */
+						padding: 18px 14px 14px 14px !important;
+						box-sizing: border-box;
+				}
+
+				/* ✅ Move “Reflexx” lower inside sidebar */
+				.floating-nav .app-title{
+						margin-top: 10px !important;
+						margin-bottom: 18px !important;
+				}
+
+				/* ✅ Main content always aligned & padded consistently */
 				.main-content{
-						margin-top: var(--banner-h);
-						margin-left: calc(var(--sidebar-x) + var(--sidebar-w) + var(--gap));
-						padding: var(--pad-top) var(--pad-x) 40px var(--pad-x);
-						padding-right: calc(var(--pad-x) + 12px); /* ✅ keep away from scrollbar */
+						margin-left: calc(var(--sidebar-x) + var(--sidebar-w) + var(--content-pad));
+						padding: var(--content-pad);
+						padding-right: calc(var(--content-pad) + var(--scrollbar-pad));
 						box-sizing: border-box;
 						min-height: calc(100vh - var(--banner-h));
 				}
 
-				/* ✅ Mobile fallback */
+				/* Mobile fallback */
 				@media (max-width: 900px){
-						.top-banner{
-								position: fixed;
-						}
+						body{ padding-top: var(--banner-h); }
+
 						.floating-nav{
 								position: static !important;
 								width: auto !important;
 								height: auto !important;
 								left: 0 !important;
-								top: 0 !important;
-								margin-top: var(--banner-h);
 						}
 						.main-content{
 								margin-left: 0;
-								margin-top: 0;
-								padding-top: calc(var(--banner-h) + 12px);
+								padding-right: var(--content-pad);
 						}
 				}
 		</style>
+
 
 </head>
 
