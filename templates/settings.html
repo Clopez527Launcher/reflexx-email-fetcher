@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% block title %}Settings – Reflexx{% endblock %}
+
+{% block content %}
+<div class="page-wrapper" style="max-width:900px; margin:0 auto; padding:20px;">
+  <h1 style="color:#fff; margin: 0 0 16px 0;">Settings</h1>
+
+  <div class="card-dark" style="padding:16px; border-radius:12px;">
+    <h3 style="margin:0 0 8px 0; color:#fff;">Daily Login Reminder Email</h3>
+    <p class="muted" style="margin:0 0 12px 0;">
+      If ON, Reflexx will email you every morning at 9:00 AM reminding you to log in.
+    </p>
+
+    <label style="display:flex; align-items:center; gap:10px; cursor:pointer;">
+      <input type="checkbox" id="emailReminderToggle" style="transform:scale(1.2);" />
+      <span style="color:#e9f6ff;">Enable reminder</span>
+    </label>
+
+    <div id="emailReminderSaved" class="muted" style="margin-top:10px; display:none;">
+      Saved ✅
+    </div>
+  </div>
+</div>
+
+<script>
+async function loadEmailReminderToggle() {
+  const res = await fetch("/api/user/email-reminder", { credentials: "include" });
+  const data = await res.json();
+  document.getElementById("emailReminderToggle").checked = !!data.enabled;
+}
+
+async function saveEmailReminderToggle(enabled) {
+  const res = await fetch("/api/user/email-reminder", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    credentials: "include",
+    body: JSON.stringify({ enabled })
+  });
+
+  const data = await res.json();
+  const saved = document.getElementById("emailReminderSaved");
+  saved.style.display = "block";
+  saved.textContent = data.ok ? "Saved ✅" : "Save failed ❌";
+  setTimeout(() => saved.style.display = "none", 1500);
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+  loadEmailReminderToggle();
+  document.getElementById("emailReminderToggle").addEventListener("change", (e) => {
+    saveEmailReminderToggle(e.target.checked);
+  });
+});
+</script>
+{% endblock %}
+

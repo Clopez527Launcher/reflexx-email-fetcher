@@ -912,6 +912,17 @@ def dashboard_new():
     # super simple for now
     return render_template("dashboard_new.html")
     
+# Settings Page    
+@app.route("/settings")
+def settings():
+    # ✅ Must be logged in
+    user_id = session.get("user_id")
+    if not user_id:
+        return redirect("/login")
+
+    return render_template("settings.html")
+    
+    
     
 # ✅ Session Check Route (Step 2)
 @app.route('/check-session')
@@ -2363,6 +2374,51 @@ def dict_cursor(conn):
     except TypeError:
         import pymysql
         return conn.cursor(pymysql.cursors.DictCursor)  # PyMySQL
+
+@app.route("/api/user/email-reminder", methods=["GET"])
+def api_get_email_reminder():
+    user_id = session.get("user_id")
+    if not user_id:
+        return jsonify({"error": "unauthorized"}), 401
+
+    conn = get_db_connection()
+    cur = conn.cursor(dictionary=True)
+
+    cur.execute(
+        "SELECT email_login_reminder_enabled FROM users WHERE id = %s",
+        (user_id,)
+    )
+    row = cur.fetchone()
+
+    cur.close()
+    conn.close()
+
+    enabled = bool(row and row.get("email_login_reminder_enabled") == 1)
+    return jsonify({"enabled": enabled})
+
+
+@app.route("/api/user/email-reminder", methods=["POST"])
+def api_set_email_reminder():
+    user_id = session.get("user_id")
+    if not user_id:
+        return jsonify({"error": "unauthorized"}), 401
+
+    data = request.get_json(force=True) or {}
+    enabled = 1 if data.get("enabled") else 0
+
+    conn = get_db_connection()
+    cur = conn.cursor()
+
+    cur.execute(
+        "UPDATE users SET email_login_reminder_enabled = %s WHERE id = %s",
+        (enabled, user_id)
+    )
+    conn.commit()
+
+    cur.close()
+    conn.close()
+
+    return jsonify({"ok": True})
 
 # ✅ User Model for Flask-Login
 class User(UserMixin):
@@ -4287,5 +4343,4 @@ def calls_summary():
         out["total"][k] = (out["ringcentral"][k] or 0) + (out["ricochet"][k] or 0)
 
     return jsonify(out)
-
 

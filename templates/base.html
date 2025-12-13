@@ -72,9 +72,15 @@
   </svg>
 
   <!-- 🔝 Top Banner -->
-  <div class="top-banner">
-    <img src="{{ url_for('static', filename='Reflexx_Icon.ico') }}" alt="Reflexx Logo">
-  </div>
+		<div class="top-banner" style="display:flex; align-items:center; justify-content:space-between; padding: 0 16px;">
+				<img src="{{ url_for('static', filename='Reflexx_Icon.ico') }}" alt="Reflexx Logo">
+
+				<!-- ⚙️ Settings gear (top right) -->
+				<a href="{{ url_for('settings') }}" title="Settings"
+							style="color:#e9f6ff; text-decoration:none; font-size:20px; line-height:20px;">
+						⚙️
+				</a>
+		</div>
 
   <!-- 🔗 TRUE Sidebar + Centered Main -->
   <div class="app-layout">
