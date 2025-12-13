@@ -2,7 +2,14 @@
 {% block title %}Settings – Reflexx{% endblock %}
 
 {% block content %}
-<div class="page-wrapper" style="max-width:900px; margin:0 auto; padding:20px;">
+<style>
+  /* ✅ Settings page cleanup */
+  .main-content { padding-top: 40px !important; }  /* pushes content down */
+  .page-wrapper, .page-wrapper * { color: #fff !important; } /* make all text white */
+  .muted { color: #cfe6ff !important; } /* still "muted" but readable */
+</style>
+
+<div class="page-wrapper" style="max-width:1200px; margin:0 auto; padding:20px;">
   <h1 style="color:#fff; margin: 0 0 16px 0;">Settings</h1>
 
   <div class="card-dark" style="padding:16px; border-radius:12px;">
