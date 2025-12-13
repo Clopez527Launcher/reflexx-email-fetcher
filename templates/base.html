@@ -16,18 +16,24 @@
 
   {% block head %}{% endblock %}
 
-  <!-- ✅ Layout: locked top banner + fixed sidebar + consistent content padding -->
+  <!-- ✅ Layout: locked top banner + fixed sidebar + content aligned correctly -->
 		<style>
 				:root{
-						--banner-h: 70px;       /* banner height */
+						--banner-h: 70px;       /* top banner height */
 						--sidebar-w: 230px;     /* sidebar width */
 						--sidebar-x: 20px;      /* sidebar distance from left edge */
 						--gap: 18px;            /* space between sidebar and content */
-						--pad-x: 22px;          /* left/right padding inside content */
-						--pad-top: 4px;        /* ✅ makes content higher/lower under banner */
+						--pad-x: 22px;          /* content left/right padding */
+						--pad-top: 10px;        /* ✅ bring content UP/DOWN under banner (smaller = higher) */
+						--sidebar-bottom-gap: 14px; /* ✅ makes sidebar NOT feel too tall */
 				}
 
 				html, body { margin: 0; padding: 0; }
+
+				/* ✅ Push the whole page down exactly 1 banner height (prevents double spacing) */
+				body{
+						padding-top: var(--banner-h);
+				}
 
 				/* ✅ LOCK banner at top (stays while scrolling) */
 				.top-banner{
@@ -37,129 +43,133 @@
 						left: 0;
 						right: 0;
 						z-index: 1000;
+
+						/* optional but recommended so it always looks like a true header */
+						background: #0b1623;
+						border-bottom: 1px solid rgba(255,255,255,0.06);
 				}
 
-				/* ✅ Sidebar fixed under banner (never moves) */
+				/* ✅ Sidebar fixed under banner */
 				.floating-nav{
 						position: fixed !important;
-						top: var(--banner-h) !important;
+						top: calc(var(--banner-h) + 12px) !important; /* ✅ small gap under banner */
 						left: var(--sidebar-x) !important;
 						width: var(--sidebar-w) !important;
-						height: calc(100vh - var(--banner-h)) !important;
+
+						/* ✅ Not “too tall” */
+						height: calc(100vh - var(--banner-h) - 12px - var(--sidebar-bottom-gap)) !important;
+
 						overflow-y: auto;
+						padding-bottom: 14px; /* keeps logout from hugging bottom */
 						z-index: 900;
 				}
 
-				/* ✅ Content starts below banner + right of sidebar */
+				/* ✅ Content starts right of sidebar (NO margin-top anymore) */
 				.main-content{
-						margin-top: var(--banner-h);
 						margin-left: calc(var(--sidebar-x) + var(--sidebar-w) + var(--gap));
 						padding: var(--pad-top) var(--pad-x) 40px var(--pad-x);
-						padding-right: calc(var(--pad-x) + 12px); /* ✅ keep away from scrollbar */
+						padding-right: calc(var(--pad-x) + 12px);
 						box-sizing: border-box;
 						min-height: calc(100vh - var(--banner-h));
 				}
 
 				/* ✅ Mobile fallback */
 				@media (max-width: 900px){
-						.top-banner{
-								position: fixed;
-						}
+						body{ padding-top: var(--banner-h); }
+
 						.floating-nav{
 								position: static !important;
 								width: auto !important;
 								height: auto !important;
 								left: 0 !important;
 								top: 0 !important;
-								margin-top: var(--banner-h);
+								margin: 12px 12px 0 12px;
 						}
+
 						.main-content{
 								margin-left: 0;
-								margin-top: 0;
-								padding-top: calc(var(--banner-h) + 12px);
+								padding-top: 12px;
 						}
 				}
 		</style>
 
-</head>
+		</head>
 
-<body data-manager-id="{{ (session.get('manager_id') or 4) | int }}">
+		<body data-manager-id="{{ (session.get('manager_id') or 4) | int }}">
 
-  <!-- 🌈 Gradient Definition (shared across all pages) -->
-  <svg style="display: none;">
-    <defs>
-      <linearGradient id="progressGradient" x1="0%" y1="0%" x2="100%" y2="0%">
-        <stop offset="0%" stop-color="#00aaff" />
-        <stop offset="50%" stop-color="#00cccc" />
-        <stop offset="100%" stop-color="#00ff99" />
-      </linearGradient>
-    </defs>
-  </svg>
+				<!-- 🌈 Gradient Definition (shared across all pages) -->
+				<svg style="display: none;">
+						<defs>
+								<linearGradient id="progressGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+										<stop offset="0%" stop-color="#00aaff" />
+										<stop offset="50%" stop-color="#00cccc" />
+										<stop offset="100%" stop-color="#00ff99" />
+								</linearGradient>
+						</defs>
+				</svg>
 
-  <!-- 🔝 Top Banner -->
-		<div class="top-banner" style="position:relative; display:flex; align-items:center; justify-content:center;">
-				<!-- Centered logo -->
-				<img src="{{ url_for('static', filename='Reflexx_Icon.ico') }}" alt="Reflexx Logo" style="display:block;">
+				<!-- 🔝 Top Banner (DO NOT set position inline) -->
+				<div class="top-banner" style="display:flex; align-items:center; justify-content:center; position:fixed;">
+						<!-- Centered logo -->
+						<img src="{{ url_for('static', filename='Reflexx_Icon.ico') }}" alt="Reflexx Logo" style="display:block;">
 
-				<!-- ⚙️ Settings gear (top right) -->
-				<a href="{{ url_for('settings') }}" title="Settings"
-							style="position:absolute; right:16px; top:50%; transform:translateY(-50%);
-														color:#ffffff; text-decoration:none; font-size:20px; line-height:20px;">
-						⚙️
-				</a>
-		</div>
+						<!-- ⚙️ Settings gear (top right) -->
+						<a href="{{ url_for('settings') }}" title="Settings"
+									style="position:absolute; right:16px; top:50%; transform:translateY(-50%);
+																color:#ffffff; text-decoration:none; font-size:20px; line-height:20px;">
+								⚙️
+						</a>
+				</div>
 
+				<!-- 🔗 Sidebar + Main -->
+				<div>
+						<!-- Sidebar Navigation -->
+						<div class="floating-nav">
+								<h2 class="app-title" style="margin-top:18px;">Reflexx</h2>
 
+								<a href="{{ url_for('dashboard_new') }}"
+											class="nav-btn {% if request.endpoint == 'dashboard_new' %}active{% endif %}">
+										Dashboard
+								</a>
 
-  <!-- 🔗 TRUE Sidebar + Centered Main -->
-  <div>
-    <!-- Sidebar Navigation -->
-    <div class="floating-nav">
-						<h2 class="app-title" style="margin-top:18px;">Reflexx</h2>
+								<a href="{{ url_for('uploads') }}"
+											class="nav-btn {% if request.endpoint == 'uploads' %}active{% endif %}">
+										Uploads
+								</a>
 
-						<a href="{{ url_for('dashboard_new') }}"
-         class="nav-btn {% if request.endpoint == 'dashboard_new' %}active{% endif %}">
-        Dashboard
-      </a>
-						
-						<a href="{{ url_for('uploads') }}"
-         class="nav-btn {% if request.endpoint == 'uploads' %}active{% endif %}">
-        Uploads
-      </a>
-						
-						<a href="{{ url_for('manager_portal') }}"
-         class="nav-btn {% if request.endpoint == 'manager_portal' %}active{% endif %}">
-        Analytics
-      </a>
-						
-						<a href="{{ url_for('analytics') }}"
-         class="nav-btn {% if request.endpoint == 'analytics' %}active{% endif %}">
-        Graphs
-      </a>  
+								<a href="{{ url_for('manager_portal') }}"
+											class="nav-btn {% if request.endpoint == 'manager_portal' %}active{% endif %}">
+										Analytics
+								</a>
 
-						<a href="{{ url_for('ai_insights_tab') }}"
-         class="nav-btn {% if request.endpoint == 'ai_insights_tab' %}active{% endif %}">
-        AI Insights
-      </a>
+								<a href="{{ url_for('analytics') }}"
+											class="nav-btn {% if request.endpoint == 'analytics' %}active{% endif %}">
+										Graphs
+								</a>
 
-      <a href="{{ url_for('reports') }}"
-         class="nav-btn {% if request.endpoint == 'reports' %}active{% endif %}">
-        Reports
-      </a>
-      
+								<a href="{{ url_for('ai_insights_tab') }}"
+											class="nav-btn {% if request.endpoint == 'ai_insights_tab' %}active{% endif %}">
+										AI Insights
+								</a>
 
-      <!-- ✅ Clear cached IDs on logout -->
-      <button class="logout-btn" id="logoutBtn">Logout</button>
-      <a href="{{ url_for('brick') }}" class="easter-egg">🎮</a>
-    </div>
+								<a href="{{ url_for('reports') }}"
+											class="nav-btn {% if request.endpoint == 'reports' %}active{% endif %}">
+										Reports
+								</a>
 
-    <!-- Page Content -->
-    <div class="main-content">
-      {% block content %}{% endblock %}
-    </div>
-  </div>
+								<button class="logout-btn" id="logoutBtn">Logout</button>
+								<a href="{{ url_for('brick') }}" class="easter-egg">🎮</a>
+						</div>
 
-  {% block scripts %}{% endblock %}
+						<!-- Page Content -->
+						<div class="main-content">
+								{% block content %}{% endblock %}
+						</div>
+				</div>
+
+				{% block scripts %}{% endblock %}
+		</body>
+
 
   <!-- 🔗 Auto-refresh RingCentral (single copy, safe globally) + logout cache clear -->
   <script>
