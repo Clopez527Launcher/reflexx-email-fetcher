@@ -18,43 +18,60 @@
 
   <!-- ✅ Layout: sidebar + content aligned under top banner -->
 		<style>
-				:root{
-						--banner-h: 70px;   /* top banner height */
-						--side-gap: 0px;   /* gap under banner */
-				}
+  :root{
+    --banner-h: 70px;      /* must match your top banner height */
+    --sidebar-w: 230px;    /* sidebar width */
+    --sidebar-x: 20px;     /* left margin from screen edge */
+    --content-pad: 10px;   /* page padding */
+  }
 
-				/* Whole page layout under the top banner */
-				.app-layout{
-						display:flex;
-						width:100%;
-						min-height: calc(100vh - var(--banner-h));
-						align-items:flex-start; /* ✅ prevents weird vertical stretching */
-				}
+  /* remove any default body margin that can cause weird shifts */
+  html, body { margin: 0; padding: 0; }
 
-				/* Sidebar column */
-				.floating-nav{
-						position: sticky !important;
-						top: calc(var(--banner-h) + var(--side-gap)) !important;
-						left: 0 !important;
+  /* Top banner must be stable height */
+  .top-banner{
+				height: var(--banner-h);
+				min-height: var(--banner-h);
+				max-height: var(--banner-h);
+		}
 
-						width: 230px;
-						height: calc(100vh - (var(--banner-h) + (var(--side-gap) * 2))) !important;
+  /* Sidebar is FIXED. Never moves with page content or zoom math. */
+  .floating-nav{
+				position: fixed !important;
+				top: var(--banner-h) !important;
+				left: var(--sidebar-x) !important;
+				width: var(--sidebar-w) !important;
+				height: calc(100vh - var(--banner-h)) !important;
 
-						margin: 0 0 0 20px;
-						flex-shrink: 0;
-						z-index: 2;
+				margin: 0 !important;
+				padding-top: 0 !important;
 
-						overflow-y: auto;
-						padding-bottom: 20px;
-				}
+				overflow-y: auto;
+				z-index: 50;
+		}
 
-				/* Main content */
-				.main-content{
-						flex: 1;
-						padding: 0px 20px 40px 20px; /* ✅ slightly tighter top padding */
-						box-sizing: border-box;
-				}
-		</style>
+  /* Content always starts to the right of sidebar */
+  .main-content{
+    margin-left: calc(var(--sidebar-x) + var(--sidebar-w) + var(--content-pad));
+    padding: var(--content-pad);
+    padding-top: var(--content-pad); /* keeps it consistent on every page */
+    box-sizing: border-box;
+    min-height: calc(100vh - var(--banner-h));
+  }
+
+  /* optional: make small screens not break */
+  @media (max-width: 900px){
+    .floating-nav{
+      position: static !important;
+      width: auto !important;
+      height: auto !important;
+      left: 0 !important;
+    }
+    .main-content{
+      margin-left: 0;
+    }
+  }
+</style>
 
 </head>
 
@@ -86,7 +103,7 @@
 
 
   <!-- 🔗 TRUE Sidebar + Centered Main -->
-  <div class="app-layout">
+  <div>
     <!-- Sidebar Navigation -->
     <div class="floating-nav">
       <h2 class="app-title">Reflexx</h2>
