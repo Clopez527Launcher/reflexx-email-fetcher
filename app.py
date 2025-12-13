@@ -2427,7 +2427,7 @@ def api_manager_get_users_email_reminders():
         return jsonify({"error": "unauthorized"}), 401
 
     conn = get_db_connection()
-    cur = conn.cursor(dictionary=True)
+    cur = conn.cursor()
 
     cur.execute("""
         SELECT id,
@@ -2438,7 +2438,12 @@ def api_manager_get_users_email_reminders():
         WHERE manager_id = %s
         ORDER BY display_name ASC
     """, (manager_id,))
-    rows = cur.fetchall()
+    rows_raw = cur.fetchall()
+
+    # Convert tuples -> dicts (works with pymysql / non-dict cursors)
+    col_names = [desc[0] for desc in cur.description]
+    rows = [dict(zip(col_names, r)) for r in rows_raw]
+
 
     cur.close()
     conn.close()
@@ -2460,7 +2465,7 @@ def api_manager_set_user_email_reminder():
         return jsonify({"error": "missing_user_id"}), 400
 
     conn = get_db_connection()
-    cur = conn.cursor(dictionary=True)
+    cur = conn.cursor()
 
     # ✅ Only allow updating users that belong to THIS manager
     cur.execute(
