@@ -2455,14 +2455,23 @@ def api_manager_get_users_email_reminders():
 def api_manager_set_user_email_reminder():
     manager_id = session.get("manager_id")
     if not manager_id:
-        return jsonify({"error": "unauthorized"}), 401
+        return jsonify({
+            "error": "unauthorized",
+            "session_user_id": session.get("user_id"),
+            "session_manager_id": session.get("manager_id"),
+            "session_role": session.get("role")
+        }), 401
 
     data = request.get_json(force=True) or {}
     target_user_id = data.get("user_id")
     enabled = 1 if data.get("enabled") else 0
 
     if not target_user_id:
-        return jsonify({"error": "missing_user_id"}), 400
+        return jsonify({
+            "error": "missing_user_id",
+            "received_json": data
+        }), 400
+
 
     conn = get_db_connection()
     cur = conn.cursor()
