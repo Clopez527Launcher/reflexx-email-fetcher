@@ -28,8 +28,24 @@
     /* Sidebar column */
 				.floating-nav {
 						position: sticky !important;
-						/* ⬇ This controls how far DOWN from the top banner the sidebar starts */
-						top: 120px !important;              /* tweak this number if you want more/less gap */
+
+						/* ✅ bring it back up closer to the top banner */
+						top: 78px !important;   /* was 120px */
+
+						left: 0 !important;
+						width: 230px;
+
+						/* ✅ match new top spacing */
+						height: calc(100vh - 98px) !important; /* was calc(100vh - 140px) */
+
+						margin: 0 0 0 20px;
+						flex-shrink: 0;
+						z-index: 2;
+
+						overflow-y: auto;
+						padding-bottom: 20px;
+				}
+
 
 						left: 0 !important;
 
