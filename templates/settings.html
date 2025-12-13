@@ -32,6 +32,7 @@ async function loadUsers() {
 
   const res = await fetch("/api/manager/users-email-reminders", { credentials: "include" });
   const data = await res.json();
+		console.log("users-email-reminders GET:", data);
 
   if (!data.users) {
     usersList.innerHTML = "Failed to load users ❌";
@@ -44,7 +45,7 @@ async function loadUsers() {
   }
 
   const rowsHtml = data.users.map(u => {
-    const name = (u.display_name || u.email || ("User " + u.id));
+    const name = (u.display_name ?? u.email ?? ("User " + u.id));
     const checked = (u.email_login_reminder_enabled == 1) ? "checked" : "";
 
     return `
@@ -52,7 +53,7 @@ async function loadUsers() {
         <div style="min-width:0;">
           <div style="color:#fff; font-weight:600;">${name}</div>
           <div style="color:#cfe6ff; font-size:12px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:520px;">
-            ${u.email || ""}
+            ${(u.email ?? "")}
           </div>
         </div>
 
