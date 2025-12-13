@@ -2419,6 +2419,71 @@ def api_set_email_reminder():
     conn.close()
 
     return jsonify({"ok": True})
+    
+@app.route("/api/manager/users-email-reminders", methods=["GET"])
+def api_manager_get_users_email_reminders():
+    manager_id = session.get("manager_id")
+    if not manager_id:
+        return jsonify({"error": "unauthorized"}), 401
+
+    conn = get_db_connection()
+    cur = conn.cursor(dictionary=True)
+
+    cur.execute("""
+        SELECT id,
+               email,
+               COALESCE(nickname, nb_detail_name, quote_audit_name, email) AS display_name,
+               email_login_reminder_enabled
+        FROM users
+        WHERE manager_id = %s
+        ORDER BY display_name ASC
+    """, (manager_id,))
+    rows = cur.fetchall()
+
+    cur.close()
+    conn.close()
+
+    return jsonify({"users": rows})
+
+
+@app.route("/api/manager/users-email-reminders", methods=["POST"])
+def api_manager_set_user_email_reminder():
+    manager_id = session.get("manager_id")
+    if not manager_id:
+        return jsonify({"error": "unauthorized"}), 401
+
+    data = request.get_json(force=True) or {}
+    target_user_id = data.get("user_id")
+    enabled = 1 if data.get("enabled") else 0
+
+    if not target_user_id:
+        return jsonify({"error": "missing_user_id"}), 400
+
+    conn = get_db_connection()
+    cur = conn.cursor(dictionary=True)
+
+    # ✅ Only allow updating users that belong to THIS manager
+    cur.execute(
+        "SELECT id FROM users WHERE id = %s AND manager_id = %s",
+        (target_user_id, manager_id)
+    )
+    owned = cur.fetchone()
+    if not owned:
+        cur.close()
+        conn.close()
+        return jsonify({"error": "forbidden"}), 403
+
+    cur.execute(
+        "UPDATE users SET email_login_reminder_enabled = %s WHERE id = %s",
+        (enabled, target_user_id)
+    )
+    conn.commit()
+
+    cur.close()
+    conn.close()
+
+    return jsonify({"ok": True})
+    
 
 # ✅ User Model for Flask-Login
 class User(UserMixin):

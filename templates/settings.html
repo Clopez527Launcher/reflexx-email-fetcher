@@ -4,59 +4,100 @@
 {% block content %}
 <style>
   /* ✅ Settings page cleanup */
-  .main-content { padding-top: 40px !important; }  /* pushes content down */
-  .page-wrapper, .page-wrapper * { color: #fff !important; } /* make all text white */
-  .muted { color: #cfe6ff !important; } /* still "muted" but readable */
+  .main-content { padding-top: 40px !important; }
+  .page-wrapper, .page-wrapper * { color: #fff !important; }
+  .muted { color: #cfe6ff !important; }
 </style>
 
 <div class="page-wrapper" style="max-width:1200px; margin:0 auto; padding:20px;">
   <h1 style="color:#fff; margin: 0 0 16px 0;">Settings</h1>
 
   <div class="card-dark" style="padding:16px; border-radius:12px;">
-    <h3 style="margin:0 0 8px 0; color:#fff;">Daily Login Reminder Email</h3>
+    <h3 style="margin:0 0 8px 0; color:#fff;">Daily Login Reminder Emails</h3>
     <p class="muted" style="margin:0 0 12px 0;">
-      If ON, Reflexx will email you every morning at 9:00 AM reminding you to log in.
+      Toggle reminders ON/OFF for each user assigned to you.
     </p>
 
-    <label style="display:flex; align-items:center; gap:10px; cursor:pointer;">
-      <input type="checkbox" id="emailReminderToggle" style="transform:scale(1.2);" />
-      <span style="color:#e9f6ff;">Enable reminder</span>
-    </label>
+    <div id="usersList" class="muted">Loading users...</div>
 
-    <div id="emailReminderSaved" class="muted" style="margin-top:10px; display:none;">
+    <div id="saveToast" class="muted" style="margin-top:10px; display:none;">
       Saved ✅
     </div>
   </div>
 </div>
 
 <script>
-async function loadEmailReminderToggle() {
-  const res = await fetch("/api/user/email-reminder", { credentials: "include" });
+async function loadUsers() {
+  const usersList = document.getElementById("usersList");
+
+  const res = await fetch("/api/manager/users-email-reminders", { credentials: "include" });
   const data = await res.json();
-  document.getElementById("emailReminderToggle").checked = !!data.enabled;
+
+  if (!data.users) {
+    usersList.innerHTML = "Failed to load users ❌";
+    return;
+  }
+
+  if (data.users.length === 0) {
+    usersList.innerHTML = "No users found for your manager_id.";
+    return;
+  }
+
+  const rowsHtml = data.users.map(u => {
+    const name = (u.display_name || u.email || ("User " + u.id));
+    const checked = (u.email_login_reminder_enabled == 1) ? "checked" : "";
+
+    return `
+      <div style="display:flex; align-items:center; justify-content:space-between; padding:10px 0; border-bottom:1px solid #1f2a36;">
+        <div style="min-width:0;">
+          <div style="color:#fff; font-weight:600;">${name}</div>
+          <div style="color:#cfe6ff; font-size:12px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:520px;">
+            ${u.email || ""}
+          </div>
+        </div>
+
+        <label style="display:flex; align-items:center; gap:10px; cursor:pointer;">
+          <input type="checkbox"
+                 class="reminderToggle"
+                 data-user-id="${u.id}"
+                 ${checked}
+                 style="transform:scale(1.2);" />
+          <span style="color:#fff;">Reminder</span>
+        </label>
+      </div>
+    `;
+  }).join("");
+
+  usersList.innerHTML = `<div>${rowsHtml}</div>`;
+
+  document.querySelectorAll(".reminderToggle").forEach(cb => {
+    cb.addEventListener("change", async (e) => {
+      const userId = parseInt(e.target.getAttribute("data-user-id"), 10);
+      const enabled = e.target.checked;
+
+      const r = await fetch("/api/manager/users-email-reminders", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ user_id: userId, enabled })
+      });
+
+      const out = await r.json();
+
+      if (!out.ok) {
+        // revert checkbox if save failed
+        e.target.checked = !enabled;
+        alert("Save failed: " + (out.error || "unknown"));
+        return;
+      }
+
+      const toast = document.getElementById("saveToast");
+      toast.style.display = "block";
+      setTimeout(() => toast.style.display = "none", 1200);
+    });
+  });
 }
 
-async function saveEmailReminderToggle(enabled) {
-  const res = await fetch("/api/user/email-reminder", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    credentials: "include",
-    body: JSON.stringify({ enabled })
-  });
-
-  const data = await res.json();
-  const saved = document.getElementById("emailReminderSaved");
-  saved.style.display = "block";
-  saved.textContent = data.ok ? "Saved ✅" : "Save failed ❌";
-  setTimeout(() => saved.style.display = "none", 1500);
-}
-
-document.addEventListener("DOMContentLoaded", () => {
-  loadEmailReminderToggle();
-  document.getElementById("emailReminderToggle").addEventListener("change", (e) => {
-    saveEmailReminderToggle(e.target.checked);
-  });
-});
+document.addEventListener("DOMContentLoaded", loadUsers);
 </script>
 {% endblock %}
-
