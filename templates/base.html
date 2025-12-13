@@ -16,27 +16,29 @@
 
   {% block head %}{% endblock %}
 
-  <!-- ✅ FORCE sidebar to be a true layout column (not floating over content) -->
-  <style>
-    /* Whole page layout under the top banner */
-    .app-layout {
-      display: flex;
-      width: 100%;
-      min-height: calc(100vh - 70px); /* banner height safety */
-    }
+  <!-- ✅ Layout: sidebar + content aligned under top banner -->
+		<style>
+				:root{
+						--banner-h: 70px;   /* top banner height */
+						--side-gap: 16px;   /* gap under banner */
+				}
 
-    /* Sidebar column */
-				.floating-nav {
+				/* Whole page layout under the top banner */
+				.app-layout{
+						display:flex;
+						width:100%;
+						min-height: calc(100vh - var(--banner-h));
+						align-items:flex-start; /* ✅ prevents weird vertical stretching */
+				}
+
+				/* Sidebar column */
+				.floating-nav{
 						position: sticky !important;
-
-						/* ✅ bring it back up closer to the top banner */
-						top: 78px !important;   /* was 120px */
-
+						top: calc(var(--banner-h) + var(--side-gap)) !important;
 						left: 0 !important;
-						width: 230px;
 
-						/* ✅ match new top spacing */
-						height: calc(100vh - 98px) !important; /* was calc(100vh - 140px) */
+						width: 230px;
+						height: calc(100vh - (var(--banner-h) + (var(--side-gap) * 2))) !important;
 
 						margin: 0 0 0 20px;
 						flex-shrink: 0;
@@ -46,32 +48,14 @@
 						padding-bottom: 20px;
 				}
 
-
-						left: 0 !important;
-
-						width: 230px;
-						/* match height to top so it fills nicely but doesn’t run off screen */
-						height: calc(100vh - 140px) !important;  /* 100vh - top (120) - ~20px bottom room */
-
-						margin: 0 0 0 20px;
-
-						flex-shrink: 0;
-						z-index: 2;
-
-						overflow-y: auto;
-						padding-bottom: 20px;
-				}
-
-
-    /* Main content becomes centered in remaining space */
-    .main-content {
+				/* Main content */
+				.main-content{
 						flex: 1;
-						/* no flexbox – let content use full width next to sidebar */
-						padding: 20px 20px 40px 20px;
+						padding: 12px 20px 40px 20px; /* ✅ slightly tighter top padding */
 						box-sizing: border-box;
 				}
+		</style>
 
-  </style>
 </head>
 
 <body data-manager-id="{{ (session.get('manager_id') or 4) | int }}">
