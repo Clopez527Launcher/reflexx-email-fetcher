@@ -291,7 +291,8 @@ def api_reflexx_kpi():
 
     # 2) Map period -> column names in elite_calls_master
     ratio_columns = {
-        "yesterday": "daily_elite_per_minute",   # index for the single day
+        # yesterday is computed manually (no column)
+        "yesterday": None,
         "7d": "w_7d_ratio",
         "14d": "w_14d_ratio",
         "30d": "w_30d_ratio",
@@ -333,19 +334,33 @@ def api_reflexx_kpi():
     anchor_day = pst_like_now.date() - timedelta(days=1)
 
     # 4) Pull rows for ANCHOR DAY ONLY (the fully completed day in Pacific)
-    query = f"""
-        SELECT 
-            user_id,
-            user_name,
-            {ratio_col} AS ratio,
-            {calls_col} AS elite_calls,
-            {talk_col} AS talk_seconds
-        FROM elite_calls_fact_daily
-        WHERE
-            day = %s
-            AND manager_id = %s
-        ORDER BY {ratio_col} DESC;
-    """
+    if period == "yesterday":
+        query = """
+            SELECT
+                user_id,
+                user_name,
+                daily_elite_calls AS elite_calls,
+                daily_talk_seconds AS talk_seconds
+            FROM elite_calls_fact_daily
+            WHERE
+                day = %s
+                AND manager_id = %s
+            ORDER BY daily_elite_calls DESC;
+        """
+    else:
+        query = f"""
+            SELECT 
+                user_id,
+                user_name,
+                {ratio_col} AS ratio,
+                {calls_col} AS elite_calls,
+                {talk_col} AS talk_seconds
+            FROM elite_calls_fact_daily
+            WHERE
+                day = %s
+                AND manager_id = %s
+            ORDER BY {ratio_col} DESC;
+        """
 
     cursor.execute(query, (anchor_day, manager_id))
     rows = cursor.fetchall()
@@ -362,8 +377,14 @@ def api_reflexx_kpi():
 
     for r in rows:
         # ----- Per-user INDEX (ratio * 100) -----
-        raw_ratio = r["ratio"]
-        ratio_value = float(raw_ratio) if raw_ratio is not None else 0.0
+        if period == "yesterday":
+            calls = float(r["elite_calls"]) if r["elite_calls"] else 0.0
+            talk_seconds = float(r["talk_seconds"]) if r["talk_seconds"] else 0.0
+            ratio_value = (calls / (talk_seconds / 60.0)) if talk_seconds > 0 else 0.0
+        else:
+            raw_ratio = r["ratio"]
+            ratio_value = float(raw_ratio) if raw_ratio is not None else 0.0
+
         index_score = ratio_value * 100
 
         # ----- Per-user calls + talk seconds (window-specific) -----
