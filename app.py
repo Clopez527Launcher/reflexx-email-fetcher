@@ -2187,6 +2187,68 @@ def api_employee_quote_series():
         "quoted_items": quoted_items,
         "quotes_unique": quotes_unique
     })
+    
+@app.route("/api/analytics/team-index-series")
+@login_required
+def api_team_index_series():
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    manager_id = getattr(current_user, "manager_id", None) or current_user.id
+
+    start = request.args.get("start")
+    end   = request.args.get("end")
+    if not start or not end:
+        return jsonify({"error": "Missing start/end"}), 400
+
+    # ==========================================================
+    # ✅ Source table/columns (change ONLY if yours differ)
+    # ==========================================================
+    TABLE = "elite_calls_master"
+    DAY_COL = "day"
+    ELITE_CALLS_COL = "daily_elite_calls"
+    TALK_SECONDS_COL = "daily_talk_seconds"
+
+    # Team = all users under this manager (plus manager)
+    cursor.execute(f"""
+        SELECT
+            e.{DAY_COL} AS day,
+            SUM(COALESCE(e.{ELITE_CALLS_COL}, 0)) AS total_elite_calls,
+            SUM(COALESCE(e.{TALK_SECONDS_COL}, 0)) AS total_talk_seconds
+        FROM {TABLE} e
+        JOIN users u ON u.id = e.user_id
+        WHERE (u.manager_id = %s OR u.id = %s)
+          AND e.{DAY_COL} BETWEEN %s AND %s
+        GROUP BY e.{DAY_COL}
+        ORDER BY e.{DAY_COL} ASC
+    """, (manager_id, manager_id, start, end))
+
+    rows = cursor.fetchall() or []
+
+    labels = []
+    team_index = []
+
+    for r in rows:
+        day = r["day"].strftime("%Y-%m-%d") if hasattr(r["day"], "strftime") else str(r["day"])
+
+        calls = float(r["total_elite_calls"] or 0)
+        talk_seconds = float(r["total_talk_seconds"] or 0)
+
+        # skip dead days
+        if calls == 0 or talk_seconds == 0:
+            continue
+
+        talk_minutes = talk_seconds / 60.0
+        idx = round(calls / talk_minutes, 4)  # elite calls per minute
+
+        labels.append(day)
+        team_index.append(idx)
+
+    return jsonify({
+        "labels": labels,
+        "team_index": team_index
+    })
+    
 
 # ✅ Notifications
 @app.route('/notifications')

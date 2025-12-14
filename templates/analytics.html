@@ -132,6 +132,13 @@
     grid-column: 1 / 2;
     grid-row: 2;
   }
+		
+		/* ✅ Force Team Index to bottom-right (row 2, col 2) */
+  #teamIndexTrends {
+    grid-column: 2 / 3;
+    grid-row: 2;
+  }
+
 
   /* ✅ Make the cards tighter */
   .emp-card {
@@ -286,6 +293,27 @@
           </div>
         </div>
       </div>
+						
+					 <!-- ======================= TEAM INDEX TRENDS (NEW) ======================= -->
+      <div id="teamIndexTrends" class="emp-card">
+        <div class="emp-controls">
+          <input id="team-start" class="emp-input" type="date" />
+          <input id="team-end" class="emp-input" type="date" />
+
+          <h3>Adjusted Team Index</h3>
+
+          <div class="right">
+            <button id="team-apply" class="emp-btn">Apply</button>
+          </div>
+        </div>
+
+        <div class="emp-grid">
+          <div class="emp-chart" style="grid-column: 1 / -1;">
+            <h4>Elite Calls / Talk Time (per minute)</h4>
+            <div class="emp-canvas-wrap"><canvas id="team-index"></canvas></div>
+          </div>
+        </div>
+      </div>
 
     </div> <!-- /widgets-grid -->
   </section>
@@ -294,7 +322,7 @@
 <!-- Chart.js -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
-<!-- ======================= EMPLOYEE TRENDS LOGIC (MOVEMENT + PHONE + QUOTING) ======================= -->
+<!-- ======================= EMPLOYEE TRENDS LOGIC (MOVEMENT + PHONE + QUOTING + TEAM INDEX) ======================= -->
 <script>
 (() => {
   const toYMD = (d) =>
@@ -325,6 +353,13 @@
   const qApply   = document.getElementById('quote-apply');
 
   // ---------------------------
+  // 🧮 Team Index controls (no user dropdown)
+  // ---------------------------
+  const tStartEl = document.getElementById('team-start');
+  const tEndEl   = document.getElementById('team-end');
+  const tApply   = document.getElementById('team-apply');
+
+  // ---------------------------
   // ✅ Default dates
   // ---------------------------
   const today = new Date();
@@ -340,6 +375,10 @@
   // Quoting defaults match Movement
   qEndEl.value = endEl.value;
   qStartEl.value = startEl.value;
+
+  // Team defaults match Movement
+  tEndEl.value = endEl.value;
+  tStartEl.value = startEl.value;
 
   // ---------------------------
   // 📈 Chart factory
@@ -403,6 +442,11 @@
   const cApMin   = mkLine(document.getElementById('quote-ap-min'), 'AdvisorPro Minutes');
   const cQItems  = mkLine(document.getElementById('quote-items'),  'Quoted Items');
   const cQUnique = mkLine(document.getElementById('quote-unique'), 'Quotes Unique');
+
+  // ---------------------------
+  // 🧮 Team Index chart
+  // ---------------------------
+  const cTeamIndex = mkLine(document.getElementById('team-index'), 'Adjusted Team Index');
 
   // ---------------------------
   // 🌐 fetch helper
@@ -527,11 +571,29 @@
   }
 
   // ---------------------------
+  // 🧮 Refresh Team Index
+  // ---------------------------
+  async function refreshTeamIndex(){
+    const s = tStartEl.value, e = tEndEl.value;
+
+    try{
+      const data = await j(`/api/analytics/team-index-series?start=${s}&end=${e}`);
+      const L = data.labels || [];
+
+      setSeries(cTeamIndex, L, data.team_index);
+
+    }catch(e){
+      console.error(e);
+    }
+  }
+
+  // ---------------------------
   // 🖱️ Apply buttons
   // ---------------------------
-  apply.addEventListener('click', () => { refreshMovement(); refreshPhone(); refreshQuoting(); });
-  pApply.addEventListener('click', () => { refreshMovement(); refreshPhone(); refreshQuoting(); });
-  qApply.addEventListener('click', () => { refreshMovement(); refreshPhone(); refreshQuoting(); });
+  apply.addEventListener('click', () => { refreshMovement(); refreshPhone(); refreshQuoting(); refreshTeamIndex(); });
+  pApply.addEventListener('click', () => { refreshMovement(); refreshPhone(); refreshQuoting(); refreshTeamIndex(); });
+  qApply.addEventListener('click', () => { refreshMovement(); refreshPhone(); refreshQuoting(); refreshTeamIndex(); });
+  tApply.addEventListener('click', () => { refreshMovement(); refreshPhone(); refreshQuoting(); refreshTeamIndex(); });
 
   // ---------------------------
   // 🚀 Boot
@@ -540,6 +602,7 @@
     refreshMovement();
     refreshPhone();
     refreshQuoting();
+    refreshTeamIndex();
   });
 
 })();
