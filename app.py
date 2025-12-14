@@ -269,11 +269,21 @@ def api_reflexx_kpi():
     conn = get_db_connection()
     cursor = conn.cursor()   # assumes dict-style rows from your helper
     
-    # 🔐 Resolve manager_id safely (no leakage)
-    if current_user.role == "manager":
-        manager_id = current_user.id
-    else:
-        manager_id = current_user.manager_id
+    # 🔐 Resolve manager_id safely (DB truth, no leakage)
+    cursor.execute(
+        "SELECT role, manager_id FROM users WHERE id = %s",
+        (current_user.id,)
+    )
+    me = cursor.fetchone()
+
+    # If I'm a manager, my manager_id is my own user id.
+    # If I'm a user, my manager_id is stored in users.manager_id.
+    manager_id = current_user.id if (me and me.get("role") == "manager") else (me.get("manager_id") if me else None)
+
+    if manager_id is None:
+        cursor.close()
+        conn.close()
+        return jsonify({"status": "error", "message": "Unable to resolve manager_id"}), 400
 
 
     # 1) Which window? (default 7d)
@@ -421,11 +431,22 @@ def api_elite_daily_index():
     conn = get_db_connection()
     cursor = conn.cursor()
     
-    # 🔐 Resolve manager_id safely (no leakage)
-    if current_user.role == "manager":
-        manager_id = current_user.id
-    else:
-        manager_id = current_user.manager_id
+    # 🔐 Resolve manager_id safely (DB truth, no leakage)
+    cursor.execute(
+        "SELECT role, manager_id FROM users WHERE id = %s",
+        (current_user.id,)
+    )
+    me = cursor.fetchone()
+
+    # If I'm a manager, my manager_id is my own user id.
+    # If I'm a user, my manager_id is stored in users.manager_id.
+    manager_id = current_user.id if (me and me.get("role") == "manager") else (me.get("manager_id") if me else None)
+
+    if manager_id is None:
+        cursor.close()
+        conn.close()
+        return jsonify({"status": "error", "message": "Unable to resolve manager_id"}), 400
+
 
     # Pagination inputs
     try:
@@ -539,11 +560,21 @@ def api_elite_daily_index_export():
     conn = get_db_connection()
     cursor = conn.cursor()
     
-    # 🔐 Resolve manager_id safely (no leakage)
-    if current_user.role == "manager":
-        manager_id = current_user.id
-    else:
-        manager_id = current_user.manager_id
+    # 🔐 Resolve manager_id safely (DB truth, no leakage)
+    cursor.execute(
+        "SELECT role, manager_id FROM users WHERE id = %s",
+        (current_user.id,)
+    )
+    me = cursor.fetchone()
+
+    # If I'm a manager, my manager_id is my own user id.
+    # If I'm a user, my manager_id is stored in users.manager_id.
+    manager_id = current_user.id if (me and me.get("role") == "manager") else (me.get("manager_id") if me else None)
+
+    if manager_id is None:
+        cursor.close()
+        conn.close()
+        return jsonify({"status": "error", "message": "Unable to resolve manager_id"}), 400
 
 
     # Same anchor logic as the JSON endpoint
