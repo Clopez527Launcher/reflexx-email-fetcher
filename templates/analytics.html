@@ -208,76 +208,198 @@
 <!-- Chart.js -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
-<!-- ======================= EMPLOYEE TRENDS LOGIC ======================= -->
+<!-- ======================= EMPLOYEE TRENDS LOGIC (MOVEMENT + PHONE) ======================= -->
 <script>
 (() => {
   const toYMD = (d) =>
     `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
 
+  // ---------------------------
+  // ✅ Movement controls
+  // ---------------------------
   const startEl = document.getElementById('emp-start');
   const endEl   = document.getElementById('emp-end');
   const userSel = document.getElementById('emp-user');
   const apply   = document.getElementById('emp-apply');
 
+  // ---------------------------
+  // 📞 Phone controls
+  // ---------------------------
+  const pStartEl = document.getElementById('phone-start');
+  const pEndEl   = document.getElementById('phone-end');
+  const pUserSel = document.getElementById('phone-user');
+  const pApply   = document.getElementById('phone-apply');
+
+  // ---------------------------
+  // ✅ Default dates
+  // ---------------------------
   const today = new Date();
   endEl.value = toYMD(today);
   startEl.value = toYMD(new Date(today.getTime() - 6*86400000));
 
+  // Phone defaults match Movement
+  pEndEl.value = endEl.value;
+  pStartEl.value = startEl.value;
+
+  // ---------------------------
+  // 📈 Chart factory
+  // ---------------------------
   const mkLine = (ctx, label) => new Chart(ctx, {
     type: 'line',
-    data: { labels: [], datasets: [{ label, data: [], tension:0.35, pointRadius:0,
-      borderColor:'#00c0ff', backgroundColor:'rgba(0,192,255,0.08)', fill:true }] },
+    data: {
+      labels: [],
+      datasets: [{
+        label,
+        data: [],
+        tension: 0.35,
+        pointRadius: 0,
+        borderColor: '#00c0ff',
+        backgroundColor: 'rgba(0,192,255,0.08)',
+        fill: true
+      }]
+    },
     options: {
-      responsive:true, maintainAspectRatio:false,
-      plugins:{ legend:{ display:false }},
-      scales:{
-        x:{ ticks:{ color:'#9ab',
-          callback(value){ const label=this.getLabelForValue(value);
-            return /^\d{4}-\d{2}-\d{2}$/.test(label) ? label.slice(5) : label; }},
-          grid:{ color:'#1f2a36' }},
-        y:{ ticks:{ color:'#9ab' }, grid:{ color:'#1f2a36' }}
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: {
+          ticks: {
+            color: '#9ab',
+            callback(value) {
+              const label = this.getLabelForValue(value);
+              return /^\d{4}-\d{2}-\d{2}$/.test(label) ? label.slice(5) : label;
+            }
+          },
+          grid: { color: '#1f2a36' }
+        },
+        y: {
+          ticks: { color: '#9ab' },
+          grid: { color: '#1f2a36' }
+        }
       }
     }
   });
 
-  const cMouse  = mkLine(document.getElementById('emp-mouse'), 'Mouse Distance');
-  const cKeys   = mkLine(document.getElementById('emp-keys'),  'Keystrokes');
-  const cClicks = mkLine(document.getElementById('emp-clicks'),'Clicks');
-  const cIdle   = mkLine(document.getElementById('emp-idle'),  'Idle');
+  // ---------------------------
+  // ✅ Movement charts
+  // ---------------------------
+  const cMouse  = mkLine(document.getElementById('emp-mouse'),  'Mouse Distance');
+  const cKeys   = mkLine(document.getElementById('emp-keys'),   'Keystrokes');
+  const cClicks = mkLine(document.getElementById('emp-clicks'), 'Clicks');
+  const cIdle   = mkLine(document.getElementById('emp-idle'),   'Idle');
 
-  async function j(url){ const r=await fetch(url,{credentials:'same-origin'}); return r.json(); }
+  // ---------------------------
+  // 📞 Phone charts
+  // ---------------------------
+  const cInbounds  = mkLine(document.getElementById('phone-inbounds'),  'Inbounds');
+  const cOutbounds = mkLine(document.getElementById('phone-outbounds'), 'Outbounds');
+  const cIbTalk    = mkLine(document.getElementById('phone-ib-talk'),   'IB Talk (min)');
+  const cObTalk    = mkLine(document.getElementById('phone-ob-talk'),   'OB Talk (min)');
 
+  // ---------------------------
+  // 🌐 fetch helper
+  // ---------------------------
+  async function j(url){
+    const r = await fetch(url, { credentials: 'same-origin' });
+    return r.json();
+  }
+
+  // ---------------------------
+  // 👥 Load employees into BOTH dropdowns
+  // ---------------------------
   async function loadEmployees(){
     try{
       const list = await j('/manager-employees');
       const pick = (u) => (u.nickname && u.nickname.trim()) || u.email;
-      userSel.innerHTML = list.sort((a,b)=>pick(a).localeCompare(pick(b)))
-        .map(u => `<option value="${u.id}">${pick(u)}</option>`).join('');
+
+      const options = list
+        .sort((a,b)=>pick(a).localeCompare(pick(b)))
+        .map(u => `<option value="${u.id}">${pick(u)}</option>`)
+        .join('');
+
+      userSel.innerHTML = options;
+      pUserSel.innerHTML = options;
+
     }catch(e){
       userSel.innerHTML = `<option value="">(failed to load)</option>`;
+      pUserSel.innerHTML = `<option value="">(failed to load)</option>`;
       console.error(e);
     }
   }
 
-  async function refresh(){
+  // ---------------------------
+  // ✅ Refresh Movement
+  // ---------------------------
+  async function refreshMovement(){
     const uid = userSel.value;
     if(!uid) return;
-    const s=startEl.value, e=endEl.value;
+
+    const s = startEl.value, e = endEl.value;
 
     try{
       const data = await j(`/api/analytics/employee-series?user_id=${uid}&start=${s}&end=${e}`);
       const L = data.labels || [];
-      const set = (chart, arr) => { chart.data.labels=L; chart.data.datasets[0].data=arr||[]; chart.update(); };
+
+      const set = (chart, arr) => {
+        chart.data.labels = L;
+        chart.data.datasets[0].data = arr || [];
+        chart.update();
+      };
 
       set(cMouse,  data.mouse_distance);
       set(cKeys,   data.keystrokes);
       set(cClicks, data.mouse_clicks);
       set(cIdle,   data.idle_count);
-    }catch(e){ console.error(e); }
+
+    }catch(e){
+      console.error(e);
+    }
   }
 
-  apply.addEventListener('click', refresh);
-  loadEmployees().then(refresh);
+  // ---------------------------
+  // 📞 Refresh Phone
+  // ---------------------------
+  async function refreshPhone(){
+    const uid = pUserSel.value;
+    if(!uid) return;
+
+    const s = pStartEl.value, e = pEndEl.value;
+
+    try{
+      const data = await j(`/api/analytics/employee-phone-series?user_id=${uid}&start=${s}&end=${e}`);
+      const L = data.labels || [];
+
+      const set = (chart, arr) => {
+        chart.data.labels = L;
+        chart.data.datasets[0].data = arr || [];
+        chart.update();
+      };
+
+      set(cInbounds,  data.inbounds);
+      set(cOutbounds, data.outbounds);
+      set(cIbTalk,    data.ib_talk_minutes);
+      set(cObTalk,    data.ob_talk_minutes);
+
+    }catch(e){
+      console.error(e);
+    }
+  }
+
+  // ---------------------------
+  // 🖱️ Apply buttons
+  // ---------------------------
+  apply.addEventListener('click', () => { refreshMovement(); refreshPhone(); });
+  pApply.addEventListener('click', () => { refreshMovement(); refreshPhone(); });
+
+  // ---------------------------
+  // 🚀 Boot
+  // ---------------------------
+  loadEmployees().then(() => {
+    refreshMovement();
+    refreshPhone();
+  });
+
 })();
 </script>
 

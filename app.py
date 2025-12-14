@@ -2026,6 +2026,88 @@ def bucket_movement_detail():
             pass
         return jsonify(empty_payload(user_name or "Unknown")), 200
 
+from datetime import datetime
+
+@app.route("/api/analytics/employee-phone-series")
+@login_required
+def api_employee_phone_series():
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    # 🔐 Resolve manager_id safely
+    if current_user.role == "manager":
+        manager_id = current_user.id
+    else:
+        manager_id = current_user.manager_id
+
+    user_id = request.args.get("user_id", type=int)
+    start = request.args.get("start")
+    end = request.args.get("end")
+
+    if not user_id or not start or not end:
+        return jsonify({"error": "Missing user_id/start/end"}), 400
+
+    # ✅ Optional safety: make sure this user belongs to this manager
+    cursor.execute("""
+        SELECT 1
+        FROM users
+        WHERE id = %s AND (id = %s OR manager_id = %s)
+        LIMIT 1
+    """, (user_id, manager_id, manager_id))
+    ok = cursor.fetchone()
+    if not ok:
+        return jsonify({"error": "Not allowed"}), 403
+
+    # ==========================================================
+    # ✅ EDIT THESE 4 COLUMN NAMES IF YOURS ARE DIFFERENT
+    # ==========================================================
+    INBOUNDS_COL = "inbounds"
+    OUTBOUNDS_COL = "outbounds"
+    IB_TALK_SECONDS_COL = "ib_talk_seconds"
+    OB_TALK_SECONDS_COL = "ob_talk_seconds"
+
+    cursor.execute(f"""
+        SELECT
+            date,
+            COALESCE({INBOUNDS_COL}, 0) AS inbounds,
+            COALESCE({OUTBOUNDS_COL}, 0) AS outbounds,
+            COALESCE({IB_TALK_SECONDS_COL}, 0) AS ib_talk_seconds,
+            COALESCE({OB_TALK_SECONDS_COL}, 0) AS ob_talk_seconds
+        FROM fact_daily
+        WHERE user_id = %s
+          AND date BETWEEN %s AND %s
+        ORDER BY date ASC
+    """, (user_id, start, end))
+
+    rows = cursor.fetchall() or []
+
+    labels = []
+    inbounds = []
+    outbounds = []
+    ib_talk_minutes = []
+    ob_talk_minutes = []
+
+    for r in rows:
+        day = r["date"].strftime("%Y-%m-%d") if hasattr(r["date"], "strftime") else str(r["date"])
+        labels.append(day)
+
+        inbounds.append(int(r["inbounds"] or 0))
+        outbounds.append(int(r["outbounds"] or 0))
+
+        ib_sec = float(r["ib_talk_seconds"] or 0)
+        ob_sec = float(r["ob_talk_seconds"] or 0)
+        ib_talk_minutes.append(round(ib_sec / 60.0, 2))
+        ob_talk_minutes.append(round(ob_sec / 60.0, 2))
+
+    return jsonify({
+        "labels": labels,
+        "inbounds": inbounds,
+        "outbounds": outbounds,
+        "ib_talk_minutes": ib_talk_minutes,
+        "ob_talk_minutes": ob_talk_minutes
+    })
+
+
 
 # ✅ Notifications
 @app.route('/notifications')
