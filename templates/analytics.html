@@ -127,6 +127,16 @@
     align-items: start;
   }
 
+  /* =================== Widget positions ===================
+     Row 1: Phone | Team
+     Row 2: Quotes | Movement
+  */
+  #phoneTrends     { grid-column: 1; grid-row: 1; }
+  #teamIndexTrends { grid-column: 2; grid-row: 1; }
+  #quoteTrends     { grid-column: 1; grid-row: 2; }
+  #empTrends       { grid-column: 2; grid-row: 2; }
+
+
   /* ✅ Force Movement to bottom-left (row 2, col 1) */
   #empTrends {
     grid-column: 1 / 2;
@@ -161,6 +171,11 @@
     .widgets-grid {
       grid-template-columns: 1fr;
     }
+
+    /* On mobile, let natural DOM order stack */
+    #phoneTrends,
+    #teamIndexTrends,
+    #quoteTrends,
     #empTrends {
       grid-column: auto;
       grid-row: auto;
@@ -295,25 +310,42 @@
       </div>
 						
 					 <!-- ======================= TEAM INDEX TRENDS (NEW) ======================= -->
-      <div id="teamIndexTrends" class="emp-card">
-        <div class="emp-controls">
-          <input id="team-start" class="emp-input" type="date" />
-          <input id="team-end" class="emp-input" type="date" />
+						<div id="teamIndexTrends" class="emp-card">
+								<div class="emp-controls">
+										<input id="team-start" class="emp-input" type="date" />
+										<input id="team-end" class="emp-input" type="date" />
 
-          <h3>Adjusted Team Index</h3>
+										<h3>Adjusted Team Index</h3>
 
-          <div class="right">
-            <button id="team-apply" class="emp-btn">Apply</button>
-          </div>
-        </div>
+										<div class="right">
+												<button id="team-apply" class="emp-btn">Apply</button>
+										</div>
+								</div>
 
-        <div class="emp-grid">
-          <div class="emp-chart" style="grid-column: 1 / -1;">
-            <h4>Elite Calls / Talk Time (per minute)</h4>
-            <div class="emp-canvas-wrap"><canvas id="team-index"></canvas></div>
-          </div>
-        </div>
-      </div>
+								<!-- ✅ Use same 2x2 grid as other widgets so height matches -->
+								<div class="emp-grid">
+										<div class="emp-chart">
+												<h4>Elite Calls / Talk Time (per minute)</h4>
+												<div class="emp-canvas-wrap"><canvas id="team-index"></canvas></div>
+										</div>
+
+										<!-- 3 spacers to match the 4-tile layout/height -->
+										<div class="emp-chart" style="visibility:hidden;">
+												<h4>Spacer</h4>
+												<div class="emp-canvas-wrap"></div>
+										</div>
+
+										<div class="emp-chart" style="visibility:hidden;">
+												<h4>Spacer</h4>
+												<div class="emp-canvas-wrap"></div>
+										</div>
+
+										<div class="emp-chart" style="visibility:hidden;">
+												<h4>Spacer</h4>
+												<div class="emp-canvas-wrap"></div>
+										</div>
+								</div>
+						</div>
 
     </div> <!-- /widgets-grid -->
   </section>
