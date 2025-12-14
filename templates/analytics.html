@@ -164,7 +164,44 @@
         </div>
       </div>
     </div>
+				<!-- ======================= PHONE TRENDS (NEW) ======================= -->
+    <div id="phoneTrends" class="emp-card">
+      <div class="emp-controls">
+        <input id="phone-start" class="emp-input" type="date" />
+        <input id="phone-end" class="emp-input" type="date" />
 
+        <h3>Phone Trends</h3>
+
+        <div class="right">
+          <select id="phone-user" class="emp-select">
+            <option value="">Loading employees…</option>
+          </select>
+          <button id="phone-apply" class="emp-btn">Apply</button>
+        </div>
+      </div>
+
+      <div class="emp-grid">
+        <div class="emp-chart">
+          <h4>Inbounds</h4>
+          <div class="emp-canvas-wrap"><canvas id="phone-inbounds"></canvas></div>
+        </div>
+
+        <div class="emp-chart">
+          <h4>Outbounds</h4>
+          <div class="emp-canvas-wrap"><canvas id="phone-outbounds"></canvas></div>
+        </div>
+
+        <div class="emp-chart">
+          <h4>IB Talk Time (min)</h4>
+          <div class="emp-canvas-wrap"><canvas id="phone-ib-talk"></canvas></div>
+        </div>
+
+        <div class="emp-chart">
+          <h4>OB Talk Time (min)</h4>
+          <div class="emp-canvas-wrap"><canvas id="phone-ob-talk"></canvas></div>
+        </div>
+      </div>
+    </div>
   </section>
 </div>
 
