@@ -323,13 +323,14 @@ def api_reflexx_kpi():
             {ratio_col} AS ratio,
             {calls_col} AS elite_calls,
             {talk_col} AS talk_seconds
-        FROM elite_calls_master
+        FROM elite_calls_fact_daily
         WHERE
             day = %s
+            AND manager_id = %s
         ORDER BY {ratio_col} DESC;
     """
 
-    cursor.execute(query, (anchor_day,))
+    cursor.execute(query, (anchor_day, current_user.manager_id))
     rows = cursor.fetchall()
 
     # 5) Build leaderboard + compute team average index (ratio * 100)
@@ -443,11 +444,11 @@ def api_elite_daily_index():
     # 1) Count total rows in the window (for pagination)
     count_sql = """
         SELECT COUNT(*) AS cnt
-        FROM elite_calls_master
+        FROM elite_calls_fact_daily
         WHERE day BETWEEN %s AND %s
-          AND daily_elite_per_minute IS NOT NULL
+          AND manager_id = %s
     """
-    cursor.execute(count_sql, (start_day, anchor_day))
+    cursor.execute(count_sql, (start_day, anchor_day, current_user.manager_id))
     count_row = cursor.fetchone()
     total_rows = count_row["cnt"] if count_row and "cnt" in count_row else 0
 
@@ -476,14 +477,18 @@ def api_elite_daily_index():
             day,
             user_id,
             user_name,
-            daily_elite_per_minute
-        FROM elite_calls_master
+            w_7d_ratio AS daily_elite_per_minute
+        FROM elite_calls_fact_daily
         WHERE day BETWEEN %s AND %s
-          AND daily_elite_per_minute IS NOT NULL
-        ORDER BY day DESC, daily_elite_per_minute DESC
+          AND manager_id = %s
+        ORDER BY day DESC, w_7d_ratio DESC
         LIMIT %s OFFSET %s
     """
-    cursor.execute(data_sql, (start_day, anchor_day, page_size, offset))
+    cursor.execute(
+        data_sql,
+        (start_day, anchor_day, current_user.manager_id, page_size, offset)
+    )
+
     rows = cursor.fetchall()
 
     result_rows = []
@@ -532,13 +537,17 @@ def api_elite_daily_index_export():
             day,
             user_id,
             user_name,
-            daily_elite_per_minute
-        FROM elite_calls_master
+            w_7d_ratio AS daily_elite_per_minute
+        FROM elite_calls_fact_daily
         WHERE day BETWEEN %s AND %s
-          AND daily_elite_per_minute IS NOT NULL
+          AND manager_id = %s
         ORDER BY day DESC, user_name ASC
     """
-    cursor.execute(export_sql, (start_day, anchor_day))
+
+    cursor.execute(
+        export_sql,
+        (start_day, anchor_day, current_user.manager_id)
+    )
     rows = cursor.fetchall()
 
     # Build CSV in memory
