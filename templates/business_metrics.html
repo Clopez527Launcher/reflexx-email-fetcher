@@ -5,6 +5,17 @@
 {% block content %}
 
 <style>
+		/* ✅ TOP SPACING FIX (Business Metrics page) */
+		.page-wrapper{
+				margin-top: 0 !important;
+				padding-top: 10px !important;   /* ✅ make sure it's px */
+		}
+
+		.page-wrapper h1:first-child,
+		.page-wrapper h2:first-child{
+				margin-top: 0 !important;
+		}
+
   /* ===== Business Metrics / Uploads styles (no layout hacks) ===== */
 
   /* 🔹 Use lighter navy background like Dashboard + pull sidebar up */
