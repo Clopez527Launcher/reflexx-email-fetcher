@@ -127,43 +127,6 @@
 
   <section class="analytics-section">
 
-    <div id="empTrends" class="emp-card">
-      <div class="emp-controls">
-        <input id="emp-start" class="emp-input" type="date" />
-        <input id="emp-end" class="emp-input" type="date" />
-
-        <h3>Movement Trends</h3>
-
-        <div class="right">
-          <select id="emp-user" class="emp-select">
-            <option value="">Loading employees…</option>
-          </select>
-          <button id="emp-apply" class="emp-btn">Apply</button>
-        </div>
-      </div>
-
-      <div class="emp-grid">
-        <div class="emp-chart">
-          <h4>Mouse Distance</h4>
-          <div class="emp-canvas-wrap"><canvas id="emp-mouse"></canvas></div>
-        </div>
-
-        <div class="emp-chart">
-          <h4>Keystrokes</h4>
-          <div class="emp-canvas-wrap"><canvas id="emp-keys"></canvas></div>
-        </div>
-
-        <div class="emp-chart">
-          <h4>Clicks</h4>
-          <div class="emp-canvas-wrap"><canvas id="emp-clicks"></canvas></div>
-        </div>
-
-        <div class="emp-chart">
-          <h4>Idle Time</h4>
-          <div class="emp-canvas-wrap"><canvas id="emp-idle"></canvas></div>
-        </div>
-      </div>
-    </div>
 				<!-- ======================= PHONE TRENDS (NEW) ======================= -->
     <div id="phoneTrends" class="emp-card">
       <div class="emp-controls">
@@ -202,13 +165,90 @@
         </div>
       </div>
     </div>
+				<!-- ======================= QUOTING TRENDS (NEW) ======================= -->
+    <div id="quoteTrends" class="emp-card">
+      <div class="emp-controls">
+        <input id="quote-start" class="emp-input" type="date" />
+        <input id="quote-end" class="emp-input" type="date" />
+
+        <h3>Quoting Trends</h3>
+
+        <div class="right">
+          <select id="quote-user" class="emp-select">
+            <option value="">Loading employees…</option>
+          </select>
+          <button id="quote-apply" class="emp-btn">Apply</button>
+        </div>
+      </div>
+
+      <div class="emp-grid">
+        <div class="emp-chart">
+          <h4>AdvisorPro Minutes</h4>
+          <div class="emp-canvas-wrap"><canvas id="quote-ap-min"></canvas></div>
+        </div>
+
+        <div class="emp-chart">
+          <h4>Quoted Items</h4>
+          <div class="emp-canvas-wrap"><canvas id="quote-items"></canvas></div>
+        </div>
+
+        <div class="emp-chart">
+          <h4>Quotes Unique</h4>
+          <div class="emp-canvas-wrap"><canvas id="quote-unique"></canvas></div>
+        </div>
+
+        <!-- blank 4th tile so the grid stays aligned -->
+        <div class="emp-chart" style="visibility:hidden;">
+          <h4>Spacer</h4>
+          <div class="emp-canvas-wrap"></div>
+        </div>
+      </div>
+    </div>
+			 	<!-- ======================= Movement TRENDS (NEW) ======================= -->
+				<div id="empTrends" class="emp-card">
+      <div class="emp-controls">
+        <input id="emp-start" class="emp-input" type="date" />
+        <input id="emp-end" class="emp-input" type="date" />
+
+        <h3>Movement Trends</h3>
+
+        <div class="right">
+          <select id="emp-user" class="emp-select">
+            <option value="">Loading employees…</option>
+          </select>
+          <button id="emp-apply" class="emp-btn">Apply</button>
+        </div>
+      </div>
+
+      <div class="emp-grid">
+        <div class="emp-chart">
+          <h4>Mouse Distance</h4>
+          <div class="emp-canvas-wrap"><canvas id="emp-mouse"></canvas></div>
+        </div>
+
+        <div class="emp-chart">
+          <h4>Keystrokes</h4>
+          <div class="emp-canvas-wrap"><canvas id="emp-keys"></canvas></div>
+        </div>
+
+        <div class="emp-chart">
+          <h4>Clicks</h4>
+          <div class="emp-canvas-wrap"><canvas id="emp-clicks"></canvas></div>
+        </div>
+
+        <div class="emp-chart">
+          <h4>Idle Time</h4>
+          <div class="emp-canvas-wrap"><canvas id="emp-idle"></canvas></div>
+        </div>
+      </div>
+    </div>
   </section>
 </div>
 
 <!-- Chart.js -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
-<!-- ======================= EMPLOYEE TRENDS LOGIC (MOVEMENT + PHONE) ======================= -->
+<!-- ======================= EMPLOYEE TRENDS LOGIC (MOVEMENT + PHONE + QUOTING) ======================= -->
 <script>
 (() => {
   const toYMD = (d) =>
@@ -231,6 +271,14 @@
   const pApply   = document.getElementById('phone-apply');
 
   // ---------------------------
+  // 🧾 Quoting controls
+  // ---------------------------
+  const qStartEl = document.getElementById('quote-start');
+  const qEndEl   = document.getElementById('quote-end');
+  const qUserSel = document.getElementById('quote-user');
+  const qApply   = document.getElementById('quote-apply');
+
+  // ---------------------------
   // ✅ Default dates
   // ---------------------------
   const today = new Date();
@@ -242,6 +290,10 @@
   // Phone defaults match Movement
   pEndEl.value = endEl.value;
   pStartEl.value = startEl.value;
+
+  // Quoting defaults match Movement
+  qEndEl.value = endEl.value;
+  qStartEl.value = startEl.value;
 
   // ---------------------------
   // 📈 Chart factory
@@ -300,6 +352,13 @@
   const cObTalk    = mkLine(document.getElementById('phone-ob-talk'),   'OB Talk (min)');
 
   // ---------------------------
+  // 🧾 Quoting charts
+  // ---------------------------
+  const cApMin   = mkLine(document.getElementById('quote-ap-min'), 'AdvisorPro Minutes');
+  const cQItems  = mkLine(document.getElementById('quote-items'),  'Quoted Items');
+  const cQUnique = mkLine(document.getElementById('quote-unique'), 'Quotes Unique');
+
+  // ---------------------------
   // 🌐 fetch helper
   // ---------------------------
   async function j(url){
@@ -321,9 +380,8 @@
     }
   }
 
-
   // ---------------------------
-  // 👥 Load employees into BOTH dropdowns
+  // 👥 Load employees into ALL dropdowns
   // ---------------------------
   async function loadEmployees(){
     try{
@@ -337,12 +395,21 @@
 
       userSel.innerHTML = options;
       pUserSel.innerHTML = options;
+      qUserSel.innerHTML = options;
 
     }catch(e){
       userSel.innerHTML = `<option value="">(failed to load)</option>`;
       pUserSel.innerHTML = `<option value="">(failed to load)</option>`;
+      qUserSel.innerHTML = `<option value="">(failed to load)</option>`;
       console.error(e);
     }
+  }
+
+  // Small helper to apply labels+data
+  function setSeries(chart, labels, arr){
+    chart.data.labels = labels;
+    chart.data.datasets[0].data = arr || [];
+    chart.update();
   }
 
   // ---------------------------
@@ -358,16 +425,10 @@
       const data = await j(`/api/analytics/employee-series?user_id=${uid}&start=${s}&end=${e}`);
       const L = data.labels || [];
 
-      const set = (chart, arr) => {
-        chart.data.labels = L;
-        chart.data.datasets[0].data = arr || [];
-        chart.update();
-      };
-
-      set(cMouse,  data.mouse_distance);
-      set(cKeys,   data.keystrokes);
-      set(cClicks, data.mouse_clicks);
-      set(cIdle,   data.idle_count);
+      setSeries(cMouse,  L, data.mouse_distance);
+      setSeries(cKeys,   L, data.keystrokes);
+      setSeries(cClicks, L, data.mouse_clicks);
+      setSeries(cIdle,   L, data.idle_count);
 
     }catch(e){
       console.error(e);
@@ -387,16 +448,32 @@
       const data = await j(`/api/analytics/employee-phone-series?user_id=${uid}&start=${s}&end=${e}`);
       const L = data.labels || [];
 
-      const set = (chart, arr) => {
-        chart.data.labels = L;
-        chart.data.datasets[0].data = arr || [];
-        chart.update();
-      };
+      setSeries(cInbounds,  L, data.inbounds);
+      setSeries(cOutbounds, L, data.outbounds);
+      setSeries(cIbTalk,    L, data.ib_talk_minutes);
+      setSeries(cObTalk,    L, data.ob_talk_minutes);
 
-      set(cInbounds,  data.inbounds);
-      set(cOutbounds, data.outbounds);
-      set(cIbTalk,    data.ib_talk_minutes);
-      set(cObTalk,    data.ob_talk_minutes);
+    }catch(e){
+      console.error(e);
+    }
+  }
+
+  // ---------------------------
+  // 🧾 Refresh Quoting
+  // ---------------------------
+  async function refreshQuoting(){
+    const uid = qUserSel.value;
+    if(!uid) return;
+
+    const s = qStartEl.value, e = qEndEl.value;
+
+    try{
+      const data = await j(`/api/analytics/employee-quote-series?user_id=${uid}&start=${s}&end=${e}`);
+      const L = data.labels || [];
+
+      setSeries(cApMin,   L, data.advisor_pro_minutes);
+      setSeries(cQItems,  L, data.quoted_items);
+      setSeries(cQUnique, L, data.quotes_unique);
 
     }catch(e){
       console.error(e);
@@ -406,8 +483,9 @@
   // ---------------------------
   // 🖱️ Apply buttons
   // ---------------------------
-  apply.addEventListener('click', () => { refreshMovement(); refreshPhone(); });
-  pApply.addEventListener('click', () => { refreshMovement(); refreshPhone(); });
+  apply.addEventListener('click', () => { refreshMovement(); refreshPhone(); refreshQuoting(); });
+  pApply.addEventListener('click', () => { refreshMovement(); refreshPhone(); refreshQuoting(); });
+  qApply.addEventListener('click', () => { refreshMovement(); refreshPhone(); refreshQuoting(); });
 
   // ---------------------------
   // 🚀 Boot
@@ -415,6 +493,7 @@
   loadEmployees().then(() => {
     refreshMovement();
     refreshPhone();
+    refreshQuoting();
   });
 
 })();

@@ -2114,6 +2114,79 @@ def api_employee_phone_series():
         "ob_talk_minutes": ob_talk_minutes
     })
 
+@app.route("/api/analytics/employee-quote-series")
+@login_required
+def api_employee_quote_series():
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    manager_id = getattr(current_user, "manager_id", None) or current_user.id
+
+    user_id = request.args.get("user_id", type=int)
+    start = request.args.get("start")
+    end = request.args.get("end")
+
+    if not user_id or not start or not end:
+        return jsonify({"error": "Missing user_id/start/end"}), 400
+
+    cursor.execute("""
+        SELECT 1
+        FROM users
+        WHERE id = %s
+          AND (id = %s OR manager_id = %s)
+        LIMIT 1
+    """, (user_id, manager_id, manager_id))
+
+    ok = cursor.fetchone()
+    if not ok:
+        return jsonify({"error": "Not allowed"}), 403
+
+    # ✅ fact_daily columns (change if yours differ)
+    AP_MIN_COL = "advisor_pro_minutes"
+    QUOTED_ITEMS_COL = "quoted_items"
+    QUOTES_UNIQUE_COL = "quotes_unique"
+
+    cursor.execute(f"""
+        SELECT
+            date,
+            COALESCE({AP_MIN_COL}, 0) AS advisor_pro_minutes,
+            COALESCE({QUOTED_ITEMS_COL}, 0) AS quoted_items,
+            COALESCE({QUOTES_UNIQUE_COL}, 0) AS quotes_unique
+        FROM fact_daily
+        WHERE user_id = %s
+          AND date BETWEEN %s AND %s
+        ORDER BY date ASC
+    """, (user_id, start, end))
+
+    rows = cursor.fetchall() or []
+
+    labels = []
+    advisor_pro_minutes = []
+    quoted_items = []
+    quotes_unique = []
+
+    for r in rows:
+        day = r["date"].strftime("%Y-%m-%d") if hasattr(r["date"], "strftime") else str(r["date"])
+
+        apm = float(r["advisor_pro_minutes"] or 0)
+        qi  = int(r["quoted_items"] or 0)
+        qu  = int(r["quotes_unique"] or 0)
+
+        # ✅ Skip days where all 3 are zero
+        if apm == 0 and qi == 0 and qu == 0:
+            continue
+
+        labels.append(day)
+        advisor_pro_minutes.append(apm)
+        quoted_items.append(qi)
+        quotes_unique.append(qu)
+
+    return jsonify({
+        "labels": labels,
+        "advisor_pro_minutes": advisor_pro_minutes,
+        "quoted_items": quoted_items,
+        "quotes_unique": quotes_unique
+    })
 
 # ✅ Notifications
 @app.route('/notifications')
