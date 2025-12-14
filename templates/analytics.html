@@ -119,68 +119,66 @@
     height:180px;
   }
 		
-		/* =================== NEW: widget grid layout =================== */
-  .widgets-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;   /* 2 columns */
-    gap: 16px;
-    align-items: start;
-  }
+		/* =================== Widgets grid layout =================== */
+		.widgets-grid {
+				display: grid;
+				grid-template-columns: 1fr 1fr;   /* 2 columns */
+				gap: 16px;
+				align-items: start;
+		}
 
-  /* =================== Widget positions ===================
-     Row 1: Phone | Team
-     Row 2: Quotes | Movement
-  */
-  #phoneTrends     { grid-column: 1; grid-row: 1; }
-  #teamIndexTrends { grid-column: 2; grid-row: 1; }
-  #quoteTrends     { grid-column: 1; grid-row: 2; }
-  #empTrends       { grid-column: 2; grid-row: 2; }
+		/* ✅ Exact layout you want:
+					Top left  = Phone
+					Top right = Team Index
+					Bottom left = Quotes
+					Bottom right = Movement
+		*/
+		#phoneTrends     { grid-column: 1; grid-row: 1; }
+		#teamIndexTrends { grid-column: 2; grid-row: 1; }
+		#quoteTrends     { grid-column: 1; grid-row: 2; }
+		#empTrends       { grid-column: 2; grid-row: 2; }
 
+		/* ✅ Make the cards tighter */
+		.emp-card {
+				padding: 12px;
+				margin-top: 0;   /* IMPORTANT: grid controls spacing now */
+		}
 
-  /* ✅ Force Movement to bottom-left (row 2, col 1) */
-  #empTrends {
-    grid-column: 1 / 2;
-    grid-row: 2;
-  }
-		
-		/* ✅ Force Team Index to bottom-right (row 2, col 2) */
-  #teamIndexTrends {
-    grid-column: 2 / 3;
-    grid-row: 2;
-  }
+		/* ✅ Smaller charts */
+		.emp-chart {
+				min-height: 190px;
+				padding: 10px;
+		}
 
+		.emp-canvas-wrap {
+				height: 140px;
+		}
 
-  /* ✅ Make the cards tighter */
-  .emp-card {
-    padding: 12px;
-    margin-top: 14px;
-  }
+		/* ✅ Make all widgets feel same height (helps Team Index match) */
+		#phoneTrends,
+		#teamIndexTrends,
+		#quoteTrends,
+		#empTrends {
+				min-height: 460px;   /* tweak if you want taller/shorter */
+		}
 
-  /* ✅ Smaller charts */
-  .emp-chart {
-    min-height: 190px;
-    padding: 10px;
-  }
+		/* Mobile: stack everything */
+		@media (max-width: 980px) {
+				.widgets-grid {
+						grid-template-columns: 1fr;
+				}
 
-  .emp-canvas-wrap {
-    height: 140px;
-  }
+				/* On mobile, let natural DOM order stack */
+				#phoneTrends,
+				#teamIndexTrends,
+				#quoteTrends,
+				#empTrends {
+						grid-column: auto;
+						grid-row: auto;
+						min-height: auto;
+				}
+		}
 
-  /* Mobile: stack everything */
-  @media (max-width: 980px) {
-    .widgets-grid {
-      grid-template-columns: 1fr;
-    }
-
-    /* On mobile, let natural DOM order stack */
-    #phoneTrends,
-    #teamIndexTrends,
-    #quoteTrends,
-    #empTrends {
-      grid-column: auto;
-      grid-row: auto;
-    }
-  }
 </style>
 
 <!-- ======================= PAGE WRAPPER ======================= -->
