@@ -235,7 +235,9 @@
   // ---------------------------
   const today = new Date();
   endEl.value = toYMD(today);
-  startEl.value = toYMD(new Date(today.getTime() - 6*86400000));
+
+  // ✅ Default to last 14 days (today + previous 13 days)
+  startEl.value = toYMD(new Date(today.getTime() - 13*86400000));
 
   // Phone defaults match Movement
   pEndEl.value = endEl.value;
