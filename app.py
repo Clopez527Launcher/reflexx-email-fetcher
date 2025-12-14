@@ -2090,21 +2090,21 @@ def api_employee_phone_series():
 
     for r in rows:
         day = r["date"].strftime("%Y-%m-%d") if hasattr(r["date"], "strftime") else str(r["date"])
+
+        ib  = int(r["inbounds"] or 0)
+        ob  = int(r["outbounds"] or 0)
+        ibm = float(r["ib_talk_minutes"] or 0)
+        obm = float(r["ob_talk_minutes"] or 0)
+
+        # ✅ Skip days where EVERYTHING is zero
+        if ib == 0 and ob == 0 and ibm == 0 and obm == 0:
+            continue
+
         labels.append(day)
-
-        inbounds.append(int(r["inbounds"] or 0))
-        outbounds.append(int(r["outbounds"] or 0))
-
-        ib_talk_minutes.append(float(r["ib_talk_minutes"] or 0))
-        ob_talk_minutes.append(float(r["ob_talk_minutes"] or 0))
-
-
-    return jsonify({
-        "labels": labels,
-        "inbounds": inbounds,
-        "outbounds": outbounds,
-        "ib_talk_minutes": ib_talk_minutes,
-        "ob_talk_minutes": ob_talk_minutes
+        inbounds.append(ib)
+        outbounds.append(ob)
+        ib_talk_minutes.append(ibm)
+        ob_talk_minutes.append(obm)
     })
 
 # ✅ Notifications
