@@ -2105,7 +2105,15 @@ def api_employee_phone_series():
         outbounds.append(ob)
         ib_talk_minutes.append(ibm)
         ob_talk_minutes.append(obm)
+
+    return jsonify({
+        "labels": labels,
+        "inbounds": inbounds,
+        "outbounds": outbounds,
+        "ib_talk_minutes": ib_talk_minutes,
+        "ob_talk_minutes": ob_talk_minutes
     })
+
 
 # ✅ Notifications
 @app.route('/notifications')
