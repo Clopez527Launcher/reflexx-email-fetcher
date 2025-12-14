@@ -2034,11 +2034,9 @@ def api_employee_phone_series():
     conn = get_db_connection()
     cursor = conn.cursor()
 
-    # 🔐 Resolve manager_id safely
-    if current_user.role == "manager":
-        manager_id = current_user.id
-    else:
-        manager_id = current_user.manager_id
+    # 🔐 Resolve manager_id safely (works even if User has no .role)
+    manager_id = getattr(current_user, "manager_id", None) or current_user.id
+
 
     user_id = request.args.get("user_id", type=int)
     start = request.args.get("start")
@@ -2051,9 +2049,11 @@ def api_employee_phone_series():
     cursor.execute("""
         SELECT 1
         FROM users
-        WHERE id = %s AND (id = %s OR manager_id = %s)
+        WHERE id = %s
+          AND (id = %s OR manager_id = %s)
         LIMIT 1
     """, (user_id, manager_id, manager_id))
+
     ok = cursor.fetchone()
     if not ok:
         return jsonify({"error": "Not allowed"}), 403
