@@ -302,8 +302,23 @@
   // ---------------------------
   async function j(url){
     const r = await fetch(url, { credentials: 'same-origin' });
-    return r.json();
+
+    // Read as text first so HTML error pages don't crash JSON parsing
+    const text = await r.text();
+
+    if (!r.ok) {
+      console.error("API ERROR:", r.status, url, text.slice(0, 300));
+      throw new Error(`API ${r.status}: ${url}`);
+    }
+
+    try {
+      return JSON.parse(text);
+    } catch (e) {
+      console.error("API returned non-JSON:", url, text.slice(0, 300));
+      throw e;
+    }
   }
+
 
   // ---------------------------
   // 👥 Load employees into BOTH dropdowns
