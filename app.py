@@ -268,6 +268,13 @@ def api_reflexx_kpi():
     """
     conn = get_db_connection()
     cursor = conn.cursor()   # assumes dict-style rows from your helper
+    
+    # 🔐 Resolve manager_id safely (no leakage)
+    if current_user.role == "manager":
+        manager_id = current_user.id
+    else:
+        manager_id = current_user.manager_id
+
 
     # 1) Which window? (default 7d)
     period = request.args.get("period", "7d")
@@ -330,7 +337,7 @@ def api_reflexx_kpi():
         ORDER BY {ratio_col} DESC;
     """
 
-    cursor.execute(query, (anchor_day, current_user.manager_id))
+    cursor.execute(query, (anchor_day, manager_id))
     rows = cursor.fetchall()
 
     # 5) Build leaderboard + compute team average index (ratio * 100)
@@ -413,6 +420,12 @@ def api_elite_daily_index():
     """
     conn = get_db_connection()
     cursor = conn.cursor()
+    
+    # 🔐 Resolve manager_id safely (no leakage)
+    if current_user.role == "manager":
+        manager_id = current_user.id
+    else:
+        manager_id = current_user.manager_id
 
     # Pagination inputs
     try:
@@ -448,7 +461,7 @@ def api_elite_daily_index():
         WHERE day BETWEEN %s AND %s
           AND manager_id = %s
     """
-    cursor.execute(count_sql, (start_day, anchor_day, current_user.manager_id))
+    cursor.execute(count_sql, (start_day, anchor_day, manager_id))
     count_row = cursor.fetchone()
     total_rows = count_row["cnt"] if count_row and "cnt" in count_row else 0
 
@@ -486,7 +499,7 @@ def api_elite_daily_index():
     """
     cursor.execute(
         data_sql,
-        (start_day, anchor_day, current_user.manager_id, page_size, offset)
+        (start_day, anchor_day, manager_id, page_size, offset)
     )
 
     rows = cursor.fetchall()
@@ -525,6 +538,13 @@ def api_elite_daily_index_export():
     """
     conn = get_db_connection()
     cursor = conn.cursor()
+    
+    # 🔐 Resolve manager_id safely (no leakage)
+    if current_user.role == "manager":
+        manager_id = current_user.id
+    else:
+        manager_id = current_user.manager_id
+
 
     # Same anchor logic as the JSON endpoint
     utc_now = datetime.utcnow()
@@ -546,8 +566,9 @@ def api_elite_daily_index_export():
 
     cursor.execute(
         export_sql,
-        (start_day, anchor_day, current_user.manager_id)
+        (start_day, anchor_day, manager_id)
     )
+
     rows = cursor.fetchall()
 
     # Build CSV in memory
