@@ -118,130 +118,176 @@
     width:100%;
     height:180px;
   }
+		
+		/* =================== NEW: widget grid layout =================== */
+  .widgets-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;   /* 2 columns */
+    gap: 16px;
+    align-items: start;
+  }
+
+  /* ✅ Force Movement to bottom-left (row 2, col 1) */
+  #empTrends {
+    grid-column: 1 / 2;
+    grid-row: 2;
+  }
+
+  /* ✅ Make the cards tighter */
+  .emp-card {
+    padding: 12px;
+    margin-top: 14px;
+  }
+
+  /* ✅ Smaller charts */
+  .emp-chart {
+    min-height: 190px;
+    padding: 10px;
+  }
+
+  .emp-canvas-wrap {
+    height: 140px;
+  }
+
+  /* Mobile: stack everything */
+  @media (max-width: 980px) {
+    .widgets-grid {
+      grid-template-columns: 1fr;
+    }
+    #empTrends {
+      grid-column: auto;
+      grid-row: auto;
+    }
+  }
 </style>
 
-<!-- ======================= PAGE WRAPPER (THE FIX YOU NEEDED) ======================= -->
+<!-- ======================= PAGE WRAPPER ======================= -->
 <div class="analytics-page-wrapper">
 
   <h1 class="analytics-h1">Graphs</h1>
 
   <section class="analytics-section">
+    <div class="widgets-grid">
 
-				<!-- ======================= PHONE TRENDS (NEW) ======================= -->
-    <div id="phoneTrends" class="emp-card">
-      <div class="emp-controls">
-        <input id="phone-start" class="emp-input" type="date" />
-        <input id="phone-end" class="emp-input" type="date" />
+      <!-- ======================= PHONE TRENDS ======================= -->
+      <div id="phoneTrends" class="emp-card">
+        <div class="emp-controls">
+          <input id="phone-start" class="emp-input" type="date" />
+          <input id="phone-end" class="emp-input" type="date" />
 
-        <h3>Phone Trends</h3>
+          <h3>Phone Trends</h3>
 
-        <div class="right">
-          <select id="phone-user" class="emp-select">
-            <option value="">Loading employees…</option>
-          </select>
-          <button id="phone-apply" class="emp-btn">Apply</button>
+          <div class="right">
+            <select id="phone-user" class="emp-select">
+              <option value="">Loading employees…</option>
+            </select>
+            <button id="phone-apply" class="emp-btn">Apply</button>
+          </div>
+        </div>
+
+        <div class="emp-grid">
+          <div class="emp-chart">
+            <h4>Inbounds</h4>
+            <div class="emp-canvas-wrap"><canvas id="phone-inbounds"></canvas></div>
+          </div>
+
+          <div class="emp-chart">
+            <h4>Outbounds</h4>
+            <div class="emp-canvas-wrap"><canvas id="phone-outbounds"></canvas></div>
+          </div>
+
+          <div class="emp-chart">
+            <h4>IB Talk Time (min)</h4>
+            <div class="emp-canvas-wrap"><canvas id="phone-ib-talk"></canvas></div>
+          </div>
+
+          <div class="emp-chart">
+            <h4>OB Talk Time (min)</h4>
+            <div class="emp-canvas-wrap"><canvas id="phone-ob-talk"></canvas></div>
+          </div>
         </div>
       </div>
 
-      <div class="emp-grid">
-        <div class="emp-chart">
-          <h4>Inbounds</h4>
-          <div class="emp-canvas-wrap"><canvas id="phone-inbounds"></canvas></div>
+      <!-- ======================= QUOTING TRENDS ======================= -->
+      <div id="quoteTrends" class="emp-card">
+        <div class="emp-controls">
+          <input id="quote-start" class="emp-input" type="date" />
+          <input id="quote-end" class="emp-input" type="date" />
+
+          <h3>Quoting Trends</h3>
+
+          <div class="right">
+            <select id="quote-user" class="emp-select">
+              <option value="">Loading employees…</option>
+            </select>
+            <button id="quote-apply" class="emp-btn">Apply</button>
+          </div>
         </div>
 
-        <div class="emp-chart">
-          <h4>Outbounds</h4>
-          <div class="emp-canvas-wrap"><canvas id="phone-outbounds"></canvas></div>
-        </div>
+        <div class="emp-grid">
+          <div class="emp-chart">
+            <h4>AdvisorPro Minutes</h4>
+            <div class="emp-canvas-wrap"><canvas id="quote-ap-min"></canvas></div>
+          </div>
 
-        <div class="emp-chart">
-          <h4>IB Talk Time (min)</h4>
-          <div class="emp-canvas-wrap"><canvas id="phone-ib-talk"></canvas></div>
-        </div>
+          <div class="emp-chart">
+            <h4>Quoted Items</h4>
+            <div class="emp-canvas-wrap"><canvas id="quote-items"></canvas></div>
+          </div>
 
-        <div class="emp-chart">
-          <h4>OB Talk Time (min)</h4>
-          <div class="emp-canvas-wrap"><canvas id="phone-ob-talk"></canvas></div>
-        </div>
-      </div>
-    </div>
-				<!-- ======================= QUOTING TRENDS (NEW) ======================= -->
-    <div id="quoteTrends" class="emp-card">
-      <div class="emp-controls">
-        <input id="quote-start" class="emp-input" type="date" />
-        <input id="quote-end" class="emp-input" type="date" />
+          <div class="emp-chart">
+            <h4>Quotes Unique</h4>
+            <div class="emp-canvas-wrap"><canvas id="quote-unique"></canvas></div>
+          </div>
 
-        <h3>Quoting Trends</h3>
-
-        <div class="right">
-          <select id="quote-user" class="emp-select">
-            <option value="">Loading employees…</option>
-          </select>
-          <button id="quote-apply" class="emp-btn">Apply</button>
-        </div>
-      </div>
-
-      <div class="emp-grid">
-        <div class="emp-chart">
-          <h4>AdvisorPro Minutes</h4>
-          <div class="emp-canvas-wrap"><canvas id="quote-ap-min"></canvas></div>
-        </div>
-
-        <div class="emp-chart">
-          <h4>Quoted Items</h4>
-          <div class="emp-canvas-wrap"><canvas id="quote-items"></canvas></div>
-        </div>
-
-        <div class="emp-chart">
-          <h4>Quotes Unique</h4>
-          <div class="emp-canvas-wrap"><canvas id="quote-unique"></canvas></div>
-        </div>
-
-        <!-- blank 4th tile so the grid stays aligned -->
-        <div class="emp-chart" style="visibility:hidden;">
-          <h4>Spacer</h4>
-          <div class="emp-canvas-wrap"></div>
-        </div>
-      </div>
-    </div>
-			 	<!-- ======================= Movement TRENDS (NEW) ======================= -->
-				<div id="empTrends" class="emp-card">
-      <div class="emp-controls">
-        <input id="emp-start" class="emp-input" type="date" />
-        <input id="emp-end" class="emp-input" type="date" />
-
-        <h3>Movement Trends</h3>
-
-        <div class="right">
-          <select id="emp-user" class="emp-select">
-            <option value="">Loading employees…</option>
-          </select>
-          <button id="emp-apply" class="emp-btn">Apply</button>
+          <!-- blank 4th tile so the grid stays aligned -->
+          <div class="emp-chart" style="visibility:hidden;">
+            <h4>Spacer</h4>
+            <div class="emp-canvas-wrap"></div>
+          </div>
         </div>
       </div>
 
-      <div class="emp-grid">
-        <div class="emp-chart">
-          <h4>Mouse Distance</h4>
-          <div class="emp-canvas-wrap"><canvas id="emp-mouse"></canvas></div>
+      <!-- ======================= MOVEMENT TRENDS ======================= -->
+      <div id="empTrends" class="emp-card">
+        <div class="emp-controls">
+          <input id="emp-start" class="emp-input" type="date" />
+          <input id="emp-end" class="emp-input" type="date" />
+
+          <h3>Movement Trends</h3>
+
+          <div class="right">
+            <select id="emp-user" class="emp-select">
+              <option value="">Loading employees…</option>
+            </select>
+            <button id="emp-apply" class="emp-btn">Apply</button>
+          </div>
         </div>
 
-        <div class="emp-chart">
-          <h4>Keystrokes</h4>
-          <div class="emp-canvas-wrap"><canvas id="emp-keys"></canvas></div>
-        </div>
+        <div class="emp-grid">
+          <div class="emp-chart">
+            <h4>Mouse Distance</h4>
+            <div class="emp-canvas-wrap"><canvas id="emp-mouse"></canvas></div>
+          </div>
 
-        <div class="emp-chart">
-          <h4>Clicks</h4>
-          <div class="emp-canvas-wrap"><canvas id="emp-clicks"></canvas></div>
-        </div>
+          <div class="emp-chart">
+            <h4>Keystrokes</h4>
+            <div class="emp-canvas-wrap"><canvas id="emp-keys"></canvas></div>
+          </div>
 
-        <div class="emp-chart">
-          <h4>Idle Time</h4>
-          <div class="emp-canvas-wrap"><canvas id="emp-idle"></canvas></div>
+          <div class="emp-chart">
+            <h4>Clicks</h4>
+            <div class="emp-canvas-wrap"><canvas id="emp-clicks"></canvas></div>
+          </div>
+
+          <div class="emp-chart">
+            <h4>Idle Time</h4>
+            <div class="emp-canvas-wrap"><canvas id="emp-idle"></canvas></div>
+          </div>
         </div>
       </div>
-    </div>
+
+    </div> <!-- /widgets-grid -->
   </section>
 </div>
 
