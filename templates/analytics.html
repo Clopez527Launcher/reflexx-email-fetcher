@@ -56,26 +56,52 @@
     margin-top:18px;
   }
 
-  .emp-controls {
-    display:flex;
-    gap:12px;
-    align-items:center;
-    flex-wrap:wrap;
-  }
+		/* ===================== HEADER ROW (DATES | CENTER TITLE | RIGHT CONTROLS) ===================== */
+		.emp-controls{
+				display: grid;
+				grid-template-columns: auto 1fr auto;
+				align-items: center;
+				gap: 12px;
+				flex: 0 0 auto;              /* ✅ keeps header fixed height inside emp-card */
+		}
 
-  .emp-controls h3 {
-    margin:0;
-    font-weight:700;
-    flex:1 1 220px;
-    text-align:center;
-  }
+		/* Left: date inputs stay together */
+		.emp-controls .dates{
+				display: flex;
+				gap: 10px;
+				align-items: center;
+				flex-wrap: nowrap;
+		}
 
-  .emp-controls .right {
-    margin-left:auto;
-    display:flex;
-    gap:10px;
-    align-items:center;
-  }
+		/* Center: widget title truly centered */
+		.emp-controls h3{
+				margin: 0;
+				font-weight: 700;
+				text-align: center;
+				justify-self: center;
+		}
+
+		/* Right: dropdown + apply NEVER wrap to next row */
+		.emp-controls .right{
+				justify-self: end;
+				display: flex;
+				gap: 10px;
+				align-items: center;
+				flex-wrap: nowrap;
+				white-space: nowrap;
+		}
+
+		/* keep date inputs from stretching */
+		.emp-input[type="date"]{
+				width: 120px;
+		}
+
+		/* keep dropdown from becoming huge + forcing wrap */
+		.emp-select{
+				min-width: 150px;
+				max-width: 220px;
+		}
+
 
   .emp-input,
   .emp-select,
@@ -172,9 +198,6 @@
 				flex-direction:column;
 				box-sizing:border-box;
 		}
-
-		/* Controls stay on top */
-		.emp-controls{ flex:0 0 auto; }
 
 		/* Grid area fills remaining space */
 		.emp-grid{
@@ -273,8 +296,11 @@
       <!-- ======================= PHONE TRENDS ======================= -->
       <div id="phoneTrends" class="emp-card">
         <div class="emp-controls">
-          <input id="phone-start" class="emp-input" type="date" />
-          <input id="phone-end" class="emp-input" type="date" />
+
+          <div class="dates">
+            <input id="phone-start" class="emp-input" type="date" />
+            <input id="phone-end" class="emp-input" type="date" />
+          </div>
 
           <h3>Phone Trends</h3>
 
@@ -284,6 +310,7 @@
             </select>
             <button id="phone-apply" class="emp-btn">Apply</button>
           </div>
+
         </div>
 
         <div class="emp-grid">
@@ -312,8 +339,11 @@
       <!-- ======================= QUOTING TRENDS ======================= -->
       <div id="quoteTrends" class="emp-card">
         <div class="emp-controls">
-          <input id="quote-start" class="emp-input" type="date" />
-          <input id="quote-end" class="emp-input" type="date" />
+
+          <div class="dates">
+            <input id="quote-start" class="emp-input" type="date" />
+            <input id="quote-end" class="emp-input" type="date" />
+          </div>
 
           <h3>Quoting Trends</h3>
 
@@ -323,6 +353,7 @@
             </select>
             <button id="quote-apply" class="emp-btn">Apply</button>
           </div>
+
         </div>
 
         <div class="emp-grid">
@@ -352,8 +383,11 @@
       <!-- ======================= MOVEMENT TRENDS ======================= -->
       <div id="empTrends" class="emp-card">
         <div class="emp-controls">
-          <input id="emp-start" class="emp-input" type="date" />
-          <input id="emp-end" class="emp-input" type="date" />
+
+          <div class="dates">
+            <input id="emp-start" class="emp-input" type="date" />
+            <input id="emp-end" class="emp-input" type="date" />
+          </div>
 
           <h3>Movement Trends</h3>
 
@@ -363,6 +397,7 @@
             </select>
             <button id="emp-apply" class="emp-btn">Apply</button>
           </div>
+
         </div>
 
         <div class="emp-grid">
@@ -387,46 +422,49 @@
           </div>
         </div>
       </div>
-						
-					 <!-- ======================= TEAM INDEX TRENDS (NEW) ======================= -->
-						<div id="teamIndexTrends" class="emp-card">
-								<div class="emp-controls">
-										<input id="team-start" class="emp-input" type="date" />
-										<input id="team-end" class="emp-input" type="date" />
 
-										<h3>Adjusted Team Index</h3>
+      <!-- ======================= TEAM INDEX TRENDS ======================= -->
+      <div id="teamIndexTrends" class="emp-card">
+        <div class="emp-controls">
 
-										<div class="right">
-												<button id="team-apply" class="emp-btn">Apply</button>
-										</div>
-								</div>
+          <div class="dates">
+            <input id="team-start" class="emp-input" type="date" />
+            <input id="team-end" class="emp-input" type="date" />
+          </div>
 
-								<!-- ✅ Use same 2x2 grid as other widgets so height matches -->
-								<div class="emp-grid team-grid">
-										<div class="emp-chart">
-												<h4>Elite Calls / Talk Time (per minute)</h4>
-												<div class="emp-canvas-wrap"><canvas id="team-index"></canvas></div>
-										</div>
+          <h3>Adjusted Team Index</h3>
 
-										<!-- 3 spacers to match the 4-tile layout/height -->
-										<div class="emp-chart" style="visibility:hidden;">
-												<h4>Spacer</h4>
-												<div class="emp-canvas-wrap"></div>
-										</div>
+          <div class="right">
+            <button id="team-apply" class="emp-btn">Apply</button>
+          </div>
 
-										<div class="emp-chart" style="visibility:hidden;">
-												<h4>Spacer</h4>
-												<div class="emp-canvas-wrap"></div>
-										</div>
+        </div>
 
-										<div class="emp-chart" style="visibility:hidden;">
-												<h4>Spacer</h4>
-												<div class="emp-canvas-wrap"></div>
-										</div>
-								</div>
-						</div>
+        <div class="emp-grid team-grid">
+          <div class="emp-chart">
+            <h4>Elite Calls / Talk Time (per minute)</h4>
+            <div class="emp-canvas-wrap"><canvas id="team-index"></canvas></div>
+          </div>
 
-    </div> <!-- /widgets-grid -->
+          <!-- 3 spacers to match the 4-tile layout/height -->
+          <div class="emp-chart" style="visibility:hidden;">
+            <h4>Spacer</h4>
+            <div class="emp-canvas-wrap"></div>
+          </div>
+
+          <div class="emp-chart" style="visibility:hidden;">
+            <h4>Spacer</h4>
+            <div class="emp-canvas-wrap"></div>
+          </div>
+
+          <div class="emp-chart" style="visibility:hidden;">
+            <h4>Spacer</h4>
+            <div class="emp-canvas-wrap"></div>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /widgets-grid -->
   </section>
 </div>
 
