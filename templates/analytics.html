@@ -230,41 +230,35 @@
 				}
 		}
 
-		/* ================= Date suggest: make the DATE INPUTS smaller ================= */
+		/* ================= DATE INPUTS: CUT SIZE IN HALF ================= */
 		.emp-input[type="date"]{
-				-webkit-appearance: none;
-				appearance: none;
+				-webkit-appearance: none !important;
+				appearance: none !important;
 
-				/* ✅ actual size of the field */
-				height: 34px;              /* <-- makes it not massive */
-				font-size: 13px;
-				line-height: 34px;
+				height: 24px !important;          /* ✅ smaller */
+				min-height: 24px !important;
+				font-size: 11px !important;       /* ✅ smaller text */
+				line-height: 24px !important;
 
-				/* ✅ keep spacing tight */
-				padding: 0 32px 0 10px;    /* right padding leaves room for icon */
+				padding: 0 22px 0 8px !important; /* ✅ tighter */
+				border-radius: 6px !important;    /* ✅ less “pill” */
 		}
 
 		/* ================= Date icon: small + white ================= */
 		.emp-input[type="date"]::-webkit-calendar-picker-indicator{
-				filter: invert(1) brightness(1.25);
-				opacity: 0.95;
+				filter: invert(1) brightness(1.25) !important;
+				opacity: 0.95 !important;
 				cursor: pointer;
 
-				width: 14px !important;
-				height: 14px !important;
+				width: 12px !important;
+				height: 12px !important;
 
+				margin-right: 6px !important;
 				padding: 0 !important;
-				margin: 0 8px 0 0 !important;
 
-				/* ✅ this is the secret sauce when browsers ignore width/height */
-				transform: scale(0.85);
-				transform-origin: center;
+				transform: scale(0.7) !important; /* ✅ smaller icon */
+				transform-origin: center !important;
 		}
-
-		.emp-input[type="date"]:hover::-webkit-calendar-picker-indicator{
-				opacity: 1;
-		}
-
 
 </style>
 
