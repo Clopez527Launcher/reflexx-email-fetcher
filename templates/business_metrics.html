@@ -510,46 +510,69 @@
   })();
 
   // ===== Analytics-style chart factory =====
-  function mkAnalyticsLine(ctx, label, yTickFmt) {
-    return new Chart(ctx, {
-      type: 'line',
-      data: { labels: [], datasets: [{
-        label,
-        data: [],
-        tension: 0.35,
-        pointRadius: 2,
-        borderColor: '#00c0ff',
-        backgroundColor: '#12243b',
-        fill: true
-      }]},
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: {
-          legend: { display: false },
-          tooltip: { intersect: false, mode: 'index' }
-        },
-        scales: {
-          x: {
-            ticks: {
-              color: '#9ab',
-              maxRotation: 35,
-              minRotation: 35,
-              callback: function(v){
-                const lbl = this.getLabelForValue(v);
-                return (typeof lbl === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(lbl)) ? lbl.slice(5) : lbl; // MM-DD
-              }
-            },
-            grid: { color: '#1f2a36' }
-          },
-          y: {
-            ticks: { color: '#9ab', callback: yTickFmt || (v => v) },
-            grid: { color: '#1f2a36' }
-          }
-        }
-      }
-    });
-  }
+		function mkAnalyticsLine(ctx, label, yTickFmt) {
+				return new Chart(ctx, {
+						type: "line",
+						data: {
+								labels: [],
+								datasets: [{
+										label,
+										data: [],
+										tension: 0.35,
+										pointRadius: 2,
+										borderColor: "#00c0ff",
+										backgroundColor: "#12243b",
+										fill: true
+								}]
+						},
+						options: {
+								responsive: true,
+								maintainAspectRatio: false,
+								plugins: {
+										legend: { display: false },
+										tooltip: { intersect: false, mode: "index" }
+								},
+								scales: {
+										x: {
+												ticks: {
+														color: "#9ab",
+														maxRotation: 35,
+														minRotation: 35,
+
+														// ✅ We control label display ourselves
+														autoSkip: false,
+
+														// ✅ Every other month label, BUT always show the last (most recent upload)
+														callback: function (v) {
+																const labels = this.chart?.data?.labels || [];
+																const lbl = this.getLabelForValue(v);
+
+																const isLast = (v === labels.length - 1);
+
+																// show tick 0,2,4... OR last tick
+																if ((v % 2 === 0) || isLast) {
+																		// if label is YYYY-MM-DD, show MM-YY
+																		if (typeof lbl === "string" && /^\d{4}-\d{2}-\d{2}$/.test(lbl)) {
+																				const yy = lbl.slice(2, 4);
+																				const mm = lbl.slice(5, 7);
+																				return `${mm}-${yy}`;
+																		}
+																		return lbl;
+																}
+
+																return "";
+														}
+												},
+												grid: { color: "#1f2a36" }
+										},
+										y: {
+												ticks: { color: "#9ab", callback: yTickFmt || (v => v) },
+												grid: { color: "#1f2a36" }
+										}
+								}
+						}
+				});
+		}
 
   const fmtPct = v => (typeof v === 'number' ? Math.round(v) + '%' : v);
   const usdCompact = new Intl.NumberFormat('en-US', {
