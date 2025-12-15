@@ -229,48 +229,75 @@
     <!-- ========================= -->
     <!-- HEADER ROW: TITLE + UPLOAD CONTROLS -->
     <!-- ========================= -->
-    <div class="bm-header-row">
-      <h2 class="bm-h2">Business Metric Trends</h2>
+    <!-- ✅ Business Metric Trends Widget -->
+				<div class="card-dark" style="
+						padding: 16px 18px;
+						margin-top: 10px;
+						border-radius: 14px;
+				">
 
-      <!-- ✅ MAIN BUSINESS METRICS UPLOAD -->
-      <form id="metricsForm" enctype="multipart/form-data" style="margin:0;">
-        <div class="bm-controls">
-          <div class="left">
-            <label>
-              Business Metric File:
-              <input id="bm-file" type="file" name="file" accept=".xlsx" />
-            </label>
+						<div style="
+								display:flex;
+								align-items:center;
+								justify-content:space-between;
+								gap:16px;
+								flex-wrap:wrap;
+						">
+								<h2 class="bm-h2" style="margin:0;">Business Metric Trends</h2>
 
-            <label for="bm-month">Month:
-              <select name="month" id="bm-month" required>
-                <option value="">Select Month</option>
-                {% set months = ['January','February','March','April','May','June','July','August','September','October','November','December'] %}
-                {% for m in months %}
-                  <option value="{{ loop.index }}">{{ m }}</option>
-                {% endfor %}
-              </select>
-            </label>
+								<form id="metricsForm" enctype="multipart/form-data" style="margin:0;">
+										<div style="
+												display:flex;
+												align-items:flex-start;
+												gap:18px;
+												flex-wrap:wrap;
+										">
 
-            <label for="bm-year">Year:
-              <select name="year" id="bm-year" required>
-                {% for y in range(2024, 2031) %}
-                  <option value="{{ y }}">{{ y }}</option>
-                {% endfor %}
-              </select>
-            </label>
-          </div>
+												<!-- STEP 1 -->
+												<div style="display:flex; flex-direction:column; gap:4px;">
+														<div style="display:flex; align-items:center; gap:10px;">
+																<span style="color:#b9d9ff;">Business Metric File:</span>
+																<input id="bm-file" type="file" name="file" accept=".xlsx" />
+														</div>
+														<div style="font-size:12px; color:#7f98b3;">Step 1: Choose file</div>
+												</div>
 
-          <div class="mid">
-            <button id="bm-upload-btn" type="submit" class="glow-btn">Upload Report</button>
-          </div>
+												<!-- STEP 2 -->
+												<div style="display:flex; flex-direction:column; gap:4px;">
+														<div style="display:flex; align-items:center; gap:10px;">
+																<span style="color:#b9d9ff;">Month:</span>
+																<select name="month" id="bm-month" required>
+																		<option value="">Select Month</option>
+																		{% set months = ['January','February','March','April','May','June','July','August','September','October','November','December'] %}
+																		{% for m in months %}
+																				<option value="{{ loop.index }}">{{ m }}</option>
+																		{% endfor %}
+																</select>
 
-          <div style="width:1px;"></div>
-        </div>
+																<span style="color:#b9d9ff;">Year:</span>
+																<select name="year" id="bm-year" required>
+																		{% for y in range(2024, 2031) %}
+																				<option value="{{ y }}">{{ y }}</option>
+																		{% endfor %}
+																</select>
+														</div>
+														<div style="font-size:12px; color:#7f98b3;">Step 2: Select month + year</div>
+												</div>
 
-        <!-- ✅ Status text (so you can see success/fail) -->
-        <div id="bmStatus" class="muted" style="margin-top:8px; font-size:13px;"></div>
-      </form>
-    </div>
+												<!-- STEP 3 -->
+												<div style="display:flex; flex-direction:column; gap:4px;">
+														<button id="bm-upload-btn" type="submit" class="glow-btn">Upload Report</button>
+														<div style="font-size:12px; color:#7f98b3; text-align:center;">Step 3: Upload</div>
+												</div>
+
+										</div>
+
+										<!-- status line -->
+										<div id="bmStatus" class="muted" style="margin-top:10px; font-size:13px;"></div>
+								</form>
+						</div>
+				</div>
+
 
     <!-- (Business metrics upload history kept for JS, but hidden in UI) -->
     <ul id="uploadHistory" style="display:none;"></ul>
