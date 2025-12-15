@@ -538,29 +538,32 @@
 														color: "#9ab",
 														maxRotation: 35,
 														minRotation: 35,
-
-														// ✅ We control label display ourselves
 														autoSkip: false,
 
-														// ✅ Every other month label, BUT always show the last (most recent upload)
+														// ✅ Show every other month anchored to the MOST RECENT point:
+														// Example: Nov, Sep, Jul, May, Mar, Jan
 														callback: function (v) {
 																const labels = this.chart?.data?.labels || [];
 																const lbl = this.getLabelForValue(v);
 
-																const isLast = (v === labels.length - 1);
+																const lastIdx = labels.length - 1;
+																if (lastIdx < 0) return "";
 
-																// show tick 0,2,4... OR last tick
-																if ((v % 2 === 0) || isLast) {
-																		// if label is YYYY-MM-DD, show MM-YY
-																		if (typeof lbl === "string" && /^\d{4}-\d{2}-\d{2}$/.test(lbl)) {
-																				const yy = lbl.slice(2, 4);
-																				const mm = lbl.slice(5, 7);
-																				return `${mm}-${yy}`;
-																		}
-																		return lbl;
+																// Distance from the end: 0=last, 1=one before last, etc.
+																const distFromEnd = lastIdx - v;
+
+																// ✅ show labels at dist 0,2,4,6... (every other month from the end)
+																const show = (distFromEnd % 2 === 0);
+																if (!show) return "";
+
+																// format YYYY-MM-DD => MM-YY
+																if (typeof lbl === "string" && /^\d{4}-\d{2}-\d{2}$/.test(lbl)) {
+																		const yy = lbl.slice(2, 4);
+																		const mm = lbl.slice(5, 7);
+																		return `${mm}-${yy}`;
 																}
 
-																return "";
+																return lbl;
 														}
 												},
 												grid: { color: "#1f2a36" }
@@ -574,6 +577,7 @@
 				});
 		}
 
+
   const fmtPct = v => (typeof v === 'number' ? Math.round(v) + '%' : v);
   const usdCompact = new Intl.NumberFormat('en-US', {
     style:'currency', currency:'USD', notation:'compact', maximumFractionDigits:1
@@ -585,25 +589,25 @@
 
   async function loadTrends(bustCache = false) {
 				const url = bustCache ? `/api/metrics-trend?t=${Date.now()}` : "/api/metrics-trend";
-				const res = await fetch(url, { credentials: "same-origin" });
+				const res = await fetch(url, { credentials: "same-origin", cache: "no-store" });
 				const data = await res.json();
 
-    if (data["Net Retention"]) {
-      netChart.data.labels = data["Net Retention"].labels || [];
-      netChart.data.datasets[0].data = data["Net Retention"].values || [];
-      netChart.update();
-    }
-    if (data["W&A Premium"]) {
-      waChart.data.labels = data["W&A Premium"].labels || [];
-      waChart.data.datasets[0].data = data["W&A Premium"].values || [];
-      waChart.update();
-    }
-    if (data["12MM Loss Ratio"]) {
-      lossChart.data.labels = data["12MM Loss Ratio"].labels || [];
-      lossChart.data.datasets[0].data = data["12MM Loss Ratio"].values || [];
-      lossChart.update();
-    }
-  }
+				// ✅ Helper: keep ONLY last 12 months
+				function applyLast12(chart, series) {
+						const labels = (series?.labels || []);
+						const values = (series?.values || []);
+
+						const start = Math.max(0, labels.length - 12);
+
+						chart.data.labels = labels.slice(start);
+						chart.data.datasets[0].data = values.slice(start);
+						chart.update();
+				}
+
+				if (data["Net Retention"])     applyLast12(netChart,  data["Net Retention"]);
+				if (data["W&A Premium"])       applyLast12(waChart,   data["W&A Premium"]);
+				if (data["12MM Loss Ratio"])   applyLast12(lossChart, data["12MM Loss Ratio"]);
+		}
 
   // ===== Quotes widget logic =====
   let QUOTES_PAGE = 1;
