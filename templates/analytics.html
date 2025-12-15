@@ -96,21 +96,30 @@
     margin-top:16px;
   }
 
-		/* ✅ Team Index: make the chart fill the whole widget */
+		/* ✅ Team Index: make it truly fill the whole widget */
 		#teamIndexTrends .team-grid {
-				grid-template-columns: 1fr;   /* full width */
+				grid-template-columns: 1fr;
+				height: 100%;
 		}
 
-		/* Hide the old spacer tiles but keep height controlled by widget min-height */
+		#teamIndexTrends .team-grid .emp-chart {
+				grid-column: 1 / -1;
+				height: 100%;
+				min-height: 0;              /* IMPORTANT: allows flex to shrink/grow correctly */
+				display: flex;
+				flex-direction: column;
+		}
+
+		#teamIndexTrends .team-grid .emp-canvas-wrap {
+				height: auto;               /* remove fixed height */
+				flex: 1;                    /* take all remaining height */
+				min-height: 0;              /* IMPORTANT */
+		}
+
+		/* ✅ Hide the old spacer tiles */
 		#teamIndexTrends .team-grid .emp-chart[style*="visibility:hidden"] {
 				display: none !important;
 		}
-
-		/* Make the team chart a bit taller so it fills the card nicely */
-		#teamIndexTrends .emp-canvas-wrap {
-				height: 240px;  /* tweak 220-280 if you want */
-		}
-
 
   .emp-chart {
     background:#0b131a;
