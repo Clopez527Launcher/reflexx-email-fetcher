@@ -229,7 +229,18 @@
 						height:auto;                       /* ✅ natural height on mobile */
 				}
 		}
+		
+		/* Make the calendar icon white (Chrome/Edge) */
+		.emp-input[type="date"]::-webkit-calendar-picker-indicator{
+				filter: invert(1);
+				opacity: 0.9;
+				cursor: pointer;
+		}
 
+		/* Optional: keep it white even if the field background is dark */
+		.emp-input[type="date"]{
+				color-scheme: dark; /* helps native controls match dark UI */
+		}
 
 </style>
 
@@ -480,27 +491,50 @@
       }]
     },
     options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      plugins: { legend: { display: false } },
-      scales: {
-        x: {
-          ticks: {
-            color: '#9ab',
-            callback(value) {
-              const label = this.getLabelForValue(value);
-              return /^\d{4}-\d{2}-\d{2}$/.test(label) ? label.slice(5) : label;
-            }
-          },
-          grid: { color: '#1f2a36' }
-        },
-        y: {
-          ticks: { color: '#9ab' },
-          grid: { color: '#1f2a36' }
-        }
-      }
-    }
-  });
+						responsive: true,
+						maintainAspectRatio: false,
+
+						// ✅ Makes hover MUCH easier (snap to nearest day)
+						interaction: {
+								mode: 'index',
+								intersect: false,
+								axis: 'x'
+						},
+
+						plugins: {
+								legend: { display: false },
+								tooltip: { enabled: true }
+						},
+
+						// ✅ Bigger invisible “hitbox” for hovering
+						elements: {
+								point: {
+										radius: 0,        // keep dots hidden
+										hitRadius: 18,    // ✅ BIG hover area
+										hoverRadius: 6    // little pop when hovering
+								},
+								line: {
+										borderWidth: 2
+								}
+						},
+
+						scales: {
+								x: {
+										ticks: {
+												color: '#9ab',
+												callback(value) {
+														const label = this.getLabelForValue(value);
+														return /^\d{4}-\d{2}-\d{2}$/.test(label) ? label.slice(5) : label;
+												}
+										},
+										grid: { color: '#1f2a36' }
+								},
+								y: {
+										ticks: { color: '#9ab' },
+										grid: { color: '#1f2a36' }
+								}
+						}
+				}
 
   // ---------------------------
   // ✅ Movement charts
