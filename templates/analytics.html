@@ -96,6 +96,22 @@
     margin-top:16px;
   }
 
+		/* ✅ Team Index: make the chart fill the whole widget */
+		#teamIndexTrends .team-grid {
+				grid-template-columns: 1fr;   /* full width */
+		}
+
+		/* Hide the old spacer tiles but keep height controlled by widget min-height */
+		#teamIndexTrends .team-grid .emp-chart[style*="visibility:hidden"] {
+				display: none !important;
+		}
+
+		/* Make the team chart a bit taller so it fills the card nicely */
+		#teamIndexTrends .emp-canvas-wrap {
+				height: 240px;  /* tweak 220-280 if you want */
+		}
+
+
   .emp-chart {
     background:#0b131a;
     border:1px solid #1f2a36;
@@ -321,7 +337,7 @@
 								</div>
 
 								<!-- ✅ Use same 2x2 grid as other widgets so height matches -->
-								<div class="emp-grid">
+								<div class="emp-grid team-grid">
 										<div class="emp-chart">
 												<h4>Elite Calls / Talk Time (per minute)</h4>
 												<div class="emp-canvas-wrap"><canvas id="team-index"></canvas></div>
