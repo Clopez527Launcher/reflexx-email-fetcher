@@ -238,7 +238,7 @@
           <div class="left">
             <label>
               Business Metric File:
-              <input id="bm-file" type="file" name="file" accept=".xlsx" required />
+              <input id="bm-file" type="file" name="file" accept=".xlsx" />
             </label>
 
             <label for="bm-month">Month:
@@ -365,70 +365,94 @@
 
 <script>
   // ============================================================
-  // ✅ Business Metrics Upload Handler (THIS is what you were missing)
+  // ✅ Business Metrics Upload UX:
+  //    1) Select file
+  //    2) Select month/year
+  //    3) Click Upload
   // ============================================================
   (function setupBusinessMetricsUpload() {
-    const fileInput = document.getElementById("bm-file");
-    const monthSel  = document.getElementById("bm-month");
-    const yearSel   = document.getElementById("bm-year");
-    const btn       = document.getElementById("bm-upload-btn");
-    const statusEl  = document.getElementById("bmStatus");
+    const form     = document.getElementById("metricsForm");
+    const fileIn   = document.getElementById("bm-file");
+    const monthSel = document.getElementById("bm-month");
+    const yearSel  = document.getElementById("bm-year");
+    const btn      = document.getElementById("bm-upload-btn");
+    const statusEl = document.getElementById("bmStatus");
 
-    // If any element is missing, do nothing (prevents JS errors)
-    if (!fileInput || !monthSel || !yearSel || !btn) return;
+    if (!form || !fileIn || !monthSel || !yearSel || !btn) return;
 
-    // Click upload -> open file picker
-    btn.addEventListener("click", () => fileInput.click());
+    // helper: show friendly status
+    function setStatus(msg) {
+      if (statusEl) statusEl.textContent = msg;
+    }
 
-    // When file chosen -> upload immediately
-    fileInput.addEventListener("change", async () => {
-      const f = fileInput.files && fileInput.files[0];
-      if (!f) return;
+    // Stop browser from doing weird native validation flow
+    form.setAttribute("novalidate", "novalidate");
+
+    // On file choose, just confirm selected
+    fileIn.addEventListener("change", () => {
+      const f = fileIn.files && fileIn.files[0];
+      if (f) setStatus(`✅ File selected: ${f.name}. Now pick Month + Year, then click Upload.`);
+      else setStatus("");
+    });
+
+    // Only upload when they click the Upload button (submit)
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+
+      const f = fileIn.files && fileIn.files[0];
+      if (!f) { alert("Pick a file first."); fileIn.focus(); return; }
 
       const month = monthSel.value;
-      const year  = yearSel.value;
+      if (!month) { alert("Pick a month."); monthSel.focus(); return; }
+
+      const year = yearSel.value;
+      if (!year) { alert("Pick a year."); yearSel.focus(); return; }
 
       const fd = new FormData();
       fd.append("file", f);
       fd.append("month", month);
       fd.append("year", year);
 
-      if (statusEl) statusEl.textContent = "Uploading business metrics…";
+      setStatus("Uploading business metrics…");
 
       try {
         const res = await fetch("/api/upload-business-metrics", {
           method: "POST",
           body: fd,
-          credentials: "same-origin"
+          credentials: "same-origin",
+          cache: "no-store"
         });
 
         const result = await res.json();
 
         if (!res.ok || !result.success) {
           const msg = "Upload failed: " + (result.error || "Unknown error");
-          if (statusEl) statusEl.textContent = msg;
+          setStatus(msg);
           alert(msg);
           return;
         }
 
-        if (statusEl) {
-          statusEl.textContent = `✅ Saved for ${month}/${year}. Refreshing charts…`;
+        setStatus(`✅ Saved for ${month}/${year}. Refreshing charts…`);
+
+        // clear file so same file can be re-uploaded
+        fileIn.value = "";
+
+        // refresh charts right away (cache bust)
+        if (typeof loadTrends === "function") {
+          await loadTrends(true);
         }
 
-        // ✅ Clear file input so you can re-upload same file if needed
-        fileInput.value = "";
-
-        // ✅ IMPORTANT: Reload charts after upload
-        await loadTrends(true);
+        setStatus(`✅ Upload complete for ${month}/${year}.`);
 
       } catch (err) {
         console.error(err);
-        if (statusEl) statusEl.textContent = "Upload error.";
+        setStatus("Upload error.");
         alert("Upload error.");
       }
     });
   })();
 </script>
+
 
 <script>
   // ===== Upload handler (New Business Details / sales) =====
