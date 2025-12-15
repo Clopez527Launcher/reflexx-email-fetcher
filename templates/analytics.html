@@ -144,12 +144,12 @@
     height:180px;
   }
 		
-		/* =================== Widgets grid layout =================== */
-		.widgets-grid {
-				display: grid;
-				grid-template-columns: 1fr 1fr;   /* 2 columns */
-				gap: 16px;
-				align-items: start;
+		/* =================== Widget grid layout =================== */
+		.widgets-grid{
+				display:grid;
+				grid-template-columns: 1fr 1fr;
+				gap:16px;
+				align-items:stretch;                 /* ✅ equal heights per row */
 		}
 
 		/* ✅ Exact layout you want:
@@ -158,51 +158,78 @@
 					Bottom left = Quotes
 					Bottom right = Movement
 		*/
-		#phoneTrends     { grid-column: 1; grid-row: 1; }
-		#teamIndexTrends { grid-column: 2; grid-row: 1; }
-		#quoteTrends     { grid-column: 1; grid-row: 2; }
-		#empTrends       { grid-column: 2; grid-row: 2; }
+		#phoneTrends     { grid-column:1; grid-row:1; }
+		#teamIndexTrends { grid-column:2; grid-row:1; }
+		#quoteTrends     { grid-column:1; grid-row:2; }
+		#empTrends       { grid-column:2; grid-row:2; }
 
-		/* ✅ Make the cards tighter */
-		.emp-card {
-				padding: 12px;
-				margin-top: 0;   /* IMPORTANT: grid controls spacing now */
+		/* =================== Make all widgets same height =================== */
+		.emp-card{
+				padding:12px;
+				margin-top:0;                        /* ✅ grid controls spacing */
+				height: 430px;                       /* ✅ one source of truth */
+				display:flex;
+				flex-direction:column;
+				box-sizing:border-box;
 		}
 
-		/* ✅ Smaller charts */
-		.emp-chart {
-				min-height: 190px;
-				padding: 10px;
+		/* Controls stay on top */
+		.emp-controls{ flex:0 0 auto; }
+
+		/* Grid area fills remaining space */
+		.emp-grid{
+				flex:1;
+				min-height:0;                        /* ✅ critical */
+				display:grid;
+				grid-template-columns: repeat(2, minmax(260px, 1fr));
+				gap:16px;
+				margin-top:16px;
+				align-content:stretch;
 		}
 
-		.emp-canvas-wrap {
-				height: 140px;
+		/* Chart tiles fill their grid cells */
+		.emp-chart{
+				min-height:0;                        /* ✅ critical */
+				padding:10px;
+				display:flex;
+				flex-direction:column;
 		}
 
-		/* ✅ Make all widgets feel same height (helps Team Index match) */
-		#phoneTrends,
-		#teamIndexTrends,
-		#quoteTrends,
-		#empTrends {
-				min-height: 460px;   /* tweak if you want taller/shorter */
+		/* Canvas fills the tile */
+		.emp-canvas-wrap{
+				flex:1;
+				min-height:0;                        /* ✅ critical */
+				height:auto;                         /* ✅ remove fixed height */
 		}
 
-		/* Mobile: stack everything */
-		@media (max-width: 980px) {
-				.widgets-grid {
-						grid-template-columns: 1fr;
-				}
+		/* =================== Team Index: fill the widget nicely =================== */
+		/* Make its grid 1 column so the chart spans the full widget width */
+		#teamIndexTrends .team-grid{
+				grid-template-columns: 1fr;
+		}
 
-				/* On mobile, let natural DOM order stack */
+		/* Hide the 3 spacer tiles (no longer needed) */
+		#teamIndexTrends .team-grid .emp-chart[style*="visibility:hidden"]{
+				display:none !important;
+		}
+
+		/* =================== Mobile: stack everything =================== */
+		@media (max-width: 980px){
+				.widgets-grid{ grid-template-columns: 1fr; }
+
 				#phoneTrends,
 				#teamIndexTrends,
 				#quoteTrends,
-				#empTrends {
-						grid-column: auto;
-						grid-row: auto;
-						min-height: auto;
+				#empTrends{
+						grid-column:auto;
+						grid-row:auto;
+				}
+
+				.emp-card{
+						height:auto;                       /* ✅ natural height on mobile */
 				}
 		}
+
 
 </style>
 
