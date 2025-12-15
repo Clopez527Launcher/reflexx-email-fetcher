@@ -230,30 +230,41 @@
 				}
 		}
 
-		/* ================= Date picker icon (Chrome/Edge/Safari) ================= */
-		/* ✅ Keep the date input looking the same + reserve room for the icon */
+		/* ================= Date suggest: make the DATE INPUTS smaller ================= */
 		.emp-input[type="date"]{
 				-webkit-appearance: none;
 				appearance: none;
-				padding-right: 34px; /* room for the calendar icon */
+
+				/* ✅ actual size of the field */
+				height: 34px;              /* <-- makes it not massive */
+				font-size: 13px;
+				line-height: 34px;
+
+				/* ✅ keep spacing tight */
+				padding: 0 32px 0 10px;    /* right padding leaves room for icon */
 		}
 
-		/* ✅ Make the native calendar icon white AND small (no custom SVG) */
+		/* ================= Date icon: small + white ================= */
 		.emp-input[type="date"]::-webkit-calendar-picker-indicator{
 				filter: invert(1) brightness(1.25);
 				opacity: 0.95;
 				cursor: pointer;
 
-				width: 16px !important;
-				height: 16px !important;
+				width: 14px !important;
+				height: 14px !important;
 
-				padding: 0;
-				margin: 0 6px 0 0;
+				padding: 0 !important;
+				margin: 0 8px 0 0 !important;
+
+				/* ✅ this is the secret sauce when browsers ignore width/height */
+				transform: scale(0.85);
+				transform-origin: center;
 		}
 
 		.emp-input[type="date"]:hover::-webkit-calendar-picker-indicator{
 				opacity: 1;
 		}
+
 
 </style>
 
