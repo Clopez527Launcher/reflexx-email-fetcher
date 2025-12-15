@@ -248,13 +248,13 @@
 								<form id="metricsForm" enctype="multipart/form-data" style="margin:0;">
 										<div style="
 												display:flex;
-												align-items:flex-start;
+												align-items:center;   /* ✅ vertical center */
 												gap:18px;
 												flex-wrap:wrap;
 										">
 
 												<!-- STEP 1 -->
-												<div style="display:flex; flex-direction:column; gap:4px;">
+												<div style="display:flex; flex-direction:column; gap:4px; align-items:center;">
 														<div style="display:flex; align-items:center; gap:10px;">
 																<span style="color:#b9d9ff;">Business Metric File:</span>
 																<input id="bm-file" type="file" name="file" accept=".xlsx" />
@@ -281,7 +281,7 @@
 																		{% endfor %}
 																</select>
 														</div>
-														<div style="font-size:12px; color:#7f98b3;">Step 2: Select month + year</div>
+														<div style="font-size:12px; color:#7f98b3; margin-top:2px;">
 												</div>
 
 												<!-- STEP 3 -->
