@@ -474,23 +474,23 @@
   tStartEl.value = startEl.value;
 
   // ---------------------------
-  // 📈 Chart factory
-  // ---------------------------
-  const mkLine = (ctx, label) => new Chart(ctx, {
-    type: 'line',
-    data: {
-      labels: [],
-      datasets: [{
-        label,
-        data: [],
-        tension: 0.35,
-        pointRadius: 0,
-        borderColor: '#00c0ff',
-        backgroundColor: 'rgba(0,192,255,0.08)',
-        fill: true
-      }]
-    },
-    options: {
+		// 📈 Chart factory
+		// ---------------------------
+		const mkLine = (ctx, label) => new Chart(ctx, {
+				type: 'line',
+				data: {
+						labels: [],
+						datasets: [{
+								label,
+								data: [],
+								tension: 0.35,
+								pointRadius: 0,
+								borderColor: '#00c0ff',
+								backgroundColor: 'rgba(0,192,255,0.08)',
+								fill: true
+						}]
+				},
+				options: {
 						responsive: true,
 						maintainAspectRatio: false,
 
@@ -513,9 +513,7 @@
 										hitRadius: 18,    // ✅ BIG hover area
 										hoverRadius: 6    // little pop when hovering
 								},
-								line: {
-										borderWidth: 2
-								}
+								line: { borderWidth: 2 }
 						},
 
 						scales: {
@@ -535,6 +533,8 @@
 								}
 						}
 				}
+		});
+
 
   // ---------------------------
   // ✅ Movement charts
