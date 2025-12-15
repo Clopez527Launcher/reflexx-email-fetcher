@@ -3410,74 +3410,120 @@ def dashboard():
 if __name__ == "__main__":
     app.run(debug=True, host="0.0.0.0", port=8080)
 
-
 from flask import request, jsonify
 import pandas as pd
 import mysql.connector
-from datetime import datetime
-
-# Bizz Metric
-from flask_login import login_required
+from flask_login import login_required, current_user
 
 @app.route("/api/upload-business-metrics", methods=["POST"])
 @login_required
 def upload_business_metrics():
     file = request.files.get("file")
-    month = request.form.get("month")
-    year = request.form.get("year")
-    user_id = session.get("user_id")
+
+    # Raw form values
+    month_raw = request.form.get("month")
+    year_raw = request.form.get("year")
+
+    # ✅ Normalize month/year
+    MONTH_MAP = {
+        "january": 1, "february": 2, "march": 3, "april": 4,
+        "may": 5, "june": 6, "july": 7, "august": 8,
+        "september": 9, "october": 10, "november": 11, "december": 12
+    }
+
+    def normalize_month(m):
+        if m is None:
+            return None
+        m = str(m).strip()
+        if m.isdigit():
+            mi = int(m)
+            return mi if 1 <= mi <= 12 else None
+        return MONTH_MAP.get(m.lower())
+
+    month = normalize_month(month_raw)
+    year = int(year_raw) if (year_raw and str(year_raw).strip().isdigit()) else None
+
+    user_id = current_user.id
 
     if not file or not month or not year:
-        return jsonify({"error": "Missing file, month, or year"}), 400
+        return jsonify({
+            "error": "Missing file, month, or year",
+            "received": {"month": month_raw, "year": year_raw, "has_file": bool(file)}
+        }), 400
 
     try:
+        # Read excel (no headers)
         df = pd.read_excel(file, header=None)
 
         def clean_value(cell):
+            if cell is None:
+                return None
             if isinstance(cell, str):
-                cell = cell.replace('$', '').replace(',', '').replace('%', '').strip()
+                cell = cell.replace("$", "").replace(",", "").replace("%", "").strip()
             try:
                 return float(cell)
-            except:
+            except Exception:
                 return None
 
-        net_ret = clean_value(df.iloc[22, 11])  # L23
-        wa_prem = clean_value(df.iloc[39, 11])  # L40
+        # ✅ L23, L40, L45 (0-indexed: row-1, col-1)
+        net_ret = clean_value(df.iloc[22, 11])     # L23
+        wa_prem = clean_value(df.iloc[39, 11])     # L40
         loss_ratio = clean_value(df.iloc[44, 11])  # L45
 
-        filename = file.filename
+        filename = file.filename or "uploaded.xlsx"
 
         conn = mysql.connector.connect(**MYSQL_CONFIG)
         cursor = conn.cursor()
 
-        # 🔁 Delete old data for same user/month/year/source_file
+        # ✅ Replace the month (DO NOT depend on filename)
         cursor.execute("""
             DELETE FROM business_metrics
-            WHERE user_id = %s AND month = %s AND year = %s AND source_file = %s
-        """, (user_id, month, year, filename))
+            WHERE user_id = %s AND month = %s AND year = %s
+        """, (user_id, month, year))
 
         metrics = [
             ("Net Retention", net_ret),
             ("W&A Premium", wa_prem),
-            ("12MM Loss Ratio", loss_ratio)
+            ("12MM Loss Ratio", loss_ratio),
         ]
 
+        inserted = 0
         for metric_name, value in metrics:
             if value is not None:
                 cursor.execute("""
-                    INSERT INTO business_metrics (metric_name, value, month, year, source_file, uploaded_at, user_id)
-                    VALUES (%s, %s, %s, %s, %s, NOW(), %s)
+                    INSERT INTO business_metrics
+                      (metric_name, value, month, year, source_file, uploaded_at, user_id)
+                    VALUES
+                      (%s, %s, %s, %s, %s, NOW(), %s)
                 """, (metric_name, value, month, year, filename, user_id))
+                inserted += 1
 
         conn.commit()
+
+        # ✅ Debug proof in logs (Railway)
+        cursor.execute("""
+            SELECT metric_name, value, month, year, source_file, uploaded_at, user_id
+            FROM business_metrics
+            WHERE user_id = %s AND month = %s AND year = %s
+            ORDER BY metric_name
+        """, (user_id, month, year))
+        rows = cursor.fetchall()
+        print("✅ Business metrics saved:", rows)
+
         cursor.close()
         conn.close()
 
         return jsonify({
             "success": True,
+            "inserted": inserted,
             "filename": filename,
             "month": month,
-            "year": year
+            "year": year,
+            "values_read": {
+                "Net Retention": net_ret,
+                "W&A Premium": wa_prem,
+                "12MM Loss Ratio": loss_ratio
+            }
         })
 
     except Exception as e:
