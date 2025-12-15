@@ -199,12 +199,14 @@
 
 </style>
 
+</style>
+
 <!-- ✅ SAME WRAPPER AS DASHBOARD_NEW -->
 <div class="page-wrapper" style="
   width: 100%;
   max-width: none;
   margin: 0;
-  padding-top: 8px;       /* was 40px – pulls everything WAY up */
+  padding-top: 8px;
 
   padding-left: 0px;
   padding-right: 26px;
@@ -213,18 +215,15 @@
   box-sizing: border-box;
 ">
 
-
-    <h1 style="
-										color:#fff;
-										text-align:left;
-										padding-left: 6px;
-										margin-top: 60px;   /* ⬅️ was 12px */
-										margin-bottom: 8px; /* keep this small so it doesn’t add big gap to charts */
-				">
-						Uploads
-				</h1>
-
-
+  <h1 style="
+    color:#fff;
+    text-align:left;
+    padding-left: 6px;
+    margin-top: 60px;
+    margin-bottom: 8px;
+  ">
+    Uploads
+  </h1>
 
   <section class="bm-section bm-upload">
     <!-- ========================= -->
@@ -233,17 +232,17 @@
     <div class="bm-header-row">
       <h2 class="bm-h2">Business Metric Trends</h2>
 
-      <!-- 1) MAIN BUSINESS METRICS UPLOAD -->
-      <form id="metricsForm" enctype="multipart/form-data">
+      <!-- ✅ MAIN BUSINESS METRICS UPLOAD -->
+      <form id="metricsForm" enctype="multipart/form-data" style="margin:0;">
         <div class="bm-controls">
           <div class="left">
             <label>
               Business Metric File:
-              <input type="file" name="file" accept=".xlsx" required />
+              <input id="bm-file" type="file" name="file" accept=".xlsx" required />
             </label>
 
-            <label for="month">Month:
-              <select name="month" id="month" required>
+            <label for="bm-month">Month:
+              <select name="month" id="bm-month" required>
                 <option value="">Select Month</option>
                 {% set months = ['January','February','March','April','May','June','July','August','September','October','November','December'] %}
                 {% for m in months %}
@@ -252,8 +251,8 @@
               </select>
             </label>
 
-            <label for="year">Year:
-              <select name="year" id="year" required>
+            <label for="bm-year">Year:
+              <select name="year" id="bm-year" required>
                 {% for y in range(2024, 2031) %}
                   <option value="{{ y }}">{{ y }}</option>
                 {% endfor %}
@@ -262,21 +261,22 @@
           </div>
 
           <div class="mid">
-            <button type="submit" class="glow-btn">Upload Report</button>
+            <button id="bm-upload-btn" type="submit" class="glow-btn">Upload Report</button>
           </div>
 
           <div style="width:1px;"></div>
         </div>
+
+        <!-- ✅ Status text (so you can see success/fail) -->
+        <div id="bmStatus" class="muted" style="margin-top:8px; font-size:13px;"></div>
       </form>
     </div>
 
     <!-- (Business metrics upload history kept for JS, but hidden in UI) -->
-    <ul id="uploadHistory" style="display:none;">
-      <!-- JS will still prepend history here, but it's hidden -->
-    </ul>
+    <ul id="uploadHistory" style="display:none;"></ul>
 
     <!-- ========================= -->
-    <!-- 4) BUSINESS METRIC TRENDS -->
+    <!-- BUSINESS METRIC TRENDS -->
     <!-- ========================= -->
     <div class="bm-grid">
 
@@ -306,7 +306,6 @@
         <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
           <h4 class="bm-card-title" style="margin-right:auto;">New Business Details</h4>
 
-          <!-- Hidden file input inside form -->
           <form id="nbDetailsForm" enctype="multipart/form-data" style="margin:0;">
             <input
               id="nb-file"
@@ -316,9 +315,7 @@
               style="display:none;"
               required
             />
-            <button type="button" id="nb-upload-btn" class="glow-btn">
-              Upload
-            </button>
+            <button type="button" id="nb-upload-btn" class="glow-btn">Upload</button>
           </form>
         </div>
 
@@ -340,31 +337,98 @@
       </div>
 
       <!-- Quotes Uploads -->
-						<div class="card-dark bm-span-all" id="quotes-widget">
-								<div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap; justify-content:space-between; width:100%;">
-										<h4 class="bm-card-title">Total Serious Quotes Detail</h4>
-										<div>
-												<input id="quotes-file" type="file" style="display:none;" />
-												<button id="quotes-upload-btn" class="glow-btn">Upload</button>
-										</div>
-								</div>
+      <div class="card-dark bm-span-all" id="quotes-widget">
+        <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap; justify-content:space-between; width:100%;">
+          <h4 class="bm-card-title">Total Serious Quotes Detail</h4>
+          <div>
+            <input id="quotes-file" type="file" style="display:none;" />
+            <button id="quotes-upload-btn" class="glow-btn">Upload</button>
+          </div>
+        </div>
 
         <div id="quotes-list" class="muted" style="margin-top:10px;">
           <div style="font-size:14px; margin-bottom:6px;">Recent uploads</div>
           <ul id="quotes-ul" style="margin:0; padding-left:16px; max-height:180px; overflow:auto;"></ul>
+
           <div id="quotes-pager" style="display:flex; gap:6px; align-items:center; justify-content:flex-end; margin-top:8px;">
             <button id="quotes-prev" class="q-mini-btn" disabled>&lt;</button>
             <span id="quotes-page" class="muted">Page 1 of 1</span>
             <button id="quotes-next" class="q-mini-btn" disabled>&gt;</button>
           </div>
-
         </div>
       </div>
+
     </div>
-
   </section>
-
 </div> <!-- close page-wrapper -->
+
+
+<script>
+  // ============================================================
+  // ✅ Business Metrics Upload Handler (THIS is what you were missing)
+  // ============================================================
+  (function setupBusinessMetricsUpload() {
+    const fileInput = document.getElementById("bm-file");
+    const monthSel  = document.getElementById("bm-month");
+    const yearSel   = document.getElementById("bm-year");
+    const btn       = document.getElementById("bm-upload-btn");
+    const statusEl  = document.getElementById("bmStatus");
+
+    // If any element is missing, do nothing (prevents JS errors)
+    if (!fileInput || !monthSel || !yearSel || !btn) return;
+
+    // Click upload -> open file picker
+    btn.addEventListener("click", () => fileInput.click());
+
+    // When file chosen -> upload immediately
+    fileInput.addEventListener("change", async () => {
+      const f = fileInput.files && fileInput.files[0];
+      if (!f) return;
+
+      const month = monthSel.value;
+      const year  = yearSel.value;
+
+      const fd = new FormData();
+      fd.append("file", f);
+      fd.append("month", month);
+      fd.append("year", year);
+
+      if (statusEl) statusEl.textContent = "Uploading business metrics…";
+
+      try {
+        const res = await fetch("/api/upload-business-metrics", {
+          method: "POST",
+          body: fd,
+          credentials: "same-origin"
+        });
+
+        const result = await res.json();
+
+        if (!res.ok || !result.success) {
+          const msg = "Upload failed: " + (result.error || "Unknown error");
+          if (statusEl) statusEl.textContent = msg;
+          alert(msg);
+          return;
+        }
+
+        if (statusEl) {
+          statusEl.textContent = `✅ Saved for ${month}/${year}. Refreshing charts…`;
+        }
+
+        // ✅ Clear file input so you can re-upload same file if needed
+        fileInput.value = "";
+
+        // ✅ IMPORTANT: Reload charts after upload
+        await loadTrends(true);
+
+      } catch (err) {
+        console.error(err);
+        if (statusEl) statusEl.textContent = "Upload error.";
+        alert("Upload error.");
+      }
+    });
+  })();
+</script>
 
 <script>
   // ===== Upload handler (New Business Details / sales) =====
@@ -472,9 +536,10 @@
   const waChart   = mkAnalyticsLine(document.getElementById('bm-wa').getContext('2d'),   'W&A Premium',  v => usdCompact(v));
   const lossChart = mkAnalyticsLine(document.getElementById('bm-loss').getContext('2d'), '12MM Loss Ratio', fmtPct);
 
-  async function loadTrends() {
-    const res = await fetch("/api/metrics-trend");
-    const data = await res.json();
+  async function loadTrends(bustCache = false) {
+				const url = bustCache ? `/api/metrics-trend?t=${Date.now()}` : "/api/metrics-trend";
+				const res = await fetch(url, { credentials: "same-origin" });
+				const data = await res.json();
 
     if (data["Net Retention"]) {
       netChart.data.labels = data["Net Retention"].labels || [];
