@@ -88,35 +88,97 @@ def safe_int(x):
         return 0
 
 
-# ---------- AI-based Performance Summary ----------
-def get_ai_summary(agent_data):
+# ---------- AI summaries (office + per rep) ----------
+def get_ai_summaries(agent_data, pacific_date_str: str):
     """
-    Summarizes the performance of each agent using GPT-4 model.
-    Expects agent_data to contain inbound calls, outbound calls, talk time, etc.
+    agent_data rows look like:
+      [name, inbound, outbound, in_talk, out_talk]
+
+    Returns:
+      office_summary: str (3 sentences)
+      rep_summaries: dict[str,str] (2 sentences each)
     """
     key = os.getenv("OPENAI_API_KEY")
     if not key:
-        return "Summary unavailable (OPENAI_API_KEY not set)."
+        office = "AI summary unavailable (OPENAI_API_KEY not set)."
+        reps = {row[0]: office for row in agent_data}
+        return office, reps
 
-    prompt = "You are Reflexx AI, analyzing yesterday's team performance:\n\n"
+    # Ask for STRICT JSON so we can render cleanly
+    payload = []
     for row in agent_data:
         name, inbound, outbound, in_talk, out_talk = row[:5]
-        prompt += f"- {name}: Inbound Calls: {inbound}, Outbound Calls: {outbound}, In-Talk: {in_talk}, Out-Talk: {out_talk}\n"
+        payload.append({
+            "name": name,
+            "inbound": inbound,
+            "outbound": outbound,
+            "in_talk": in_talk,
+            "out_talk": out_talk
+        })
 
-    prompt += "\nFor each agent, summarize the performance in 2 sentences with an improvement suggestion."
+    prompt = f"""
+You are Reflexx AI. Analyze yesterday's performance for the office (Pacific date {pacific_date_str}).
+
+DATA (per rep):
+{json.dumps(payload, indent=2)}
+
+Return STRICT JSON only with this exact shape:
+{{
+  "office_summary": "THREE short sentences about the office overall. Mention who did well and who struggled (based only on the data).",
+  "rep_summaries": [
+    {{
+      "name": "Rep Name",
+      "summary": "TWO short sentences about this rep. 1) what they did well, 2) what to improve next."
+    }}
+  ]
+}}
+
+Rules:
+- Do NOT invent numbers or facts not in the data.
+- Keep it short, direct, and sales-manager style.
+- If a metric is zero/low, say it plainly.
+""".strip()
 
     from openai import OpenAI
     client = OpenAI(api_key=key)
-    
+    r = client.chat.completions.create(
+        model="gpt-4o",
+        messages=[{"role": "user", "content": prompt}],
+        temperature=0.2
+    )
+    raw = (r.choices[0].message.content or "").strip()
+
+    # Robust parse: if model adds extra text, try to extract JSON
     try:
-        response = client.chat.completions.create(
-            model="gpt-4",
-            messages=[{"role": "user", "content": prompt}],
-            temperature=0.5  # The lower the temp, the more factual
-        )
-        return response["choices"][0]["message"]["content"]
-    except Exception as e:
-        return f"AI error: {str(e)}"
+        data = json.loads(raw)
+    except Exception:
+        # try to extract the first {...} block
+        try:
+            start = raw.find("{")
+            end = raw.rfind("}")
+            data = json.loads(raw[start:end+1])
+        except Exception:
+            office = raw if raw else "AI summary error: empty response."
+            reps = {row[0]: "AI summary error: could not parse response." for row in agent_data}
+            return office, reps
+
+    office_summary = (data.get("office_summary") or "").strip() or "No office summary returned."
+    rep_summaries_list = data.get("rep_summaries") or []
+
+    rep_map = {}
+    for item in rep_summaries_list:
+        n = (item.get("name") or "").strip()
+        s = (item.get("summary") or "").strip()
+        if n:
+            rep_map[n] = s
+
+    # ensure every rep has *something*
+    for row in agent_data:
+        name = row[0]
+        if name not in rep_map:
+            rep_map[name] = "No AI summary returned for this rep."
+
+    return office_summary, rep_map
 
 
 # ---------- Fetch metrics (TZ-correct + manager-filtered) ----------
@@ -220,7 +282,7 @@ def fetch_metrics(manager_id: int, pacific_date: date = None):
 
 
 # ---------- PDF generation (returns BYTES) ----------
-def generate_pdf_bytes(summary, totals, agent_rows, web_usage, pacific_date_str: str):
+def generate_pdf_bytes(office_summary, rep_summaries, totals, agent_rows, web_usage, pacific_date_str: str):
     pacific = timezone("US/Pacific")
     now = datetime.now(pacific)
     timestamp = now.strftime('%b %d, %Y at %I:%M %p')
@@ -241,8 +303,22 @@ def generate_pdf_bytes(summary, totals, agent_rows, web_usage, pacific_date_str:
         Spacer(1, 6),
         Paragraph(f"<i>Data window: Pacific calendar day {pacific_date_str}</i>", styles['Body']),
         Spacer(1, 10),
-        Paragraph(summary, styles['Body']),
-        Spacer(1, 14)
+        Paragraph("<b>AI Summary – Office</b>", styles["H2"]),
+        Spacer(1, 6),
+        Paragraph(office_summary, styles["Body"]),
+        Spacer(1, 12),
+
+        Paragraph("<b>AI Summary – By Rep</b>", styles["H2"]),
+        Spacer(1, 6),
+        
+        # Per-rep summaries
+        for rep_name in [r[0] for r in agent_rows]:
+            txt = rep_summaries.get(rep_name, "No AI summary returned for this rep.")
+            elements.append(Paragraph(f"<b>{rep_name}:</b> {txt}", styles["Body"]))
+            elements.append(Spacer(1, 6))
+
+        elements.append(Spacer(1, 10))
+
     ]
 
     header_labels = ["Agent", "Inbound", "Outbound", "In Talk", "Out Talk",
@@ -355,5 +431,6 @@ def main(manager_id: int):
         str(safe_int(totals_activity[3]))
     ]
 
-    summary = get_ai_summary(ai_input)
-    return generate_pdf_bytes(summary, total_row, agent_rows, web_usage, pacific_date_str)
+    office_summary, rep_summaries = get_ai_summaries(ai_input, pacific_date_str)
+    return generate_pdf_bytes(office_summary, rep_summaries, total_row, agent_rows, web_usage, pacific_date_str)
+
