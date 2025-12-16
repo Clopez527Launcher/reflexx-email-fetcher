@@ -2538,91 +2538,145 @@ def call_metrics_range():
         payload["by_date"] = breakdown
 
     return jsonify(payload)
+    
+def resolve_manager_id(cursor):
+    """
+    If I'm a manager -> manager_id = my user id.
+    If I'm a user -> manager_id = users.manager_id.
+    """
+    cursor.execute("SELECT role, manager_id FROM users WHERE id = %s", (current_user.id,))
+    me = cursor.fetchone()
+    if not me:
+        return None
+    return current_user.id if me["role"] == "manager" else me["manager_id"]
+    
 
 # ✅ Reports Page (Filtered by Manager)
 @app.route('/reports')
 @login_required
 def reports():
-    manager_id = current_user.id
     selected_date_str = request.args.get("date")
-    selected_date = None
+    page = int(request.args.get("page", 1))
+    per_page = 25
+    offset = (page - 1) * per_page
 
-    query = "SELECT id, filename, created_at FROM reports WHERE manager_id = %s"
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True)
+
+    manager_id = resolve_manager_id(cursor)
+    if not manager_id:
+        cursor.close(); conn.close()
+        return abort(403)
+
     params = [manager_id]
+    where = "WHERE manager_id = %s"
 
-    # 👇 Filter by date if provided
     if selected_date_str:
         try:
             selected_date = datetime.strptime(selected_date_str, "%Y-%m-%d").date()
-            query += " AND DATE(created_at) = %s"
+            where += " AND DATE(created_at) = %s"
             params.append(selected_date)
         except ValueError:
-            pass  # ignore bad input
+            selected_date_str = None  # ignore bad input
 
-    query += " ORDER BY created_at DESC"
+    # ✅ total rows
+    cursor.execute(f"SELECT COUNT(*) AS cnt FROM reports {where}", tuple(params))
+    total = int(cursor.fetchone()["cnt"] or 0)
+    total_pages = max(1, (total + per_page - 1) // per_page)
 
-    conn = mysql.connector.connect(
-        host="mysql.railway.internal",
-        user="root",
-        password="vbNVbSKVuUvYRJzhewpufAXbxcatfKIc",
-        database="railway",
-        port=3306
-    )
-    cursor = conn.cursor(dictionary=True)
-    cursor.execute(query, tuple(params))
-    all_reports = cursor.fetchall()
+    # ✅ paged rows (fast)
+    cursor.execute(f"""
+        SELECT id, filename, created_at
+        FROM reports
+        {where}
+        ORDER BY created_at DESC
+        LIMIT %s OFFSET %s
+    """, tuple(params + [per_page, offset]))
+    rows = cursor.fetchall()
+
     cursor.close()
     conn.close()
 
-    # ✅ Pagination
-    page = int(request.args.get('page', 1))
-    per_page = 50
-    total = len(all_reports)
-    total_pages = max(1, (total + per_page - 1) // per_page)
-    start = (page - 1) * per_page
-    paginated_reports = all_reports[start:start+per_page]
-
-    return render_template("reports.html",
-                           reports=paginated_reports,
-                           page=page,
-                           total_pages=total_pages,
-                           selected_date=selected_date_str)
+    return render_template(
+        "reports.html",
+        reports=rows,
+        page=page,
+        total_pages=total_pages,
+        selected_date=selected_date_str
+    )
 
 # ✅ Download individual report from DB by ID
 @app.route('/reports/download/<int:report_id>')
 @login_required
 def download_report(report_id):
-    manager_id = current_user.id
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True)
 
-    conn = mysql.connector.connect(
-        host="mysql.railway.internal",
-        user="root",
-        password="vbNVbSKVuUvYRJzhewpufAXbxcatfKIc",
-        database="railway",
-        port=3306
-    )
-    cursor = conn.cursor()
+    manager_id = resolve_manager_id(cursor)
+    if not manager_id:
+        cursor.close(); conn.close()
+        return abort(403)
+
     cursor.execute("""
         SELECT filename, file_data
         FROM reports
         WHERE id = %s AND manager_id = %s
     """, (report_id, manager_id))
     row = cursor.fetchone()
+
     cursor.close()
     conn.close()
 
     if not row:
         return abort(404, "Report not found")
 
-    filename, file_data = row
-    return send_file(BytesIO(file_data), download_name=filename, as_attachment=True)
+    return send_file(
+        BytesIO(row["file_data"]),
+        download_name=row["filename"],
+        as_attachment=True
+    )
 
 # ✅ Generate a new report tied to manager
 @app.route('/generate-report', methods=['POST'])
 @login_required
 def generate_report_now():
-    from generate_daily_report import main as generate_report
-    generate_report(manager_id=current_user.id)
+    """
+    Generate report and store it in `reports` table.
+    """
+    import traceback
+    from datetime import datetime
+
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True)
+
+    manager_id = resolve_manager_id(cursor)
+    if not manager_id:
+        cursor.close(); conn.close()
+        return abort(403)
+
+    try:
+        # ✅ EXPECTATION: generator returns (filename, pdf_bytes)
+        from generate_daily_report import main as generate_report
+        filename, pdf_bytes = generate_report(manager_id=manager_id)
+
+        if not filename or not pdf_bytes:
+            raise Exception("Generator returned empty filename or pdf bytes.")
+
+        cursor.execute("""
+            INSERT INTO reports (filename, file_data, created_at, manager_id)
+            VALUES (%s, %s, %s, %s)
+        """, (filename, pdf_bytes, datetime.now(), manager_id))
+        conn.commit()
+
+    except Exception as e:
+        conn.rollback()
+        print("❌ generate-report failed:", e)
+        print(traceback.format_exc())
+        cursor.close(); conn.close()
+        return abort(500, "Report generation failed. Check logs.")
+
+    cursor.close()
+    conn.close()
     return redirect(url_for('reports'))
 
 # ✅ Brick Game Page
