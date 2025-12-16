@@ -190,20 +190,25 @@ DATA (per rep):
 {json.dumps(payload, indent=2)}
 
 Return STRICT JSON only with this exact shape:
-{{
+{
   "office_summary": "THREE short sentences about the office overall. Mention who did well and who struggled (based only on the data).",
   "rep_summaries": [
-    {{
-      "name": "Rep Name",
+    {
+      "name": "MUST match the input name exactly (email). Example: jcardona5@allstate.com",
       "summary": "TWO short sentences about this rep. 1) what they did well, 2) what to improve next."
-    }}
+    }
   ]
-}}
+}
 
 Rules:
 - Do NOT invent numbers or facts not in the data.
 - Keep it short, direct, and sales-manager style.
 - If a metric is zero/low, say it plainly.
+- You MUST return one rep_summaries item for EVERY rep in DATA (same count).
+- For each rep_summaries item, the "name" MUST EXACTLY equal that rep's input "name" (email). Do NOT use display_name.
+- Idle time: low idle_minutes is GOOD. High idle_minutes is BAD, especially > 90 minutes.
+
+
 """.strip()
 
     from openai import OpenAI
@@ -232,12 +237,32 @@ Rules:
     office_summary = (data.get("office_summary") or "").strip() or "No office summary returned."
     rep_summaries_list = data.get("rep_summaries") or []
 
+    # ✅ Build maps so we can recover if the model returns display_name instead of email
+    expected_keys = []
+    display_to_email = {}
+    for p in payload:
+        k = (p.get("name") or "").strip()  # email preferred
+        dn = (p.get("display_name") or "").strip()
+        if k:
+            expected_keys.append(k)
+        if dn and k:
+            display_to_email[dn.lower()] = k
+
     rep_map = {}
     for item in rep_summaries_list:
-        n = (item.get("name") or "").strip()          # email (preferred)
+        n = (item.get("name") or "").strip()
         s = (item.get("summary") or "").strip()
-        if n:
-            rep_map[n] = s
+        if not n:
+            continue
+
+        # If AI returned display name, map it back to email
+        if n not in expected_keys:
+            mapped = display_to_email.get(n.lower())
+            if mapped:
+                n = mapped
+
+        rep_map[n] = s
+
 
     # ensure every rep has *something*
     for r in fact_rows:
