@@ -619,7 +619,7 @@ def api_elite_daily_index_export():
     ws1 = wb.active
     ws1.title = "Elite Daily Index"
 
-    ws1.append(["Day", "User ID", "User Name", "Elite Per Minute"])
+    ws1.append(["Day", "User ID", "User Name", "Daily Index"])
 
     elite_sql = """
         SELECT
