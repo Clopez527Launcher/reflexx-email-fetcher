@@ -16,8 +16,18 @@
 
   /* 🟦 Give the whole page a little top padding so ALL content sits lower */
   .main-content.timekeeping-layout {
-    padding-top: 20px;
-  }
+				padding-top: 20px;
+
+				/* ✅ Full width like Dashboard */
+				width: 100%;
+				max-width: none;
+				margin: 0;
+				box-sizing: border-box;
+
+				/* ✅ Small left nudge so it hugs the sidebar like other tabs */
+				transform: translateX(-14px);
+				padding-right: 26px;
+		}
 
   /* 🟦 AI Insights header – bigger + moved down + aligned left like Dashboard */
   .timekeeping-layout .top-bar {
@@ -46,24 +56,17 @@
 		<style>
 				/* This wrapper controls how far left + how wide the run bars go */
 				.ai-insights-wrap{
-								width: 60%;
-								max-width: none;
-								box-sizing: border-box;
+						width: 100%;
+						max-width: none;
+						box-sizing: border-box;
 
-								/* Let the header spacing control vertical position */
-								margin-top: 0;
-								padding-top: 0;
+						/* Align next to sidebar like other tabs */
+						margin: 0;
+						padding: 0 26px 20px 0;
 
-								/* Keep right edge consistent with other tabs */
-								padding-right: 26px;
-
-								/* Nudge left similar to Dashboard / Analytics */
-								padding-left: 0;
-								transform: translateX(-10px);
-
-								padding-bottom: 20px;
+						/* Remove the “center nudge” */
+						transform: none;
 				}
-
 
 				/* Make sure the list fills the wrapper */
 				#ai-run-list{
@@ -73,6 +76,12 @@
 								margin-top: 14px;
 								gap: 12px;
 				}
+				
+				/* ✅ Force each run “bar” to take full width */
+				#ai-run-list > *{
+						width: 100%;
+				}
+
 		</style>
 
 		<div class="ai-insights-wrap">
