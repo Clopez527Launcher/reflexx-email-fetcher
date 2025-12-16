@@ -569,55 +569,83 @@
   }
 		
 		/* =========================
-					SCORECARD MODAL — SIZE + PADDING + SMALL X TOP-RIGHT
+					Reflexx Clean Modal
 					========================= */
 
-		#scorecard-modal{
-				padding: 24px;
-				box-sizing: border-box;
+		.rx-modal{
+				position: fixed;
+				inset: 0;
+				z-index: 9999;
 		}
 
-		#scorecard-modal .modal-content{
+		.rx-modal__overlay{
+				position: absolute;
+				inset: 0;
+				background: rgba(0,0,0,0.55);
+				backdrop-filter: blur(2px);
+		}
+
+		.rx-modal__panel{
 				position: relative;
-				width: min(900px, 92vw);
-				max-height: 78vh;
+				width: min(760px, 92vw);
+				max-height: 80vh;
 				overflow: auto;
 
-				padding: 20px 22px 22px;
+				margin: 10vh auto 0;
+				padding: 18px 20px 20px;
+
+				background: #0b0f14;
+				border: 1px solid rgba(0,255,255,0.25);
 				border-radius: 16px;
+				box-shadow: 0 18px 60px rgba(0,0,0,0.6);
 		}
 
-		#scorecard-modal .modal-title{
-				margin: 0;
-				padding-right: 44px; /* room for X */
-				line-height: 1.25;
-		}
-
-		#scorecard-modal .modal-body{
-				margin-top: 14px;
-				padding-top: 6px;
-		}
-
-		#scorecard-modal .modal-close{
+		.rx-modal__close{
 				position: absolute;
 				top: 12px;
 				right: 12px;
 
-				width: 26px;
-				height: 26px;
+				width: 30px;
+				height: 30px;
 				padding: 0;
 
-				display: flex;
-				align-items: center;
-				justify-content: center;
+				display: grid;
+				place-items: center;
 
-				font-size: 14px;
+				font-size: 16px;
 				line-height: 1;
 
-				background: transparent;
-				border: 1px solid rgba(255,255,255,0.18);
-				border-radius: 8px;
+				color: #e9f6ff;
+				background: rgba(255,255,255,0.06);
+				border: 1px solid rgba(255,255,255,0.14);
+				border-radius: 10px;
 				cursor: pointer;
+		}
+
+		.rx-modal__close:hover{
+				background: rgba(255,255,255,0.10);
+		}
+
+		.rx-modal__title{
+				color: #00ffff;
+				font-weight: 700;
+				font-size: 18px;
+				padding-right: 48px; /* room for the X */
+		}
+
+		.rx-modal__body{
+				margin-top: 12px;
+				color: #e9f6ff;
+				font-size: 15px;
+		}
+
+		.rx-modal__body ul{
+				margin: 10px 0 0;
+				padding-left: 18px;
+		}
+
+		.rx-modal__body li{
+				margin: 6px 0;
 		}
 
 </style>
@@ -836,7 +864,22 @@
 				</div>
 
   </div> <!-- /analytics-bottom-row -->
+		<!-- ✅ Clean Scorecard Modal -->
+		<div id="scorecard-modal" class="rx-modal" style="display:none;">
+				<div class="rx-modal__overlay" data-close="1"></div>
 
+				<div class="rx-modal__panel" role="dialog" aria-modal="true" aria-labelledby="rx-modal-title">
+						<button class="rx-modal__close" type="button" aria-label="Close" data-close="1">×</button>
+
+						<div class="rx-modal__header">
+								<div id="rx-modal-title" class="rx-modal__title">Details</div>
+						</div>
+
+						<div class="rx-modal__body modal-body">
+								<!-- JS writes content here -->
+						</div>
+				</div>
+		</div>
 </div> <!-- /dashboard-layout -->
 
 <script>
@@ -1164,7 +1207,7 @@
       return;
     }
     const body  = modal.querySelector(".modal-body");
-    const title = modal.querySelector(".modal-title");
+    const title = document.getElementById("rx-modal-title");
 
     const name  = data.user_name || "Unknown";
     const start = data.start || "";
@@ -1666,6 +1709,15 @@ document.addEventListener('DOMContentLoaded', () => {
     el.addEventListener('change', triggerRC);
     el.addEventListener('keydown', e => { if (e.key === 'Enter') triggerRC(); });
   });
+});
+</script>
+
+<script>
+document.addEventListener("click", function(e){
+  if (e.target && e.target.dataset && e.target.dataset.close) {
+    const m = document.getElementById("scorecard-modal");
+    if (m) m.style.display = "none";
+  }
 });
 </script>
 
