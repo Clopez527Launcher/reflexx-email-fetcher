@@ -967,7 +967,11 @@
   function getDashboardDates() {
     const startInput = document.getElementById("cm-start");
     const endInput   = document.getElementById("cm-end");
-    const today = new Date().toISOString().slice(0, 10);
+    // ✅ Default to yesterday (local browser time)
+				const d = new Date();
+				d.setDate(d.getDate() - 1);
+				const today = d.toISOString().slice(0, 10); // (variable name stays "today" but it's yesterday)
+
 
     function normalizeDate(str) {
       if (!str) return "";
@@ -1218,11 +1222,12 @@
   const startPicker = flatpickr("#cm-start", fpOptions);
   const endPicker   = flatpickr("#cm-end",   fpOptions);
   (function(){
-    const now = new Date();
-    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    startPicker.setDate(today, false);
-    endPicker.setDate(today, false);
-  })();
+				const now = new Date();
+				const yesterday = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1);
+				startPicker.setDate(yesterday, false);
+				endPicker.setDate(yesterday, false);
+		})();
+
 </script>
 
 <!-- 🔧 KPI Ring logic -->
