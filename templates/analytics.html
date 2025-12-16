@@ -754,7 +754,11 @@
       setSeries(cMouse,  L, data.mouse_distance);
       setSeries(cKeys,   L, data.keystrokes);
       setSeries(cClicks, L, data.mouse_clicks);
-      setSeries(cIdle,   L, data.idle_count);
+      setSeries(
+								cIdle,
+								L,
+								(data.idle_count || []).map(v => v / 60)
+						);
 
     }catch(e){
       console.error(e);
