@@ -1830,7 +1830,7 @@ def bucket_phone_detail():
               SUM(COALESCE(outbounds, 0))       AS outbounds,
               SUM(COALESCE(ib_time_minutes, 0)) AS ib_time_minutes,
               SUM(COALESCE(ob_time_minutes, 0)) AS ob_time_minutes
-            FROM fact_daily_scores
+            FROM fact_daily
             WHERE user_id = %s
               AND date BETWEEN %s AND %s
             """,
@@ -1950,7 +1950,7 @@ def bucket_quoting_detail():
                 COALESCE(SUM(quoted_items), 0)        AS quoted_items,
                 COALESCE(SUM(quotes_unique), 0)       AS quotes_unique,
                 COALESCE(SUM(advisor_pro_minutes), 0) AS advisor_pro_minutes
-            FROM fact_daily_scores
+            FROM fact_daily
             WHERE user_id = %s
               AND date BETWEEN %s AND %s
             """,
@@ -2051,7 +2051,7 @@ def bucket_movement_detail():
                 COALESCE(SUM(mouse_clicks), 0)      AS mouse_clicks,
                 COALESCE(SUM(mouse_distance), 0)    AS mouse_distance,
                 COALESCE(SUM(idle_time_seconds), 0) AS idle_time_seconds
-            FROM fact_daily_scores
+            FROM fact_daily
             WHERE user_id = %s
               AND date BETWEEN %s AND %s
             """,
