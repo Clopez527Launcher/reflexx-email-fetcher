@@ -70,7 +70,7 @@ def fetch_fact_daily_for_manager(conn, manager_id, pacific_yesterday_date):
             fd.date,
             fd.user_id,
             u.email AS email,
-            COALESCE(fd.user_name, u.name) AS user_name,
+            COALESCE(fd.user_name, u.email) AS user_name,
 
             fd.outbounds,
             fd.ib_time_minutes,
@@ -98,7 +98,7 @@ def fetch_fact_daily_for_manager(conn, manager_id, pacific_yesterday_date):
               u.manager_id = %s
               OR u.id = %s
           )
-        ORDER BY user_name
+        ORDER BY COALESCE(fd.user_name, u.email)
     """
 
     cur.execute(sql, (pacific_yesterday_date, manager_id, manager_id))
