@@ -626,7 +626,7 @@
 								tooltip: {
 										enabled: true,
 										callbacks: {
-												label: (ctx) => (ctx.parsed.y * 100).toFixed(1) + '%'
+												label: (ctx) => (ctx.parsed.y * 100).toFixed(1)
 										}
 								}
 						},
@@ -648,7 +648,7 @@
 								y: {
 										ticks: {
 												color: '#9ab',
-												callback: (v) => (v * 100).toFixed(1) + '%'
+												callback: (v) => (v * 100).toFixed(1)
 										},
 										grid: { color: '#1f2a36' }
 								}
