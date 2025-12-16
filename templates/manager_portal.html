@@ -967,11 +967,7 @@
   function getDashboardDates() {
     const startInput = document.getElementById("cm-start");
     const endInput   = document.getElementById("cm-end");
-    // ✅ Default to yesterday (local browser time)
-				const d = new Date();
-				d.setDate(d.getDate() - 1);
-				const today = d.toISOString().slice(0, 10); // (variable name stays "today" but it's yesterday)
-
+    const today = new Date().toISOString().slice(0, 10);
 
     function normalizeDate(str) {
       if (!str) return "";
@@ -1222,164 +1218,13 @@
   const startPicker = flatpickr("#cm-start", fpOptions);
   const endPicker   = flatpickr("#cm-end",   fpOptions);
   (function(){
-				const now = new Date();
-				const yesterday = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1);
-				startPicker.setDate(yesterday, false);
-				endPicker.setDate(yesterday, false);
-		})();
-
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    startPicker.setDate(today, false);
+    endPicker.setDate(today, false);
+  })();
 </script>
 
-<!-- 🔧 KPI Ring logic -->
-<script>
-(function () {
-  const startInput = document.getElementById('cm-start') || document.getElementById('scorecard-date');
-  const endInput   = document.getElementById('cm-end');
-  const applyBtn   = document.getElementById('cm-apply');
-
-  const widget   = document.getElementById('baselineRingWidget');
-  const ring     = widget ? widget.querySelector('.ring-progress') : null;
-  const centerEl = widget ? widget.querySelector('#kpiCenter') : null;
-  const dateBadge= document.getElementById('kpiDateLabel');
-
-  const deltaEl  = document.getElementById('kpiDelta');
-  const baseEl   = document.getElementById('kpiBaseline');
-  const currEl   = document.getElementById('kpiCurrent');
-
-  if (!widget || !ring || !centerEl || !startInput) return;
-
-  const CIRC = 2 * Math.PI * 50;
-  function setRing(fillRatio) {
-    const f = Math.max(0, Math.min(1, Number(fillRatio) || 0));
-    ring.style.strokeDasharray  = String(CIRC);
-    ring.style.strokeDashoffset = String((1 - f) * CIRC);
-  }
-
-  const fmtPct1 = n => (n == null || isNaN(n)) ? '—' : `${Number(n).toFixed(1)}%`;
-  const fmtPct2 = n => (n == null || isNaN(n)) ? '—' : `${Number(n).toFixed(2)}%`;
-
-  function normalizeDate(raw) {
-    if (!raw) return '';
-    const s = String(raw).trim();
-    if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s;
-    const m = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
-    if (m) { const mm = m[1].padStart(2,'0'), dd = m[2].padStart(2,'0'); return `${m[3]}-${mm}-${dd}`; }
-    const d = new Date(s);
-    if (!isNaN(d)) { const mm = String(d.getMonth()+1).padStart(2,'0'), dd = String(d.getDate()).padStart(2,'0'); return `${d.getFullYear()}-${mm}-${dd}`; }
-    return '';
-  }
-  function fmtMDY(ymd) {
-    if (!ymd) return '';
-    const [y,m,d] = ymd.split('-').map(Number);
-    return `${String(m).padStart(2,'0')}/${String(d).padStart(2,'0')}/${y}`;
-  }
-  async function fetchJSON(url) {
-    const res = await fetch(url, { credentials: 'same-origin' });
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    return res.json();
-  }
-
-  // anti-race
-  let RENDER_TOKEN = 0;
-
-  async function refreshRing() {
-    const token = ++RENDER_TOKEN;
-
-    const startYMD = normalizeDate(startInput.value);
-    const endYMD   = normalizeDate(endInput?.value || '');
-    if (!startYMD) return;
-
-    const isRange  = !!(endYMD && endYMD >= startYMD);
-
-    // 1) get baseline / series
-    const series   = await fetchJSON(
-      `/api/analytics/team-series?start=${startYMD}&end=${isRange ? endYMD : startYMD}`
-    );
-    const baseline = (typeof series.baseline_all_time === 'number')
-      ? series.baseline_all_time
-      : null;
-
-    // 2) get current team score for the date/range
-    let currentPct = null;
-    if (isRange) {
-      const payload = await fetchJSON(
-        `/api/team-score?start=${encodeURIComponent(startYMD)}&end=${encodeURIComponent(endYMD)}`
-      );
-      if (payload && typeof payload.team_score === 'number') {
-        currentPct = Math.round(
-          Math.round((payload.team_score + Number.EPSILON) * 10) / 10
-        );
-      }
-    } else {
-      const payload = await fetchJSON(
-        `/api/team-score?start=${encodeURIComponent(startYMD)}&end=${encodeURIComponent(startYMD)}`
-      );
-      if (payload && typeof payload.team_score === 'number') {
-        currentPct = Math.round(
-          Math.round((payload.team_score + Number.EPSILON) * 10) / 10
-        );
-      }
-    }
-
-    // if a newer render started, abort this one
-    if (token !== RENDER_TOKEN) return;
-
-    // 3) render
-    if (currentPct != null) {
-      const expected = `${currentPct}%`;
-      centerEl.textContent = expected;
-
-      // guard: remove old sublabels
-      widget.querySelectorAll(".ring-sublabel").forEach(el => el.remove());
-
-      // add sublabel
-      const sub = document.createElementNS("http://www.w3.org/2000/svg", "text");
-      sub.setAttribute("x","60");
-      sub.setAttribute("y","75");
-      sub.setAttribute("text-anchor","middle");
-      sub.setAttribute("fill","white");
-      sub.setAttribute("font-size","10");
-      sub.classList.add("ring-sublabel");
-      sub.textContent = "to baseline";
-      ring.parentNode.appendChild(sub);
-
-      // ring fill (clamp 0–100)
-      const ratio = Math.max(0, Math.min(100, currentPct));
-      setRing(ratio / 100);
-
-      // delta text
-      if (baseline != null) {
-        const delta = currentPct - baseline;
-        const word  = delta > 0 ? 'Up' : delta < 0 ? 'Down' : 'Even';
-        deltaEl.textContent = `${word} ${fmtPct1(Math.abs(delta))} from baseline`;
-        deltaEl.classList.remove('kpi-up','kpi-down');
-        if (delta > 0) deltaEl.classList.add('kpi-up');
-        if (delta < 0) deltaEl.classList.add('kpi-down');
-      } else {
-        deltaEl.textContent = '—';
-        deltaEl.classList.remove('kpi-up','kpi-down');
-      }
-    } else {
-      // no data → reset ring
-      centerEl.textContent = '—';
-      if (widget._centerObserver) widget._centerObserver.disconnect();
-      widget.querySelectorAll(".ring-sublabel").forEach(el => el.remove());
-      deltaEl.textContent = '—';
-      deltaEl.classList.remove('kpi-up','kpi-down');
-      setRing(0);
-    }
-  }
-  
-
-  refreshRing().catch(console.error);
-
-  if (applyBtn) applyBtn.addEventListener('click', () => refreshRing().catch(console.error));
-  startInput.addEventListener('change',  () => refreshRing().catch(console.error));
-  if (endInput) endInput.addEventListener('change', () => refreshRing().catch(console.error));
-  const scDate = document.getElementById('scorecard-date');
-  if (scDate) scDate.addEventListener('change', () => refreshRing().catch(console.error));
-})();
-</script>
 
 <!-- 🔍 User Metrics Modal (unchanged) -->
 <div id="userMetricsModal" style="display:none;position:fixed;z-index:1000;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.8);">
