@@ -55,6 +55,55 @@ MYSQL_CONFIG = {
 
 
 # ---------- Helpers ----------
+# -------------------------------
+# ✅ FACT_DAILY: pull yesterday (Pacific) for this manager
+# -------------------------------
+def fetch_fact_daily_for_manager(conn, manager_id, pacific_yesterday_date):
+    """
+    Returns list[dict] of fact_daily rows for all users under a manager for a single day.
+    pacific_yesterday_date is a python date (YYYY-MM-DD)
+    """
+    cur = conn.cursor(dictionary=True)
+
+    sql = """
+        SELECT
+            fd.date,
+            fd.user_id,
+            u.email AS email,
+            COALESCE(fd.user_name, u.name) AS user_name,
+
+            fd.outbounds,
+            fd.ib_time_minutes,
+            fd.ob_time_minutes,
+            (COALESCE(fd.ib_time_minutes,0) + COALESCE(fd.ob_time_minutes,0)) AS total_talk_minutes,
+
+            fd.advisor_pro_minutes,
+
+            fd.phone_activity_score,
+            fd.movement_activity_score,
+            fd.quote_activity_score,
+            fd.binary_vc_score,
+
+            fd.idle_time_seconds,
+            (COALESCE(fd.idle_time_seconds,0) / 60.0) AS idle_minutes,
+
+            fd.quoted_items,
+            fd.quotes_unique,
+            fd.vc_policies,
+            fd.vc_items
+        FROM fact_daily fd
+        JOIN users u ON u.id = fd.user_id
+        WHERE fd.date = %s
+          AND (
+              u.manager_id = %s
+              OR u.id = %s
+          )
+        ORDER BY user_name
+    """
+
+    cur.execute(sql, (pacific_yesterday_date, manager_id, manager_id))
+    return cur.fetchall()
+
 def pacific_day_utc_window(target_local_date: date):
     """Return (start_utc, end_utc, pacific_date_str) for the given Pacific calendar date."""
     pac = timezone("US/Pacific")
@@ -101,7 +150,7 @@ def safe_int(x):
 
 
 # ---------- AI summaries (office + per rep) ----------
-def get_ai_summaries(agent_data, pacific_date_str: str):
+def get_ai_summaries(fact_rows, pacific_date_str: str):
     """
     agent_data rows look like:
       [name, inbound, outbound, in_talk, out_talk]
@@ -113,23 +162,29 @@ def get_ai_summaries(agent_data, pacific_date_str: str):
     key = os.getenv("OPENAI_API_KEY")
     if not key:
         office = "AI summary unavailable (OPENAI_API_KEY not set)."
-        reps = {row[0]: office for row in agent_data}
+        reps = {(r.get("user_name") or "Unknown"): office for r in fact_rows}
         return office, reps
 
-    # Ask for STRICT JSON so we can render cleanly
+    # Ask for STRICT JSON so we can render cleanly (from fact_daily)
     payload = []
-    for row in agent_data:
-        name, inbound, outbound, in_talk, out_talk = row[:5]
+    for r in fact_rows:
         payload.append({
-            "name": name,
-            "inbound": inbound,
-            "outbound": outbound,
-            "in_talk": in_talk,
-            "out_talk": out_talk
+            "name": r.get("email") or r.get("user_name"),
+            "display_name": r.get("user_name"),
+            "outbounds": int(r.get("outbounds") or 0),
+            "total_talk_minutes": float(r.get("total_talk_minutes") or 0),
+            "advisor_pro_minutes": int(r.get("advisor_pro_minutes") or 0),
+            "movement_activity_score": float(r.get("movement_activity_score") or 0),
+            "idle_minutes": float(r.get("idle_minutes") or 0),
         })
 
     prompt = f"""
 You are Reflexx AI. Analyze yesterday's performance for the office (Pacific date {pacific_date_str}).
+
+IMPORTANT:
+- Use ONLY these fields: outbounds, total_talk_minutes, advisor_pro_minutes, movement_activity_score, idle_minutes.
+- Do NOT talk about inbound/outbound talk TIME separately (we already gave total_talk_minutes).
+- If values are low or 0, say it plainly.
 
 DATA (per rep):
 {json.dumps(payload, indent=2)}
@@ -171,7 +226,7 @@ Rules:
             data = json.loads(raw[start:end+1])
         except Exception:
             office = raw if raw else "AI summary error: empty response."
-            reps = {row[0]: "AI summary error: could not parse response." for row in agent_data}
+            reps = {(r.get("user_name") or "Unknown"): "AI summary error: could not parse response." for r in fact_rows}
             return office, reps
 
     office_summary = (data.get("office_summary") or "").strip() or "No office summary returned."
@@ -179,16 +234,16 @@ Rules:
 
     rep_map = {}
     for item in rep_summaries_list:
-        n = (item.get("name") or "").strip()
+        n = (item.get("name") or "").strip()          # email (preferred)
         s = (item.get("summary") or "").strip()
         if n:
             rep_map[n] = s
 
     # ensure every rep has *something*
-    for row in agent_data:
-        name = row[0]
-        if name not in rep_map:
-            rep_map[name] = "No AI summary returned for this rep."
+    for r in fact_rows:
+        key = (r.get("email") or "").strip() or (r.get("user_name") or "").strip() or "Unknown"
+        if key not in rep_map:
+            rep_map[key] = "No AI summary returned for this rep."
 
     return office_summary, rep_map
 
@@ -438,6 +493,14 @@ def generate_pdf_bytes(office_summary, rep_summaries, totals, agent_rows, web_us
 # ---------- Main ----------
 def main(manager_id: int):
     totals_activity, user_activities, user_calls, web_usage, pacific_date_str = fetch_metrics(manager_id=manager_id)
+    
+    # ✅ We always run this the next morning, so AI should analyze PACIFIC YESTERDAY
+    pacific_yesterday_date = (datetime.now(timezone("US/Pacific")).date() - timedelta(days=1))
+
+    # ✅ Pull fact_daily rows for that day (manager-scoped)
+    conn = mysql.connector.connect(**MYSQL_CONFIG)
+    fact_rows = fetch_fact_daily_for_manager(conn, manager_id, pacific_yesterday_date)
+    conn.close()
 
     agent_rows = []
     ai_input = []
@@ -477,6 +540,6 @@ def main(manager_id: int):
         str(safe_int(totals_activity[3]))
     ]
 
-    office_summary, rep_summaries = get_ai_summaries(ai_input, pacific_date_str)
+    office_summary, rep_summaries = get_ai_summaries(fact_rows, pacific_date_str)
     return generate_pdf_bytes(office_summary, rep_summaries, total_row, agent_rows, web_usage, pacific_date_str)
 
