@@ -567,6 +567,59 @@
     padding: 0 !important;
     box-shadow: none !important;
   }
+		
+		/* =========================
+					SCORECARD MODAL — SIZE + PADDING + SMALL X TOP-RIGHT
+					========================= */
+
+		#scorecard-modal{
+				padding: 24px;
+				box-sizing: border-box;
+		}
+
+		#scorecard-modal .modal-content{
+				position: relative;
+				width: min(900px, 92vw);
+				max-height: 78vh;
+				overflow: auto;
+
+				padding: 20px 22px 22px;
+				border-radius: 16px;
+		}
+
+		#scorecard-modal .modal-title{
+				margin: 0;
+				padding-right: 44px; /* room for X */
+				line-height: 1.25;
+		}
+
+		#scorecard-modal .modal-body{
+				margin-top: 14px;
+				padding-top: 6px;
+		}
+
+		#scorecard-modal .modal-close{
+				position: absolute;
+				top: 12px;
+				right: 12px;
+
+				width: 26px;
+				height: 26px;
+				padding: 0;
+
+				display: flex;
+				align-items: center;
+				justify-content: center;
+
+				font-size: 14px;
+				line-height: 1;
+
+				background: transparent;
+				border: 1px solid rgba(255,255,255,0.18);
+				border-radius: 8px;
+				cursor: pointer;
+		}
+
 </style>
 
 
