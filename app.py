@@ -609,7 +609,11 @@ def api_elite_daily_index_export():
             day,
             user_id,
             user_name,
-            w_7d_ratio AS daily_elite_per_minute
+            CASE
+                WHEN daily_talk_seconds > 0
+                    THEN (daily_elite_calls * 60.0 / daily_talk_seconds)
+                ELSE 0
+            END AS daily_elite_per_minute
         FROM elite_calls_fact_daily
         WHERE day BETWEEN %s AND %s
           AND manager_id = %s
