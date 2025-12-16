@@ -289,38 +289,72 @@ def generate_pdf_bytes(office_summary, rep_summaries, totals, agent_rows, web_us
     filename = f"Reflexx Daily Report – {timestamp}.pdf"
 
     buf = BytesIO()
-    doc = SimpleDocTemplate(buf, pagesize=LETTER, leftMargin=54, rightMargin=54, topMargin=54, bottomMargin=54)
+    doc = SimpleDocTemplate(
+        buf,
+        pagesize=LETTER,
+        leftMargin=54,
+        rightMargin=54,
+        topMargin=54,
+        bottomMargin=54
+    )
     content_width = doc.width
 
     styles = getSampleStyleSheet()
-    styles.add(ParagraphStyle(name="ReportTitle", parent=styles["Title"], fontName=FONT_MAIN, fontSize=18, leading=22))
-    styles.add(ParagraphStyle(name="Body", parent=styles["BodyText"], fontName=FONT_MAIN, fontSize=10.25, leading=14))
-    styles.add(ParagraphStyle(name="H2", parent=styles["Heading2"], fontName=FONT_MAIN, fontSize=13, leading=16))
-    styles.add(ParagraphStyle(name="HeaderWhiteSmall", fontName=FONT_BOLD, fontSize=7.0, leading=8.6, alignment=1, textColor=colors.white))
+    styles.add(ParagraphStyle(
+        name="ReportTitle",
+        parent=styles["Title"],
+        fontName=FONT_MAIN,
+        fontSize=18,
+        leading=22
+    ))
+    styles.add(ParagraphStyle(
+        name="Body",
+        parent=styles["BodyText"],
+        fontName=FONT_MAIN,
+        fontSize=10.25,
+        leading=14
+    ))
+    styles.add(ParagraphStyle(
+        name="H2",
+        parent=styles["Heading2"],
+        fontName=FONT_MAIN,
+        fontSize=13,
+        leading=16
+    ))
+    styles.add(ParagraphStyle(
+        name="HeaderWhiteSmall",
+        fontName=FONT_BOLD,
+        fontSize=7.0,
+        leading=8.6,
+        alignment=1,
+        textColor=colors.white
+    ))
 
+    # ✅ Build elements FIRST (no loops inside the list)
     elements = [
-        Paragraph(f"<b>Reflexx Daily Report – {timestamp}</b>", styles['ReportTitle']),
+        Paragraph(f"<b>Reflexx Daily Report – {timestamp}</b>", styles["ReportTitle"]),
         Spacer(1, 6),
-        Paragraph(f"<i>Data window: Pacific calendar day {pacific_date_str}</i>", styles['Body']),
+        Paragraph(f"<i>Data window: Pacific calendar day {pacific_date_str}</i>", styles["Body"]),
         Spacer(1, 10),
+
         Paragraph("<b>AI Summary – Office</b>", styles["H2"]),
         Spacer(1, 6),
-        Paragraph(office_summary, styles["Body"]),
+        Paragraph(office_summary or "No office summary returned.", styles["Body"]),
         Spacer(1, 12),
 
         Paragraph("<b>AI Summary – By Rep</b>", styles["H2"]),
         Spacer(1, 6),
-        
-        # Per-rep summaries
-        for rep_name in [r[0] for r in agent_rows]:
-            txt = rep_summaries.get(rep_name, "No AI summary returned for this rep.")
-            elements.append(Paragraph(f"<b>{rep_name}:</b> {txt}", styles["Body"]))
-            elements.append(Spacer(1, 6))
-
-        elements.append(Spacer(1, 10))
-
     ]
 
+    # ✅ NOW loop and append per-rep paragraphs
+    for rep_name in [r[0] for r in agent_rows]:
+        txt = rep_summaries.get(rep_name, "No AI summary returned for this rep.")
+        elements.append(Paragraph(f"<b>{rep_name}:</b> {txt}", styles["Body"]))
+        elements.append(Spacer(1, 6))
+
+    elements.append(Spacer(1, 10))
+
+    # ---- Agent table (same as your existing code) ----
     header_labels = ["Agent", "Inbound", "Outbound", "In Talk", "Out Talk",
                      "Distance", "Keystrokes", "Clicks", "Idle", "Grade (Score)"]
     headers = [Paragraph(h, styles["HeaderWhiteSmall"]) for h in header_labels]
@@ -346,10 +380,10 @@ def generate_pdf_bytes(office_summary, rep_summaries, totals, agent_rows, web_us
         ('VALIGN', (0, 0), (-1, 0), 'MIDDLE'),
         ('FONTNAME', (0, 1), (-1, -1), FONT_MAIN),
         ('FONTSIZE', (0, 1), (-1, -1), 8),
-        ('LEFTPADDING', (0,0), (-1,-1), 2),
-        ('RIGHTPADDING', (0,0), (-1,-1), 2),
-        ('TOPPADDING', (0,0), (-1,-1), 2),
-        ('BOTTOMPADDING', (0,0), (-1,-1), 2),
+        ('LEFTPADDING', (0, 0), (-1, -1), 2),
+        ('RIGHTPADDING', (0, 0), (-1, -1), 2),
+        ('TOPPADDING', (0, 0), (-1, -1), 2),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 2),
         ('ALIGN', (1, 1), (8, -1), 'CENTER'),
         ('ALIGN', (0, 1), (0, -1), 'LEFT'),
         ('ALIGN', (9, 1), (9, -1), 'CENTER'),
@@ -359,8 +393,8 @@ def generate_pdf_bytes(office_summary, rep_summaries, totals, agent_rows, web_us
     ]))
     elements.extend([agent_table, Spacer(1, 14)])
 
-    # Office Web Usage
-    elements.append(Paragraph("<b>Office Web Usage</b>", styles['H2']))
+    # Office Web Usage (keep your existing block)
+    elements.append(Paragraph("<b>Office Web Usage</b>", styles["H2"]))
     if web_usage:
         usage_rows = [["Application", "Share (%)"]] + [[app, f"{pct}%"] for app, pct in web_usage]
         uw_total = 0.8 * content_width
@@ -369,10 +403,10 @@ def generate_pdf_bytes(office_summary, rep_summaries, totals, agent_rows, web_us
         usage_table.setStyle(TableStyle([
             ('FONTNAME', (0, 0), (-1, -1), FONT_MAIN),
             ('FONTSIZE', (0, 0), (-1, -1), 8.5),
-            ('LEFTPADDING', (0,0), (-1,-1), 3),
-            ('RIGHTPADDING', (0,0), (-1,-1), 3),
-            ('TOPPADDING', (0,0), (-1,-1), 2),
-            ('BOTTOMPADDING', (0,0), (-1,-1), 2),
+            ('LEFTPADDING', (0, 0), (-1, -1), 3),
+            ('RIGHTPADDING', (0, 0), (-1, -1), 3),
+            ('TOPPADDING', (0, 0), (-1, -1), 2),
+            ('BOTTOMPADDING', (0, 0), (-1, -1), 2),
             ('BACKGROUND', (0, 0), (-1, 0), colors.darkblue),
             ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
             ('ALIGN', (1, 1), (1, -1), 'RIGHT'),
@@ -381,7 +415,7 @@ def generate_pdf_bytes(office_summary, rep_summaries, totals, agent_rows, web_us
         ]))
         elements.append(usage_table)
     else:
-        elements.append(Paragraph("No web usage recorded today.", styles['Body']))
+        elements.append(Paragraph("No web usage recorded today.", styles["Body"]))
 
     doc.build(elements)
     pdf_bytes = buf.getvalue()
