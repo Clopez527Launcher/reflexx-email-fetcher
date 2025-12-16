@@ -182,6 +182,7 @@ def get_ai_summaries(fact_rows, pacific_date_str: str):
 You are Reflexx AI. Analyze yesterday's performance for the office (Pacific date {pacific_date_str}).
 
 IMPORTANT:
+- Idle time: LOW idle_minutes is GOOD. HIGH idle_minutes is BAD, especially > 90 minutes.
 - Use ONLY these fields: outbounds, total_talk_minutes, advisor_pro_minutes, movement_activity_score, idle_minutes.
 - Do NOT talk about inbound/outbound talk TIME separately (we already gave total_talk_minutes).
 - If values are low or 0, say it plainly.
