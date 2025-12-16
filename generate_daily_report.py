@@ -85,7 +85,7 @@ def fetch_fact_daily_for_manager(conn, manager_id, pacific_yesterday_date):
             fd.binary_vc_score,
 
             fd.idle_time_seconds,
-            (COALESCE(fd.idle_time_seconds,0) / 60.0) AS idle_minutes,
+            ROUND((COALESCE(fd.idle_time_seconds,0) / 60.0), 0) AS idle_minutes,
 
             fd.quoted_items,
             fd.quotes_unique,
@@ -375,7 +375,7 @@ def fetch_metrics(manager_id: int, pacific_date: date = None):
 
 
 # ---------- PDF generation (returns BYTES) ----------
-def generate_pdf_bytes(office_summary, rep_summaries, totals, agent_rows, web_usage, pacific_date_str: str):
+def generate_pdf_bytes(office_summary, rep_summaries, web_usage, pacific_date_str: str):
     pacific = timezone("US/Pacific")
     now = datetime.now(pacific)
     timestamp = now.strftime('%b %d, %Y at %I:%M %p')
@@ -440,51 +440,12 @@ def generate_pdf_bytes(office_summary, rep_summaries, totals, agent_rows, web_us
     ]
 
     # ✅ NOW loop and append per-rep paragraphs
-    for rep_name in [r[0] for r in agent_rows]:
+    for rep_name in sorted(rep_summaries.keys()):
         txt = rep_summaries.get(rep_name, "No AI summary returned for this rep.")
         elements.append(Paragraph(f"<b>{rep_name}:</b> {txt}", styles["Body"]))
         elements.append(Spacer(1, 6))
 
     elements.append(Spacer(1, 10))
-
-    # ---- Agent table (same as your existing code) ----
-    header_labels = ["Agent", "Inbound", "Outbound", "In Talk", "Out Talk",
-                     "Distance", "Keystrokes", "Clicks", "Idle", "Grade (Score)"]
-    headers = [Paragraph(h, styles["HeaderWhiteSmall"]) for h in header_labels]
-
-    col_widths = [
-        0.225 * content_width,
-        0.070 * content_width,
-        0.075 * content_width,
-        0.100 * content_width,
-        0.100 * content_width,
-        0.080 * content_width,
-        0.100 * content_width,
-        0.090 * content_width,
-        0.070 * content_width,
-        0.085 * content_width
-    ]
-
-    table_data = [headers, ["TOTAL"] + totals] + agent_rows
-    agent_table = Table(table_data, repeatRows=1, colWidths=col_widths)
-    agent_table.setStyle(TableStyle([
-        ('BACKGROUND', (0, 0), (-1, 0), colors.darkblue),
-        ('ALIGN', (0, 0), (-1, 0), 'CENTER'),
-        ('VALIGN', (0, 0), (-1, 0), 'MIDDLE'),
-        ('FONTNAME', (0, 1), (-1, -1), FONT_MAIN),
-        ('FONTSIZE', (0, 1), (-1, -1), 8),
-        ('LEFTPADDING', (0, 0), (-1, -1), 2),
-        ('RIGHTPADDING', (0, 0), (-1, -1), 2),
-        ('TOPPADDING', (0, 0), (-1, -1), 2),
-        ('BOTTOMPADDING', (0, 0), (-1, -1), 2),
-        ('ALIGN', (1, 1), (8, -1), 'CENTER'),
-        ('ALIGN', (0, 1), (0, -1), 'LEFT'),
-        ('ALIGN', (9, 1), (9, -1), 'CENTER'),
-        ('VALIGN', (0, 1), (-1, -1), 'MIDDLE'),
-        ('GRID', (0, 0), (-1, -1), 0.35, colors.black),
-        ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, colors.whitesmoke]),
-    ]))
-    elements.extend([agent_table, Spacer(1, 14)])
 
     # Office Web Usage (keep your existing block)
     elements.append(Paragraph("<b>Office Web Usage</b>", styles["H2"]))
@@ -518,54 +479,34 @@ def generate_pdf_bytes(office_summary, rep_summaries, totals, agent_rows, web_us
 
 # ---------- Main ----------
 def main(manager_id: int):
-    totals_activity, user_activities, user_calls, web_usage, pacific_date_str = fetch_metrics(manager_id=manager_id)
-    
-    # ✅ We always run this the next morning, so AI should analyze PACIFIC YESTERDAY
-    pacific_yesterday_date = (datetime.now(timezone("US/Pacific")).date() - timedelta(days=1))
+    # Still needed for web usage + Pacific date label
+    totals_activity, user_activities, user_calls, web_usage, pacific_date_str = fetch_metrics(
+        manager_id=manager_id
+    )
 
-    # ✅ Pull fact_daily rows for that day (manager-scoped)
+    # We always run this the next morning → analyze PACIFIC YESTERDAY
+    pacific_yesterday_date = (
+        datetime.now(timezone("US/Pacific")).date() - timedelta(days=1)
+    )
+
+    # Pull fact_daily rows for that day (manager-scoped)
     conn = mysql.connector.connect(**MYSQL_CONFIG)
-    fact_rows = fetch_fact_daily_for_manager(conn, manager_id, pacific_yesterday_date)
+    fact_rows = fetch_fact_daily_for_manager(
+        conn, manager_id, pacific_yesterday_date
+    )
     conn.close()
 
-    agent_rows = []
-    ai_input = []
+    # AI summaries come ONLY from fact_daily now
+    office_summary, rep_summaries = get_ai_summaries(
+        fact_rows, pacific_date_str
+    )
 
-    tot_in = tot_out = 0
-    tot_in_secs = tot_out_secs = 0
+    # Agent table removed → PDF no longer needs totals / agent_rows
+    return generate_pdf_bytes(
+        office_summary,
+        rep_summaries,
+        web_usage,
+        pacific_date_str
+    )
 
-    for user in user_activities:
-        name, distance, keys, clicks, idle = user
-        inbound, outbound, in_talk, out_talk = user_calls.get(name, (0, 0, "0:00:00", "0:00:00"))
-
-        tot_in += safe_int(inbound)
-        tot_out += safe_int(outbound)
-        tot_in_secs += hms_to_secs(in_talk)
-        tot_out_secs += hms_to_secs(out_talk)
-
-        # ✅ Scorecard removed — keep PDF stable
-        grade_cell = "-"
-
-
-        agent_rows.append([
-            name,
-            str(inbound), str(outbound), time_to_hms(in_talk), time_to_hms(out_talk),
-            str(safe_int(distance)), str(safe_int(keys)), str(safe_int(clicks)), str(safe_int(idle)),
-            grade_cell
-        ])
-        ai_input.append([name, str(inbound), str(outbound), time_to_hms(in_talk), time_to_hms(out_talk)])
-
-    total_row = [
-        str(tot_in),
-        str(tot_out),
-        secs_to_hms(tot_in_secs),
-        secs_to_hms(tot_out_secs),
-        str(safe_int(totals_activity[0])),
-        str(safe_int(totals_activity[1])),
-        str(safe_int(totals_activity[2])),
-        str(safe_int(totals_activity[3]))
-    ]
-
-    office_summary, rep_summaries = get_ai_summaries(fact_rows, pacific_date_str)
-    return generate_pdf_bytes(office_summary, rep_summaries, total_row, agent_rows, web_usage, pacific_date_str)
 
