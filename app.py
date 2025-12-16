@@ -532,13 +532,18 @@ def api_elite_daily_index():
             day,
             user_id,
             user_name,
-            w_7d_ratio AS daily_elite_per_minute
+            CASE
+                WHEN daily_talk_seconds > 0
+                    THEN (daily_elite_calls * 60.0 / daily_talk_seconds)
+                ELSE 0
+            END AS daily_elite_per_minute
         FROM elite_calls_fact_daily
         WHERE day BETWEEN %s AND %s
           AND manager_id = %s
-        ORDER BY day DESC, w_7d_ratio DESC
+        ORDER BY day DESC, daily_elite_per_minute DESC
         LIMIT %s OFFSET %s
     """
+
     cursor.execute(
         data_sql,
         (start_day, anchor_day, manager_id, page_size, offset)
@@ -571,40 +576,52 @@ def api_elite_daily_index():
     })
 
 
+from openpyxl import Workbook
+from flask import Response
+from datetime import datetime, timedelta
+import io
+
 @app.route("/api/elite_daily_index_export")
 @login_required
 def api_elite_daily_index_export():
     """
-    Export last 30 days of daily elite-per-minute scores to CSV
-    (Excel-friendly).
+    Export Excel with:
+      Sheet 1: Elite Daily Index (daily elite-per-minute)
+      Sheet 2: Raw fact_daily metrics (11 fields)
     """
     conn = get_db_connection()
     cursor = conn.cursor()
-    
-    # 🔐 Resolve manager_id safely (DB truth, no leakage)
+
+    # 🔐 Resolve manager_id safely
     cursor.execute(
         "SELECT role, manager_id FROM users WHERE id = %s",
         (current_user.id,)
     )
     me = cursor.fetchone()
 
-    # If I'm a manager, my manager_id is my own user id.
-    # If I'm a user, my manager_id is stored in users.manager_id.
-    manager_id = current_user.id if (me and me.get("role") == "manager") else (me.get("manager_id") if me else None)
-
+    manager_id = current_user.id if (me and me.get("role") == "manager") else me.get("manager_id")
     if manager_id is None:
         cursor.close()
         conn.close()
         return jsonify({"status": "error", "message": "Unable to resolve manager_id"}), 400
 
-
-    # Same anchor logic as the JSON endpoint
+    # Anchor to California yesterday
     utc_now = datetime.utcnow()
     pst_like_now = utc_now - timedelta(hours=8)
     anchor_day = pst_like_now.date() - timedelta(days=1)
     start_day = anchor_day - timedelta(days=29)
 
-    export_sql = """
+    wb = Workbook()
+
+    # ======================================================
+    # SHEET 1 — Elite Daily Index
+    # ======================================================
+    ws1 = wb.active
+    ws1.title = "Elite Daily Index"
+
+    ws1.append(["Day", "User ID", "User Name", "Elite Per Minute"])
+
+    elite_sql = """
         SELECT
             day,
             user_id,
@@ -613,50 +630,89 @@ def api_elite_daily_index_export():
                 WHEN daily_talk_seconds > 0
                     THEN (daily_elite_calls * 60.0 / daily_talk_seconds)
                 ELSE 0
-            END AS daily_elite_per_minute
+            END AS elite_per_minute
         FROM elite_calls_fact_daily
         WHERE day BETWEEN %s AND %s
           AND manager_id = %s
         ORDER BY day DESC, user_name ASC
     """
-
-    cursor.execute(
-        export_sql,
-        (start_day, anchor_day, manager_id)
-    )
-
-    rows = cursor.fetchall()
-
-    # Build CSV in memory
-    output = io.StringIO()
-    writer = csv.writer(output)
-    writer.writerow(["Day", "User ID", "User Name", "Score"])
-
-    for r in rows:
-        val = r["daily_elite_per_minute"]
-        score = float(val) if val is not None else 0.0
-        writer.writerow([
-            r["day"].isoformat() if hasattr(r["day"], "isoformat") else str(r["day"]),
+    cursor.execute(elite_sql, (start_day, anchor_day, manager_id))
+    for r in cursor.fetchall():
+        ws1.append([
+            r["day"],
             r["user_id"],
             r["user_name"],
-            round(score, 3)
+            round(float(r["elite_per_minute"] or 0), 4)
         ])
 
-    csv_data = output.getvalue()
-    output.close()
+    # ======================================================
+    # SHEET 2 — Raw Fact Daily (11 metrics)
+    # ======================================================
+    ws2 = wb.create_sheet(title="Fact Daily Raw")
+
+    ws2.append([
+        "date", "user_id", "user_name",
+        "inbounds", "outbounds", "ib_time_minutes", "ob_time_minutes",
+        "quoted_items", "quotes_unique", "advisor_pro_minutes",
+        "mouse_distance", "keystrokes", "mouse_clicks", "idle_time_seconds"
+    ])
+
+    fact_sql = """
+        SELECT
+            fd.date,
+            fd.user_id,
+            fd.user_name,
+            fd.inbounds,
+            fd.outbounds,
+            fd.ib_time_minutes,
+            fd.ob_time_minutes,
+            fd.quoted_items,
+            fd.quotes_unique,
+            fd.advisor_pro_minutes,
+            fd.mouse_distance,
+            fd.keystrokes,
+            fd.mouse_clicks,
+            fd.idle_time_seconds
+        FROM fact_daily fd
+        JOIN users u ON u.id = fd.user_id
+        WHERE fd.date BETWEEN %s AND %s
+          AND u.manager_id = %s
+        ORDER BY fd.date DESC, fd.user_name ASC
+    """
+    cursor.execute(fact_sql, (start_day, anchor_day, manager_id))
+    for r in cursor.fetchall():
+        ws2.append([
+            r["date"],
+            r["user_id"],
+            r["user_name"],
+            r["inbounds"],
+            r["outbounds"],
+            r["ib_time_minutes"],
+            r["ob_time_minutes"],
+            r["quoted_items"],
+            r["quotes_unique"],
+            r["advisor_pro_minutes"],
+            r["mouse_distance"],
+            r["keystrokes"],
+            r["mouse_clicks"],
+            r["idle_time_seconds"],
+        ])
 
     cursor.close()
     conn.close()
 
-    # Return as downloadable CSV (Excel will open it fine)
-    from flask import Response
-    resp = Response(csv_data, mimetype="text/csv")
-    resp.headers["Content-Disposition"] = (
-        "attachment; filename=elite_daily_index_last_30_days.csv"
+    # Write workbook to memory
+    output = io.BytesIO()
+    wb.save(output)
+    output.seek(0)
+
+    return Response(
+        output.getvalue(),
+        mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={
+            "Content-Disposition": "attachment; filename=reflexx_daily_data.xlsx"
+        }
     )
-    return resp
-
-
 
 
 # ---------- Quotes: upload, list, view ----------
