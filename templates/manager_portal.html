@@ -569,6 +569,78 @@
   }
 </style>
 
+/* =========================
+   SCORECARD MODAL — FIX SIZE + PADDING + SMALL X TOP-RIGHT
+   ========================= */
+
+/* Overlay (safe even if you already have it) */
+#scorecard-modal{
+  padding: 24px !important;              /* space from screen edges */
+  box-sizing: border-box;
+}
+
+/* The modal box (try common class names) */
+#scorecard-modal .modal-content,
+#scorecard-modal .modal-box,
+#scorecard-modal .modal-inner{
+  position: relative !important;         /* lets us pin the X */
+  width: min(980px, 94vw) !important;    /* ✅ bigger */
+  max-height: 78vh !important;           /* ✅ doesn’t run off screen */
+  overflow: auto !important;             /* ✅ scroll inside if needed */
+
+  padding: 22px 26px 26px !important;    /* ✅ real padding */
+  border-radius: 16px !important;
+}
+
+/* Title spacing so it never gets covered by the X */
+#scorecard-modal .modal-title{
+  margin: 0 !important;
+  padding-right: 44px !important;        /* room for the X */
+  line-height: 1.25 !important;
+}
+
+/* Body spacing */
+#scorecard-modal .modal-body{
+  margin-top: 14px !important;
+  padding-top: 6px !important;
+}
+
+/* The close X button — small, top-right */
+#scorecard-modal .modal-close,
+#scorecard-modal .close,
+#scorecard-modal .close-btn,
+#scorecard-modal button[aria-label="Close"],
+#scorecard-modal button.close{
+  position: absolute !important;
+  top: 12px !important;
+  right: 12px !important;
+
+  width: 26px !important;
+  height: 26px !important;
+  padding: 0 !important;
+
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+
+  font-size: 14px !important;            /* ✅ smaller X */
+  line-height: 1 !important;
+
+  background: transparent !important;    /* no giant pill */
+  border: 1px solid rgba(255,255,255,0.18) !important;
+  border-radius: 8px !important;
+
+  cursor: pointer !important;
+}
+
+/* optional hover */
+#scorecard-modal .modal-close:hover,
+#scorecard-modal .close:hover,
+#scorecard-modal .close-btn:hover{
+  border-color: rgba(255,255,255,0.35) !important;
+}
+
+
 
 <div class="dashboard-layout">
   <div class="top-bar">
