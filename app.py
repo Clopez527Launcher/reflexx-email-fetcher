@@ -2619,7 +2619,7 @@ def reports():
 @login_required
 def download_report(report_id):
     conn = get_db_connection()
-    cursor = conn.cursor(dictionary=True)
+    cursor = get_dict_cursor(conn)
 
     manager_id = resolve_manager_id(cursor)
     if not manager_id:
@@ -2656,7 +2656,7 @@ def generate_report_now():
     from datetime import datetime
 
     conn = get_db_connection()
-    cursor = conn.cursor(dictionary=True)
+    cursor = get_dict_cursor(conn)
 
     manager_id = resolve_manager_id(cursor)
     if not manager_id:
