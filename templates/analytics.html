@@ -442,7 +442,7 @@
 
         <div class="emp-grid team-grid">
           <div class="emp-chart">
-            <h4>Elite Calls / Talk Time (per minute)</h4>
+            <h4>Team Index by Day</h4>
             <div class="emp-canvas-wrap"><canvas id="team-index"></canvas></div>
           </div>
 
@@ -559,7 +559,12 @@
 
 						plugins: {
 								legend: { display: false },
-								tooltip: { enabled: true }
+								tooltip: {
+										enabled: true,
+										callbacks: {
+												label: (ctx) => ctx.parsed.y
+										}
+								}
 						},
 
 						// ✅ Bigger invisible “hitbox” for hovering
@@ -584,13 +589,72 @@
 										grid: { color: '#1f2a36' }
 								},
 								y: {
-										ticks: { color: '#9ab' },
+										ticks: {
+												color: '#9ab',
+												callback: function(value) {
+														return value;
+												}
+										},
 										grid: { color: '#1f2a36' }
 								}
 						}
 				}
 		});
 
+		
+		// ✅ PASTE THIS ENTIRE BLOCK RIGHT HERE (Step 2)
+		const mkLinePct = (ctx, label) => new Chart(ctx, {
+				type: 'line',
+				data: {
+						labels: [],
+						datasets: [{
+								label,
+								data: [],
+								tension: 0.35,
+								pointRadius: 0,
+								borderColor: '#00c0ff',
+								backgroundColor: 'rgba(0,192,255,0.08)',
+								fill: true
+						}]
+				},
+				options: {
+						responsive: true,
+						maintainAspectRatio: false,
+						interaction: { mode: 'index', intersect: false, axis: 'x' },
+						plugins: {
+								legend: { display: false },
+								tooltip: {
+										enabled: true,
+										callbacks: {
+												label: (ctx) => (ctx.parsed.y * 100).toFixed(1) + '%'
+										}
+								}
+						},
+						elements: {
+								point: { radius: 0, hitRadius: 18, hoverRadius: 6 },
+								line: { borderWidth: 2 }
+						},
+						scales: {
+								x: {
+										ticks: {
+												color: '#9ab',
+												callback(value) {
+														const label = this.getLabelForValue(value);
+														return /^\d{4}-\d{2}-\d{2}$/.test(label) ? label.slice(5) : label;
+												}
+										},
+										grid: { color: '#1f2a36' }
+								},
+								y: {
+										ticks: {
+												color: '#9ab',
+												callback: (v) => (v * 100).toFixed(1) + '%'
+										},
+										grid: { color: '#1f2a36' }
+								}
+						}
+				}
+		});
 
   // ---------------------------
   // ✅ Movement charts
@@ -618,7 +682,7 @@
   // ---------------------------
   // 🧮 Team Index chart
   // ---------------------------
-  const cTeamIndex = mkLine(document.getElementById('team-index'), 'Adjusted Team Index');
+  const cTeamIndex = mkLinePct(document.getElementById('team-index'), 'Adjusted Team Index');
 
   // ---------------------------
   // 🌐 fetch helper
