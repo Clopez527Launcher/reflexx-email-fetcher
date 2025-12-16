@@ -33,12 +33,24 @@ except Exception:
 
 
 # ---------- MySQL config ----------
+def _env(*names):
+    """Return the first env var value that exists and is non-empty."""
+    for n in names:
+        v = os.getenv(n)
+        if v and str(v).strip():
+            return v
+    return None
+
 MYSQL_CONFIG = {
-    "host": "mysql.railway.internal",
-    "user": "root",
-    "password": os.getenv("vbNVbSKVuUvYRJzhewpufAXbxcatfKIc") or os.getenv("vbNVbSKVuUvYRJzhewpufAXbxcatfKIc"),
-    "database": "railway",
-    "port": 3306
+    "host": _env("MYSQLHOST", "MYSQL_HOST") or "mysql.railway.internal",
+    "port": int(_env("MYSQLPORT", "MYSQL_PORT") or 3306),
+    "user": _env("MYSQLUSER", "MYSQL_USER") or "root",
+    "password": _env(
+        "MYSQLPASSWORD",
+        "MYSQL_PASSWORD",
+        "MYSQL_ROOT_PASSWORD"
+    ),
+    "database": _env("MYSQLDATABASE", "MYSQL_DATABASE") or "railway",
 }
 
 
@@ -76,59 +88,35 @@ def safe_int(x):
         return 0
 
 
-# ---------- ✅ Local scorecard logic (no imports) ----------
-def calculate_scorecard_from_raw(distance, keys, clicks, idle_count):
+# ---------- AI-based Performance Summary ----------
+def get_ai_summary(agent_data):
     """
-    Mirrors your grading matrix in the PDF:
-      - Mouse Distance: 100/200/300/400 -> 5/10/15/20
-      - Keystrokes: 4000/6000/8000/10000 -> 5/10/15/20
-      - Mouse Clicks: 1000/1500/2000/2500 -> 5/10/15/20
-      - Idle Count: <=120/90/60/30 -> 10/20/30/40
-    Total max = 100
+    Summarizes the performance of each agent using GPT-4 model.
+    Expects agent_data to contain inbound calls, outbound calls, talk time, etc.
     """
-    d = safe_int(distance)
-    k = safe_int(keys)
-    c = safe_int(clicks)
-    idle = safe_int(idle_count)
+    key = os.getenv("OPENAI_API_KEY")
+    if not key:
+        return "Summary unavailable (OPENAI_API_KEY not set)."
 
-    def tier_points(val, tiers):
-        # tiers is list of (threshold, points) in ascending threshold order
-        pts = 0
-        for threshold, p in tiers:
-            if val >= threshold:
-                pts = p
-        return pts
+    prompt = "You are Reflexx AI, analyzing yesterday's team performance:\n\n"
+    for row in agent_data:
+        name, inbound, outbound, in_talk, out_talk = row[:5]
+        prompt += f"- {name}: Inbound Calls: {inbound}, Outbound Calls: {outbound}, In-Talk: {in_talk}, Out-Talk: {out_talk}\n"
 
-    dist_pts = tier_points(d, [(100,5),(200,10),(300,15),(400,20)])
-    key_pts  = tier_points(k, [(4000,5),(6000,10),(8000,15),(10000,20)])
-    click_pts= tier_points(c, [(1000,5),(1500,10),(2000,15),(2500,20)])
+    prompt += "\nFor each agent, summarize the performance in 2 sentences with an improvement suggestion."
 
-    # idle is reversed (lower is better)
-    if idle <= 30:
-        idle_pts = 40
-    elif idle <= 60:
-        idle_pts = 30
-    elif idle <= 90:
-        idle_pts = 20
-    elif idle <= 120:
-        idle_pts = 10
-    else:
-        idle_pts = 0
-
-    score = dist_pts + key_pts + click_pts + idle_pts
-
-    if score >= 90:
-        grade = "A"
-    elif score >= 80:
-        grade = "B"
-    elif score >= 70:
-        grade = "C"
-    elif score >= 60:
-        grade = "D"
-    else:
-        grade = "F"
-
-    return {"score": score, "grade": grade}
+    from openai import OpenAI
+    client = OpenAI(api_key=key)
+    
+    try:
+        response = client.chat.completions.create(
+            model="gpt-4",
+            messages=[{"role": "user", "content": prompt}],
+            temperature=0.5  # The lower the temp, the more factual
+        )
+        return response["choices"][0]["message"]["content"]
+    except Exception as e:
+        return f"AI error: {str(e)}"
 
 
 # ---------- Fetch metrics (TZ-correct + manager-filtered) ----------
@@ -229,41 +217,6 @@ def fetch_metrics(manager_id: int, pacific_date: date = None):
 
     cur.close(); conn.close()
     return total_activity, user_activities, user_calls, web_usage, pacific_date_str
-
-
-# ---------- AI summary (safe fallback) ----------
-def get_ai_summary(agent_data):
-    key = os.getenv("OPENAI_API_KEY")
-    if not key:
-        return "Summary unavailable (OPENAI_API_KEY not set)."
-
-    prompt = "You are Reflexx AI. Here's the office performance for today:\n\n"
-    for row in agent_data:
-        name, inbound, outbound, in_talk, out_talk = row[:5]
-        prompt += f"- {name}: Inbound {inbound}, Outbound {outbound}, In Talk {in_talk}, Out Talk {out_talk}\n"
-    prompt += "\nPlease summarize the day's performance in one paragraph and give one improvement suggestion."
-
-    from openai import OpenAI
-    client = OpenAI(api_key=key)
-    r = client.chat.completions.create(
-        model="gpt-4o",
-        messages=[{"role": "user", "content": prompt}],
-        temperature=0.3
-    )
-    return r.choices[0].message.content
-
-
-def grade_color_html(grade_letter: str, score: int) -> str:
-    g = (grade_letter or "F").upper()[:1]
-    if g in ("F", "D"):
-        color = "#d32f2f"
-    elif g == "C":
-        color = "#ef6c00"
-    elif g == "B":
-        color = "#f9a825"
-    else:
-        color = "#2e7d32"  # A
-    return f'<font color="{color}"><b>{g}</b> ({score}%)</font>'
 
 
 # ---------- PDF generation (returns BYTES) ----------
@@ -405,4 +358,3 @@ def main(manager_id: int):
 
     summary = get_ai_summary(ai_input)
     return generate_pdf_bytes(summary, total_row, agent_rows, web_usage, pacific_date_str)
-
