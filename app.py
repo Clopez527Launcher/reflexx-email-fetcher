@@ -2583,11 +2583,26 @@ def reports():
 
     if selected_date_str:
         try:
+            # ✅ User picked a *Pacific* calendar date
             selected_date = datetime.strptime(selected_date_str, "%Y-%m-%d").date()
-            where += " AND DATE(created_at) = %s"
-            params.append(selected_date)
+
+            # ✅ Convert that Pacific day into a UTC window: [start_utc, next_day_utc)
+            from datetime import time, timedelta
+            import pytz
+
+            pac = pytz.timezone("US/Pacific")
+            start_pac = pac.localize(datetime.combine(selected_date, time.min))
+            next_pac  = start_pac + timedelta(days=1)
+
+            start_utc = start_pac.astimezone(pytz.utc).replace(tzinfo=None)
+            next_utc  = next_pac.astimezone(pytz.utc).replace(tzinfo=None)
+
+            where += " AND created_at >= %s AND created_at < %s"
+            params.extend([start_utc, next_utc])
+
         except ValueError:
             selected_date_str = None  # ignore bad input
+
 
     # ✅ total rows
     cursor.execute(f"SELECT COUNT(*) AS cnt FROM reports {where}", tuple(params))
@@ -2675,7 +2690,7 @@ def generate_report_now():
         cursor.execute("""
             INSERT INTO reports (filename, file_data, created_at, manager_id)
             VALUES (%s, %s, %s, %s)
-        """, (filename, pdf_bytes, datetime.now(), manager_id))
+        """, (filename, pdf_bytes, datetime.utcnow(), manager_id))
         conn.commit()
 
     except Exception as e:
