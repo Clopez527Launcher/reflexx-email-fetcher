@@ -2550,6 +2550,15 @@ def resolve_manager_id(cursor):
         return None
     return current_user.id if me["role"] == "manager" else me["manager_id"]
     
+def get_dict_cursor(conn):
+    """
+    Works for PyMySQL connections (Railway typical).
+    Returns a cursor that gives dict rows.
+    """
+    import pymysql
+    return conn.cursor(pymysql.cursors.DictCursor)
+    
+    
 
 # ✅ Reports Page (Filtered by Manager)
 @app.route('/reports')
@@ -2561,7 +2570,7 @@ def reports():
     offset = (page - 1) * per_page
 
     conn = get_db_connection()
-    cursor = conn.cursor(dictionary=True)
+    cursor = get_dict_cursor(conn)
 
     manager_id = resolve_manager_id(cursor)
     if not manager_id:
