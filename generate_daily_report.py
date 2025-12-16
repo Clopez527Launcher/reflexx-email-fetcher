@@ -36,7 +36,7 @@ except Exception:
 MYSQL_CONFIG = {
     "host": "mysql.railway.internal",
     "user": "root",
-    "password": os.getenv("vbNVbSKVuUvYRJzhewpufAXbxcatfKIc", ""),  # ✅ prefer env var
+    "password": os.getenv("MYSQL_PASSWORD") or os.getenv("vbNVbSKVuUvYRJzhewpufAXbxcatfKIc"),
     "database": "railway",
     "port": 3306
 }
