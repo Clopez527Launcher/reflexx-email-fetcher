@@ -190,15 +190,15 @@ DATA (per rep):
 {json.dumps(payload, indent=2)}
 
 Return STRICT JSON only with this exact shape:
-{
+{{
   "office_summary": "THREE short sentences about the office overall. Mention who did well and who struggled (based only on the data).",
   "rep_summaries": [
-    {
+    {{
       "name": "MUST match the input name exactly (email). Example: jcardona5@allstate.com",
       "summary": "TWO short sentences about this rep. 1) what they did well, 2) what to improve next."
-    }
+    }}
   ]
-}
+}}
 
 Rules:
 - Do NOT invent numbers or facts not in the data.
