@@ -3,7 +3,48 @@
 {% block title %}Reports – Reflexx{% endblock %}
 
 {% block content %}
-  <div class="main-content reports-layout">
+<style>
+  /* ✅ Match Dashboard background */
+  body,
+  .content,
+  .content-wrapper,
+  .page-wrapper,
+  .main-content {
+    background: #12243b !important;
+    color: #e9f6ff;
+  }
+
+  /* ✅ Reports page: hug sidebar + full width like Dashboard */
+  .reports-layout{
+    width: 100%;
+    max-width: none;
+    margin: 0;
+    box-sizing: border-box;
+
+    /* same “feel” as Dashboard */
+    padding-top: 0px;
+    padding-right: 26px;
+    transform: translateX(-14px);
+  }
+
+  /* ✅ Header spacing + size like other tabs */
+  .reports-layout .top-bar h1{
+    margin-top: 22px;
+    margin-bottom: 14px;
+    padding-left: 6px;
+    font-size: 30px;
+    font-weight: 700;
+  }
+
+  /* ✅ Align filter + list with the cards edge */
+  .reports-layout form,
+  .reports-layout ul,
+  .reports-layout > div {
+    padding-left: 6px;
+  }
+</style>
+
+  <div class="reports-layout">
     <div class="top-bar" style="display: flex; justify-content: space-between; align-items: center;">
       <h1>Reports</h1>
       <form action="{{ url_for('generate_report_now') }}" method="post" style="margin: 0;">
