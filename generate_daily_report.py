@@ -80,6 +80,18 @@ def secs_to_hms(total_secs: int) -> str:
     s = total_secs % 60
     return f"{h}:{m:02d}:{s:02d}"
 
+def time_to_hms(x) -> str:
+    """
+    Ensure TIME values are always JSON-safe strings.
+    mysql TIME can come back as timedelta.
+    """
+    if x is None:
+        return "0:00:00"
+    if isinstance(x, timedelta):
+        total = int(x.total_seconds())
+        return secs_to_hms(total)
+    return str(x)
+
 
 def safe_int(x):
     try:
@@ -448,11 +460,11 @@ def main(manager_id: int):
 
         agent_rows.append([
             name,
-            str(inbound), str(outbound), in_talk, out_talk,
+            str(inbound), str(outbound), time_to_hms(in_talk), time_to_hms(out_talk),
             str(safe_int(distance)), str(safe_int(keys)), str(safe_int(clicks)), str(safe_int(idle)),
             grade_cell
         ])
-        ai_input.append([name, str(inbound), str(outbound), in_talk, out_talk])
+        ai_input.append([name, str(inbound), str(outbound), time_to_hms(in_talk), time_to_hms(out_talk)])
 
     total_row = [
         str(tot_in),
