@@ -21,8 +21,9 @@ from io import BytesIO
 
 from flask import (
     Flask, request, jsonify, render_template, redirect, url_for,
-    session, Response, send_from_directory, current_app
+    session, Response, send_from_directory, current_app, abort
 )
+
 from flask_login import login_user  # keep if you use it elsewhere
 from flask_login import current_user
 

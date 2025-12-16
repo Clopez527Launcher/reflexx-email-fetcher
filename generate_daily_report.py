@@ -332,10 +332,9 @@ def main(manager_id: int):
         tot_in_secs += hms_to_secs(in_talk)
         tot_out_secs += hms_to_secs(out_talk)
 
-        card = calculate_scorecard_from_raw(distance, keys, clicks, idle)
-        grade = card["grade"]
-        score = card["score"]
-        grade_cell = Paragraph(grade_color_html(grade, score), getSampleStyleSheet()["BodyText"])
+        # ✅ Scorecard removed — keep PDF stable
+        grade_cell = "-"
+
 
         agent_rows.append([
             name,
