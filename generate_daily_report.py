@@ -531,8 +531,8 @@ def generate_pdf_bytes(office_summary, rep_summaries, web_usage, pacific_date_st
         name="ScoreStyle",
         parent=styles["Body"],
         fontName=FONT_BOLD,   # ✅ bold like dashboard
-        fontSize=9,           # ✅ smaller so it stays 1 line
-        leading=10,
+        fontSize=8.5,           # ✅ smaller so it stays 1 line
+        leading=9.5,
         alignment=TA_CENTER,  # ✅ centered
         spaceBefore=0,
         spaceAfter=0,
@@ -576,19 +576,25 @@ def generate_pdf_bytes(office_summary, rep_summaries, web_usage, pacific_date_st
             ])
 
         tbl = Table(data, colWidths=[220, 95, 95, 95])
-        t.setStyle(TableStyle([
+
+        tbl.setStyle(TableStyle([
             ('FONTNAME', (0, 0), (-1, -1), FONT_MAIN),
             ('FONTSIZE', (0, 0), (-1, -1), 9),
             ('BACKGROUND', (0, 0), (-1, 0), colors.darkblue),
             ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
             ('GRID', (0, 0), (-1, -1), 0.35, colors.black),
-            ('ALIGN', (1, 1), (-1, -1), 'RIGHT'),
+
+            # ✅ Center the score cells (Phone/Quote/Movement)
+            ('ALIGN', (1, 1), (-1, -1), 'CENTER'),
+            ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+
             ('LEFTPADDING', (0, 0), (-1, -1), 3),
             ('RIGHTPADDING', (0, 0), (-1, -1), 3),
             ('TOPPADDING', (0, 0), (-1, -1), 2),
             ('BOTTOMPADDING', (0, 0), (-1, -1), 2),
         ]))
-        elements.append(t)
+
+        elements.append(tbl)
         elements.append(Spacer(1, 10))
 
     # ✅ add Yesterday + L-7 tables
