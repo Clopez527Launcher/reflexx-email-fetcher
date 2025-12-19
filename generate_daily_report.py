@@ -526,7 +526,7 @@ def generate_pdf_bytes(office_summary, rep_summaries, web_usage, pacific_date_st
         Paragraph(f"<i>Data window: Pacific calendar day {pacific_date_str}</i>", styles["Body"]),
         Spacer(1, 10),
 
-        Paragraph("<b>Office AI Summary 🪄</b>", styles["H2"]),
+        Paragraph("<b>Office AI Summary ✨</b>", styles["H2"]),
         Spacer(1, 6),
         Paragraph(office_summary or "No office summary returned.", styles["Body"]),
         Spacer(1, 12),
@@ -551,11 +551,15 @@ def generate_pdf_bytes(office_summary, rep_summaries, web_usage, pacific_date_st
         for r in rows:
             data.append([
                 r["name"],
-                str(r["phone"]),
-                str(r["quote"]),
-                str(r["movement"]),
+
+                # ✅ Paragraph() makes ReportLab parse <font> tags
+                Paragraph(str(r["phone"]), styles["Body"]),
+                Paragraph(str(r["quote"]), styles["Body"]),
+                Paragraph(str(r["movement"]), styles["Body"]),
+
                 f'{float(r["index_score"]):.2f}',
             ])
+
 
 
         t = Table(data, colWidths=[content_width*0.40, content_width*0.15, content_width*0.15, content_width*0.15, content_width*0.15], hAlign="LEFT")
