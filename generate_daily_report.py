@@ -545,7 +545,7 @@ def generate_pdf_bytes(office_summary, rep_summaries, web_usage, pacific_date_st
         Paragraph(f"<i>Data window: Pacific calendar day {pacific_date_str}</i>", styles["Body"]),
         Spacer(1, 10),
 
-        Paragraph("Office AI Summary ✨", styles["H2Emoji"]),
+        Paragraph("AI Office Summary", styles["H2Emoji"]),
         Spacer(1, 6),
         Paragraph(office_summary or "No office summary returned.", styles["Body"]),
         Spacer(1, 12),
