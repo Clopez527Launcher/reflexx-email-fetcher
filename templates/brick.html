@@ -62,16 +62,28 @@ let score = 0;
 let levelBricksBroken = 0;
 let gameOver = false;
 
-document.addEventListener("keydown", keyDownHandler);
-document.addEventListener("keyup", keyUpHandler);
+// ✅ Keep arrow keys from scrolling the page while playing
+document.addEventListener("keydown", keyDownHandler, { passive: false });
+document.addEventListener("keyup", keyUpHandler, { passive: false });
 
 function keyDownHandler(e) {
-  if (e.key === "Right" || e.key === "ArrowRight") rightPressed = true;
-  else if (e.key === "Left" || e.key === "ArrowLeft") leftPressed = true;
+  if (e.key === "Right" || e.key === "ArrowRight") {
+    e.preventDefault();
+    rightPressed = true;
+  } else if (e.key === "Left" || e.key === "ArrowLeft") {
+    e.preventDefault();
+    leftPressed = true;
+  }
 }
+
 function keyUpHandler(e) {
-  if (e.key === "Right" || e.key === "ArrowRight") rightPressed = false;
-  else if (e.key === "Left" || e.key === "ArrowLeft") leftPressed = false;
+  if (e.key === "Right" || e.key === "ArrowRight") {
+    e.preventDefault();
+    rightPressed = false;
+  } else if (e.key === "Left" || e.key === "ArrowLeft") {
+    e.preventDefault();
+    leftPressed = false;
+  }
 }
 
 function collisionDetection() {
