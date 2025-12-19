@@ -12,7 +12,10 @@
     window.MANAGER_ID = {{ (session.get('manager_id') or 4) | int }};
   </script>
   <!-- ✅ Your bundle (file lives at /static/dashboard.js) -->
-  <script defer src="{{ url_for('static', filename='dashboard.js') }}"></script>
+  {% if request.endpoint == 'dashboard_new' %}
+				<script defer src="{{ url_for('static', filename='dashboard.js') }}"></script>
+		{% endif %}
+
 
   {% block head %}{% endblock %}
 

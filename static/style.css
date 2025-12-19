@@ -261,11 +261,9 @@ canvas { width: 100% !important; height: auto !important; }
   display: block;
 }
 
-button {
-  padding: 8px 12px;         /* keeps thickness */
-  width: 150px;              /* sets a shorter width */
-  margin: 0 auto;            /* ✅ centers it horizontally */
-  background-color: #9336fd; /* Cyber Grape */
+button{
+  padding: 8px 12px;
+  background-color: #9336fd;
   color: black;
   border: none;
   border-radius: 5px;
@@ -275,6 +273,14 @@ button {
   box-shadow: 0 0 10px rgba(147, 54, 253, 0.6);
   transition: background-color 0.3s ease;
 }
+
+/* ✅ Only center buttons when you explicitly want it */
+.btn-center{
+  display: block;
+  margin: 0 auto;
+  width: 150px;
+}
+
 button:hover { background-color: #b76eff; }
 
 .projections-layout,
