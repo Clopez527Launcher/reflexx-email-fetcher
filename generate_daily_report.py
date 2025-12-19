@@ -565,23 +565,17 @@ def generate_pdf_bytes(office_summary, rep_summaries, web_usage, pacific_date_st
             return
 
         # We'll keep generic headers here; table title will explain which mode it is
-        data = [["Rep", "Phone", "Quote", "Movement", "Index Score"]]
+        data = [["Rep", "Phone", "Quote", "Movement"]]
 
         for r in rows:
             data.append([
                 r["name"],
-
-                # ✅ Paragraph() makes ReportLab parse <font> tags
                 Paragraph(str(r["phone"]), styles["ScoreStyle"]),
                 Paragraph(str(r["quote"]), styles["ScoreStyle"]),
                 Paragraph(str(r["movement"]), styles["ScoreStyle"]),
-
-                f'{float(r["index_score"]):.2f}',
             ])
 
-
-
-        t = Table(data, colWidths=[content_width*0.40, content_width*0.15, content_width*0.15, content_width*0.15, content_width*0.15], hAlign="LEFT")
+        tbl = Table(data, colWidths=[220, 95, 95, 95])
         t.setStyle(TableStyle([
             ('FONTNAME', (0, 0), (-1, -1), FONT_MAIN),
             ('FONTSIZE', (0, 0), (-1, -1), 9),
