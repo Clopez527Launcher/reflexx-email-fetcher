@@ -652,10 +652,15 @@ def main(manager_id: int):
         rep_summaries,
         web_usage,
         pacific_date_str,
+
         # ✅ Yesterday table = bucket z-scores (activity_score columns) from yesterday row
-        snapshot_yesterday = build_bucket_rows(fact_rows_yesterday, index_map_yesterday, mode="bucket")
+        snapshot_yesterday=build_bucket_rows(
+            fact_rows_yesterday, index_map_yesterday, mode="bucket"
+        ),
 
         # ✅ L-7 table = CE L7 z-scores (phone_ce_l7_z etc) from the SAME yesterday row
-        snapshot_l7        = build_bucket_rows(fact_rows_yesterday, index_map_l7, mode="l7z")
-
+        snapshot_l7=build_bucket_rows(
+            fact_rows_yesterday, index_map_l7, mode="l7z"
+        ),
     )
+
