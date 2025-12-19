@@ -3,12 +3,51 @@
 {% block title %}Brick Game – Reflexx{% endblock %}
 
 {% block content %}
+<style>
+  /* ✅ Brick Game: force true centering inside the content area */
+  .timekeeping-layout{
+    width: 100%;
+    max-width: none;
+    margin: 0;
+    box-sizing: border-box;
+
+    /* key: kill weird offsets coming from base/page styles */
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+    transform: none !important;
+  }
+
+  /* ✅ Center the title */
+  .timekeeping-layout .top-bar{
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin: 0;
+    padding: 14px 0 0 0;
+  }
+  .timekeeping-layout .top-bar h1{
+    margin: 0;
+    text-align: center;
+  }
+
+  /* ✅ Center the canvas */
+  .brick-center{
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    padding: 30px 0 0 0;
+  }
+</style>
+
+
   <div class="main-content timekeeping-layout">
     <div class="top-bar">
       <h1>Brick Game</h1>
     </div>
 
-    <div style="display: flex; justify-content: center; align-items: center; padding: 40px; margin-top: 30px;">
+    <div class="brick-center">
       <div style="max-width: 700px; width: 100%;">
         <canvas id="brickCanvas" width="640" height="400"
           style="background-color:#111; border:2px solid #00f0ff; display:block; margin:auto;"></canvas>
