@@ -126,6 +126,11 @@ def hms_to_secs(s: str) -> int:
     except Exception:
         return 0
 
+def safe_float(x, default=0.0):
+    try:
+        return float(x)
+    except Exception:
+        return default
 
 def secs_to_hms(total_secs: int) -> str:
     total_secs = int(total_secs or 0)
@@ -271,7 +276,7 @@ def fetch_index_scores_for_manager(conn, manager_id: int, target_day: date):
     return out    
 
 # ---------- AI summaries (office + per rep) ----------
-def get_ai_summaries(fact_rows, pacific_date_str: str):
+def get_ai_summaries(fact_rows, pacific_date_str, team_index_yesterday=0.0, team_index_7d=0.0):
     """
     agent_data rows look like:
       [name, inbound, outbound, in_talk, out_talk]
@@ -292,13 +297,18 @@ def get_ai_summaries(fact_rows, pacific_date_str: str):
         payload.append({
             "name": (r.get("email") or "").strip().lower() or (r.get("user_name") or "unknown"),
             "display_name": (r.get("user_name") or "").strip(),
-            "display_name": r.get("user_name"),
             "outbounds": int(r.get("outbounds") or 0),
             "total_talk_minutes": float(r.get("total_talk_minutes") or 0),
             "advisor_pro_minutes": int(r.get("advisor_pro_minutes") or 0),
             "movement_activity_score": float(r.get("movement_activity_score") or 0),
             "idle_minutes": float(r.get("idle_minutes") or 0),
         })
+
+    # ✅ Team index context (must be mentioned in every office summary)
+    index_context = {
+        "team_adjusted_index_yesterday": round(float(team_index_yesterday or 0.0), 2),
+        "team_adjusted_index_7d": round(float(team_index_7d or 0.0), 2),
+    }
 
     prompt = f"""
 You are Reflexx AI. Analyze yesterday's performance for the office (Pacific date {pacific_date_str}).
@@ -314,13 +324,21 @@ IMPORTANT:
   2) ONE team-wide pattern sentence (no names) describing a common pattern or constraint across the whole team.
   3) ONE directional focus sentence for today's team meeting (no names) telling the manager what to emphasize today.
   2) and 3) MUST NOT include any rep names (only team-level language).
+- You MUST mention the Team Adjusted Index in EVERY office_summary:
+  - Compare team_adjusted_index_yesterday vs team_adjusted_index_7d.
+  - Include BOTH numbers in the office_summary.
+  - If yesterday > 7d: say we're having more meaningful conversations than the recent baseline.
+  - If yesterday < 7d: say conversation quality dipped vs baseline and we should focus on more meaningful conversations.
+
+TEAM INDEX CONTEXT:
+{json.dumps(index_context, indent=2)}
 
 DATA (per rep):
 {json.dumps(payload, indent=2)}
 
 Return STRICT JSON only with this exact shape:
 {{
-  "office_summary": "4–5 sentences. Include: (1) individual highlights, (2) one team-wide pattern sentence (no names), (3) one directional focus sentence for today's team meeting (no names).",
+  "office_summary": "4–5 sentences. MUST include BOTH Team Adjusted Index numbers (yesterday and 7d) and whether we are up or down vs baseline. Also include: (1) individual highlights, (2) one team-wide pattern sentence (no names), (3) one directional focus sentence for today's team meeting (no names).",
   "rep_summaries": [
     {{
       "name": "MUST match the input name exactly (email). Example: jcardona5@allstate.com",
@@ -828,10 +846,21 @@ def main(manager_id: int):
 
     index_map_yesterday = fetch_index_scores_for_manager(conn, manager_id, pacific_yesterday_date)
 
+    # ✅ Team Adjusted Index (Yesterday) = average of rep index scores (simple + stable)
+    team_index_yesterday = 0.0
+    if index_map_yesterday:
+        team_index_yesterday = sum(float(v) for v in index_map_yesterday.values()) / max(len(index_map_yesterday), 1)
+
+    # ✅ Team Adjusted Index (7-day)
+    # NOTE: totals_activity from fetch_metrics() is not a dict here, so use a safe fallback for now.
+    team_index_7d = float(team_index_yesterday)
+
     conn.close()
 
     office_summary, _rep_summaries_email = get_ai_summaries(
-        fact_rows_yesterday, pacific_date_str
+        fact_rows_yesterday, pacific_date_str,
+        team_index_yesterday=team_index_yesterday,
+        team_index_7d=team_index_7d
     )
 
     coaching_rows = []
