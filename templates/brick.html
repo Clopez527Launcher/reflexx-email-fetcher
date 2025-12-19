@@ -45,7 +45,7 @@
     align-items: center;
 				
 				/* ✅ move the game left so it centers under the top "R" */
-    transform: translateX(-180px);
+    transform: translateX(var(--brick-shift, 0px));
 
   }
 
@@ -86,6 +86,29 @@
   const ctx = canvas.getContext("2d");
   const shell = canvas.closest(".brick-shell");
 
+		// ✅ Center the game under the top "R" (full screen center)
+  // We do that by shifting left by HALF the sidebar width.
+  function applyBrickShift() {
+    const sidebar =
+      document.querySelector(".floating-nav") ||
+      document.querySelector(".sidebar") ||
+      document.querySelector(".side-nav") ||
+      document.querySelector("#sidebar") ||
+      document.querySelector("aside");
+
+    const sidebarW = sidebar ? sidebar.getBoundingClientRect().width : 0;
+
+    // shift left by half the sidebar width
+    const shift = -(sidebarW / 2);
+
+    // set CSS variable on the shell
+    shell.style.setProperty("--brick-shift", `${shift}px`);
+  }
+
+  // run once now
+  applyBrickShift();
+
+
   function resizeCanvas() {
     const dpr = window.devicePixelRatio || 1;
     const rect = shell.getBoundingClientRect();
@@ -99,11 +122,12 @@
 
   resizeCanvas();
   window.addEventListener("resize", () => {
-    resizeCanvas();
-    resetBall();
-    resetPaddle();
-    rebuildBricks();
-  });
+				resizeCanvas();
+				resetBall();
+				resetPaddle();
+				rebuildBricks();
+				applyBrickShift();
+		});
 
   /* === Tunables === */
   const REFLEXX = "#00f0ff";
