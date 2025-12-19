@@ -19,3 +19,6 @@ pandas
 openpyxl
 SQLAlchemy>=2.0
 numpy
+postmarker
+pytz
+mysql-connector-python
