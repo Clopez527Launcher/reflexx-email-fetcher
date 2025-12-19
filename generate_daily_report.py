@@ -162,6 +162,9 @@ def normalize_ai_language(text: str) -> str:
         "increase their total talk minutes significantly": "increase their talk time",
         "increase total talk minutes": "increase their talk time",
         "increase talk minute": "increase their talk time",
+        "minimal talk": "minimal talk time",
+        "low talk": "low talk time",
+        "total talk": "total talk time",
     }
 
     for bad, good in replacements.items():
@@ -192,6 +195,29 @@ def score_to_label(z) -> str:
     if zNum >= -1.5:
         return "Below Average"
     return "Poor"
+
+def talk_minutes_to_phone_label(avg_minutes: float) -> str:
+    """
+    Your rubric:
+      < 30  = Poor
+      >=60  = Average
+      >=90  = Good
+      >=120 = Great
+
+    We'll treat 30-59 as "Below Average".
+    """
+    m = float(avg_minutes or 0)
+
+    if m >= 120:
+        return "Great"
+    if m >= 90:
+        return "Good"
+    if m >= 60:
+        return "Average"
+    if m < 30:
+        return "Poor"
+    return "Below Average"
+
 
 def label_to_pdf_color(label: str) -> str:
     """
@@ -367,6 +393,140 @@ Rules:
             rep_map[key] = "No AI summary returned for this rep."
 
     return office_summary, rep_map
+
+def get_ai_rep_coaching_l7(coaching_rows, pacific_date_str: str):
+    """
+    coaching_rows: list of dicts like:
+      {
+        "display_name": "Nedda Joveini",
+        "movement_label": "Poor",
+        "quote_label": "Excellent",
+        "talk_avg_minutes": 72.5,
+        "talk_label": "Average",
+        "active_days": 5
+      }
+
+    Returns dict[display_name] = 2-sentence coaching summary
+    """
+    key = os.getenv("OPENAI_API_KEY")
+    if not key:
+        return {r["display_name"]: "AI coaching unavailable (OPENAI_API_KEY not set)." for r in coaching_rows}
+
+    prompt = f"""
+You are Reflexx AI. Write coaching advice using L-7 lookback signals for Pacific date {pacific_date_str}.
+
+Interpretation rules:
+- Movement:
+  - Below Average or Poor = rep is having trouble navigating programs / workflow friction. Coach them on navigation, shortcuts, process.
+  - Above Average or better = no navigation issue flagged.
+- Quote:
+  - Above Average or Excellent = they are increasing their chances of selling. Reinforce.
+  - Below Average or Poor = they are decreasing their chances of selling. Coach quoting behaviors.
+- Phone (talk time) uses talk_avg_minutes_per_active_day over last 7 days:
+  - < 30 = Poor
+  - 30-59 = Below Average
+  - 60-89 = Average
+  - 90-119 = Good
+  - >= 120 = Great
+- ALWAYS say "talk time" (not "talk").
+
+DATA (per rep):
+{json.dumps(coaching_rows, indent=2)}
+
+Return STRICT JSON only:
+{{
+  "rep_summaries": [
+    {{
+      "display_name": "Must match input display_name exactly",
+      "summary": "Two sentences. Sentence 1: diagnosis from Movement/Quote/Phone. Sentence 2: specific coaching actions (1-2 concrete things)."
+    }}
+  ]
+}}
+
+Rules:
+- Do NOT invent numbers.
+- Keep it direct and sales-manager style.
+- Must include EVERY rep in DATA.
+""".strip()
+
+    from openai import OpenAI
+    client = OpenAI(api_key=key)
+    r = client.chat.completions.create(
+        model="gpt-4o",
+        messages=[{"role": "user", "content": prompt}],
+        temperature=0.2
+    )
+    raw = (r.choices[0].message.content or "").strip()
+
+    try:
+        data = json.loads(raw)
+    except Exception:
+        try:
+            start = raw.find("{"); end = raw.rfind("}")
+            data = json.loads(raw[start:end+1])
+        except Exception:
+            return {r["display_name"]: "AI coaching error: could not parse response." for r in coaching_rows}
+
+    rep_list = data.get("rep_summaries") or []
+    out = {}
+    for item in rep_list:
+        dn = (item.get("display_name") or "").strip()
+        sm = (item.get("summary") or "").strip()
+        if dn:
+            out[dn] = sm or "No AI coaching returned."
+
+    # Ensure every rep has something
+    for r in coaching_rows:
+        dn = r["display_name"]
+        if dn not in out:
+            out[dn] = "No AI coaching returned."
+
+    return out
+
+def fetch_l7_talk_avg_per_active_day(conn, manager_id: int, end_day: date):
+    """
+    Computes talk time coaching stat:
+      avg_talk_minutes_per_active_day over the last 7 calendar days ending at end_day.
+
+    active_day = a day where total_talk_minutes > 0
+    returns dict[email_lower] = {
+        "avg": float,
+        "sum": float,
+        "active_days": int
+    }
+    """
+    start_day = end_day - timedelta(days=6)
+    cur = conn.cursor(dictionary=True)
+
+    sql = """
+        SELECT
+            LOWER(u.email) AS email,
+            SUM(COALESCE(fd.ib_time_minutes,0) + COALESCE(fd.ob_time_minutes,0)) AS talk_sum,
+            SUM(
+                CASE
+                  WHEN (COALESCE(fd.ib_time_minutes,0) + COALESCE(fd.ob_time_minutes,0)) > 0 THEN 1
+                  ELSE 0
+                END
+            ) AS active_days
+        FROM fact_daily fd
+        JOIN users u ON u.id = fd.user_id
+        WHERE fd.date BETWEEN %s AND %s
+          AND (u.manager_id = %s OR u.id = %s)
+        GROUP BY LOWER(u.email)
+    """
+    cur.execute(sql, (start_day, end_day, manager_id, manager_id))
+
+    out = {}
+    for r in cur.fetchall():
+        talk_sum = float(r.get("talk_sum") or 0)
+        active_days = int(r.get("active_days") or 0)
+        avg = (talk_sum / active_days) if active_days > 0 else 0.0
+        out[(r.get("email") or "").strip()] = {
+            "avg": round(avg, 1),
+            "sum": round(talk_sum, 1),
+            "active_days": active_days
+        }
+    return out
 
 
 # ---------- Fetch metrics (TZ-correct + manager-filtered) ----------
@@ -596,12 +756,12 @@ def generate_pdf_bytes(office_summary, rep_summaries, web_usage, pacific_date_st
         elements.append(Spacer(1, 10))
 
     # ✅ add Yesterday + L-7 tables
-    snapshot_table("Yesterday (Bucket Z-Scores)", snapshot_yesterday or [])
-    snapshot_table("L-7 (CE L7 Z-Scores from Yesterday Row)", snapshot_l7 or [])
+    snapshot_table("Yesterday Z-Scores", snapshot_yesterday or [])
+    snapshot_table("L-7 Z-Scores", snapshot_l7 or [])
 
     # Continue with the normal report sections
     elements += [
-        Paragraph("<b>AI Summary – By Rep</b>", styles["H2"]),
+        Paragraph("<b>AI Coaching Suggestions</b>", styles["H2"]),
         Spacer(1, 6),
     ]
 
@@ -644,69 +804,57 @@ def generate_pdf_bytes(office_summary, rep_summaries, web_usage, pacific_date_st
     return filename, pdf_bytes
 
 
-# ---------- Main ----------
 def main(manager_id: int):
-    # Still needed for web usage + Pacific date label
     totals_activity, user_activities, user_calls, web_usage, pacific_date_str = fetch_metrics(
         manager_id=manager_id
     )
 
-    # We always run this the next morning → analyze PACIFIC YESTERDAY
     pacific_yesterday_date = (
         datetime.now(timezone("US/Pacific")).date() - timedelta(days=1)
     )
 
-    # ✅ L-7 = 7 days before yesterday (Pacific calendar)
-    pacific_l7_date = pacific_yesterday_date - timedelta(days=7)
-
-    # Pull fact_daily rows for YESTERDAY + L-7 (manager-scoped)
     conn = mysql.connector.connect(**MYSQL_CONFIG)
 
     fact_rows_yesterday = fetch_fact_daily_for_manager(conn, manager_id, pacific_yesterday_date)
-    fact_rows_l7        = fetch_fact_daily_for_manager(conn, manager_id, pacific_l7_date)
 
-    # ✅ Index Score maps (from elite_calls_fact_daily)
+    talk_l7_map = fetch_l7_talk_avg_per_active_day(conn, manager_id, pacific_yesterday_date)
+
     index_map_yesterday = fetch_index_scores_for_manager(conn, manager_id, pacific_yesterday_date)
-    index_map_l7        = fetch_index_scores_for_manager(conn, manager_id, pacific_l7_date)
 
     conn.close()
 
-    # AI summaries come ONLY from fact_daily now (yesterday)
-    office_summary, rep_summaries = get_ai_summaries(
+    office_summary, _rep_summaries_email = get_ai_summaries(
         fact_rows_yesterday, pacific_date_str
     )
 
-    # ✅ Build email -> display name map (from fact_rows_yesterday)
-    email_to_name = {}
+    coaching_rows = []
     for r in fact_rows_yesterday:
         email = (r.get("email") or "").strip().lower()
-        name  = (r.get("user_name") or "").strip()
-        if email:
-            email_to_name[email] = name or email
+        display_name = (r.get("user_name") or r.get("email") or "Unknown").strip()
 
-    # ✅ Convert rep_summaries keys from email -> display name (for PDF display only)
-    rep_summaries_named = {}
-    for email, summary in rep_summaries.items():
-        key = email_to_name.get((email or "").strip().lower(), email)
-        rep_summaries_named[key] = summary
+        movement_label = score_to_label(r.get("movement_ce_l7_z"))
+        quote_label    = score_to_label(r.get("quote_ce_l7_z"))
 
-    # ✅ Use the named version for rendering
-    rep_summaries = rep_summaries_named
+        talk_stats = talk_l7_map.get(email, {"avg": 0.0, "active_days": 0})
+        talk_avg = float(talk_stats.get("avg") or 0.0)
+        active_days = int(talk_stats.get("active_days") or 0)
 
+        coaching_rows.append({
+            "display_name": display_name,
+            "movement_label": movement_label,
+            "quote_label": quote_label,
+            "talk_avg_minutes_per_active_day": talk_avg,
+            "talk_time_label": talk_minutes_to_phone_label(talk_avg),
+            "active_days": active_days
+        })
 
-    # ✅ normalize wording so we don't say "talk minutes"
+    rep_summaries = get_ai_rep_coaching_l7(coaching_rows, pacific_date_str)
+
     office_summary = normalize_ai_language(office_summary)
-
-    # ✅ normalize wording for each rep summary too
     for k in list(rep_summaries.keys()):
         rep_summaries[k] = normalize_ai_language(rep_summaries[k])
 
-    # ✅ Build snapshot tables (bucket scores only)
     def build_bucket_rows(rows, index_map, mode="bucket"):
-        """
-        mode="bucket"  -> uses phone_activity_score / quote_activity_score / movement_activity_score
-        mode="l7z"     -> uses phone_ce_l7_z / quote_ce_l7_z / movement_ce_l7_z
-        """
         out = []
         for r in rows:
             uid = int(r.get("user_id") or 0)
@@ -722,34 +870,21 @@ def main(manager_id: int):
 
             out.append({
                 "name": (r.get("user_name") or r.get("email") or "Unknown"),
-
-                # ✅ convert number -> label
                 "phone": label_to_pdf_color(score_to_label(phone_val)),
                 "quote": label_to_pdf_color(score_to_label(quote_val)),
                 "movement": label_to_pdf_color(score_to_label(movement_val)),
-
                 "index_score": float(index_map.get(uid, 0.0)),
             })
 
-        # ✅ Sort by Index Score high → low
         out.sort(key=lambda x: float(x.get("index_score", 0.0)), reverse=True)
         return out
 
-    # Agent table removed → PDF no longer needs totals / agent_rows
     return generate_pdf_bytes(
         office_summary,
         rep_summaries,
         web_usage,
         pacific_date_str,
-
-        # ✅ Yesterday table = bucket z-scores (activity_score columns) from yesterday row
-        snapshot_yesterday=build_bucket_rows(
-            fact_rows_yesterday, index_map_yesterday, mode="bucket"
-        ),
-
-        # ✅ L-7 table = CE L7 z-scores (phone_ce_l7_z etc) from the SAME yesterday row
-        snapshot_l7=build_bucket_rows(
-            fact_rows_yesterday, index_map_l7, mode="l7z"
-        ),
+        snapshot_yesterday=build_bucket_rows(fact_rows_yesterday, index_map_yesterday, mode="bucket"),
+        snapshot_l7=build_bucket_rows(fact_rows_yesterday, index_map_yesterday, mode="l7z"),
     )
 
