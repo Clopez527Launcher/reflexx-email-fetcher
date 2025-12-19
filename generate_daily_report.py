@@ -639,6 +639,6 @@ def main(manager_id: int):
         rep_summaries,
         web_usage,
         pacific_date_str,
-        snapshot_yesterday = build_bucket_rows(fact_rows_yesterday, index_map_yesterday)
-        snapshot_l7        = build_bucket_rows(fact_rows_l7, index_map_l7)
+        snapshot_yesterday=build_bucket_rows(fact_rows_yesterday, index_map_yesterday),
+        snapshot_l7=build_bucket_rows(fact_rows_l7, index_map_l7),
     )
