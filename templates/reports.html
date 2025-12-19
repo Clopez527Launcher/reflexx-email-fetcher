@@ -39,20 +39,28 @@
       inset 0 0 0 1px rgba(0,230,230,0.06);
   }
 
+  /* ✅ Header row INSIDE widget */
   .reports-widget-header{
     display: flex;
     align-items: center;
     justify-content: space-between;
     gap: 14px;
-    margin-bottom: 14px;
+    margin-bottom: 12px;
   }
 
   .reports-title{
-    margin: 0;
+    margin: 0;             /* ✅ prevents weird vertical drift */
     font-size: 30px;
     font-weight: 700;
     color: #e9f6ff;
     letter-spacing: 0.2px;
+  }
+
+  /* ✅ Keep generate button aligned (not floating high/right) */
+  .generate-form{
+    margin: 0;
+    display: flex;
+    align-items: center;
   }
 
   .btn-generate{
@@ -68,19 +76,23 @@
   }
   .btn-generate:active{ transform: translateY(1px); }
 
-  /* Filter row */
+  /* ✅ Filter row: DO NOT let it span full width (prevents Apply drifting) */
   .reports-filter{
-    display: flex;
+    display: inline-flex;        /* ✅ key fix */
     align-items: center;
+    justify-content: flex-start; /* ✅ stays left */
     gap: 10px;
     margin: 10px 0 14px;
     flex-wrap: wrap;
+    width: fit-content;          /* ✅ key fix */
+    max-width: 100%;
   }
 
   .reports-filter label{
     color: #e9f6ff;
     font-weight: 700;
     margin-right: 4px;
+    white-space: nowrap;
   }
 
   .reports-filter input[type="date"]{
@@ -157,16 +169,16 @@
   <!-- ✅ Everything is inside the widget now -->
   <div class="reports-widget">
 
-    <!-- Header row INSIDE widget -->
+    <!-- ✅ Header row INSIDE widget -->
     <div class="reports-widget-header">
       <h1 class="reports-title">Reports</h1>
 
-      <form action="{{ url_for('generate_report_now') }}" method="post" style="margin: 0;">
+      <form class="generate-form" action="{{ url_for('generate_report_now') }}" method="post">
         <button type="submit" class="btn-generate">📝 Generate New Report</button>
       </form>
     </div>
 
-    <!-- Calendar Filter INSIDE widget -->
+    <!-- ✅ Calendar Filter INSIDE widget -->
     <form method="get" action="{{ url_for('reports') }}" class="reports-filter">
       <label for="date">📅 Filter by Date:</label>
 
@@ -182,7 +194,7 @@
       {% endif %}
     </form>
 
-    <!-- List INSIDE widget -->
+    <!-- ✅ List INSIDE widget -->
     {% if reports %}
       <ul class="reports-list">
         {% for report in reports %}
@@ -197,7 +209,7 @@
         {% endfor %}
       </ul>
 
-      <!-- Pagination INSIDE widget -->
+      <!-- ✅ Pagination INSIDE widget -->
       <div class="reports-pagination">
         <a href="{{ url_for('reports', page=1, date=selected_date) }}">⏮ First</a>
 
@@ -216,5 +228,3 @@
   </div>
 </div>
 {% endblock %}
-
-
