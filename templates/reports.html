@@ -20,7 +20,6 @@
     max-width: none;
     margin: 0;
     box-sizing: border-box;
-
     padding-top: 16px;
     padding-right: 26px;
     transform: translateX(-14px);
@@ -39,14 +38,14 @@
       inset 0 0 0 1px rgba(0,230,230,0.06);
   }
 
-  /* ✅ Header row INSIDE widget */
+  /* ✅ Title row (just title now) */
   .reports-widget-header{
     display: flex;
     align-items: center;
     justify-content: space-between;
     gap: 14px;
-    margin-bottom: 12px;
-    position: relative; /* needed for override nuke consistency */
+    margin-bottom: 10px;
+    position: relative;
   }
 
   .reports-title{
@@ -57,42 +56,15 @@
     letter-spacing: 0.2px;
   }
 
-  /* ✅ Put the generate form inside a wrapper so we can nuke global positioning */
-  .reports-header-actions{
-    display: flex;
-    align-items: center;
-    justify-content: flex-end;
-    margin: 0;
-  }
-
-  .generate-form{
-    margin: 0;
-    display: flex;
-    align-items: center;
-  }
-
-  .btn-generate{
-    background-color: #00e6e6;
-    color: black;
-    font-weight: 800;
-    padding: 9px 14px;
-    border: none;
-    border-radius: 10px;
-    cursor: pointer;
-    box-shadow: 0 6px 18px rgba(0,230,230,0.18);
-    white-space: nowrap;
-  }
-  .btn-generate:active{ transform: translateY(1px); }
-
-  /* ✅ Filter row: DO NOT let it span full width (prevents Apply drifting) */
+  /* ✅ Filter row */
   .reports-filter{
-    display: inline-flex;        /* ✅ key fix */
+    display: inline-flex;
     align-items: center;
-    justify-content: flex-start; /* ✅ stays left */
+    justify-content: flex-start;
     gap: 10px;
-    margin: 10px 0 14px;
+    margin: 10px 0 8px;     /* slightly tighter bottom */
     flex-wrap: wrap;
-    width: fit-content;          /* ✅ key fix */
+    width: fit-content;
     max-width: 100%;
   }
 
@@ -129,7 +101,28 @@
     margin-left: 4px;
   }
 
-  /* Reports list */
+  /* ✅ Generate button UNDER the filter */
+  .generate-form{
+    margin: 6px 0 18px;     /* ✅ creates separation before PDF list */
+    display: flex;
+    justify-content: flex-start;
+    align-items: center;
+  }
+
+  .btn-generate{
+    background-color: #00e6e6;
+    color: black;
+    font-weight: 800;
+    padding: 9px 14px;
+    border: none;
+    border-radius: 10px;
+    cursor: pointer;
+    box-shadow: 0 6px 18px rgba(0,230,230,0.18);
+    white-space: nowrap;
+  }
+  .btn-generate:active{ transform: translateY(1px); }
+
+  /* ✅ Reports list (extra space already comes from generate-form margin-bottom) */
   .reports-list{
     list-style: none;
     padding: 0;
@@ -172,10 +165,11 @@
   }
 
   /* ==========================================================
-     🔥 OVERRIDE NUKE: if base.html forces the button to top-right
+     🔥 OVERRIDE NUKE: if any global CSS tries to pin the button
+     (keep this so it NEVER floats top-right again)
      ========================================================== */
   .reports-layout .reports-widget .reports-widget-header,
-  .reports-layout .reports-widget .reports-header-actions,
+  .reports-layout .reports-widget .reports-filter,
   .reports-layout .reports-widget .generate-form,
   .reports-layout .reports-widget .btn-generate{
     position: static !important;
@@ -187,29 +181,20 @@
     float: none !important;
   }
 
-  /* If base uses z-index/fixed, kill it too */
   .reports-layout .reports-widget .btn-generate{
     z-index: auto !important;
   }
 </style>
 
 <div class="reports-layout">
-
-  <!-- ✅ Everything is inside the widget now -->
   <div class="reports-widget">
 
-    <!-- ✅ Header row INSIDE widget -->
+    <!-- ✅ Title only -->
     <div class="reports-widget-header">
       <h1 class="reports-title">Reports</h1>
-
-      <div class="reports-header-actions">
-        <form class="generate-form" action="{{ url_for('generate_report_now') }}" method="post">
-          <button type="submit" class="btn-generate">📝 Generate New Report</button>
-        </form>
-      </div>
     </div>
 
-    <!-- ✅ Calendar Filter INSIDE widget -->
+    <!-- ✅ Filter -->
     <form method="get" action="{{ url_for('reports') }}" class="reports-filter">
       <label for="date">📅 Filter by Date:</label>
 
@@ -225,7 +210,12 @@
       {% endif %}
     </form>
 
-    <!-- ✅ List INSIDE widget -->
+    <!-- ✅ Generate button moved UNDER Filter -->
+    <form class="generate-form" action="{{ url_for('generate_report_now') }}" method="post">
+      <button type="submit" class="btn-generate">📝 Generate New Report</button>
+    </form>
+
+    <!-- ✅ Reports list -->
     {% if reports %}
       <ul class="reports-list">
         {% for report in reports %}
@@ -240,7 +230,6 @@
         {% endfor %}
       </ul>
 
-      <!-- ✅ Pagination INSIDE widget -->
       <div class="reports-pagination">
         <a href="{{ url_for('reports', page=1, date=selected_date) }}">⏮ First</a>
 
@@ -259,4 +248,3 @@
   </div>
 </div>
 {% endblock %}
-
