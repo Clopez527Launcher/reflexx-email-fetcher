@@ -498,7 +498,9 @@ def generate_pdf_bytes(office_summary, rep_summaries, web_usage, pacific_date_st
             elements.append(Spacer(1, 8))
             return
 
+        # We'll keep generic headers here; table title will explain which mode it is
         data = [["Rep", "Phone", "Quote", "Movement", "Index Score"]]
+
         for r in rows:
             data.append([
                 r["name"],
@@ -525,8 +527,8 @@ def generate_pdf_bytes(office_summary, rep_summaries, web_usage, pacific_date_st
         elements.append(Spacer(1, 10))
 
     # ✅ add Yesterday + L-7 tables
-    snapshot_table("Yesterday", snapshot_yesterday or [])
-    snapshot_table("L-7", snapshot_l7 or [])
+    snapshot_table("Yesterday (Bucket Z-Scores)", snapshot_yesterday or [])
+    snapshot_table("L-7 (CE L7 Z-Scores from Yesterday Row)", snapshot_l7 or [])
 
     # Continue with the normal report sections
     elements += [
@@ -615,18 +617,29 @@ def main(manager_id: int):
         rep_summaries[k] = normalize_ai_language(rep_summaries[k])
 
     # ✅ Build snapshot tables (bucket scores only)
-    def build_bucket_rows(rows, index_map):
+    def build_bucket_rows(rows, index_map, mode="bucket"):
+        """
+        mode="bucket"  -> uses phone_activity_score / quote_activity_score / movement_activity_score
+        mode="l7z"     -> uses phone_ce_l7_z / quote_ce_l7_z / movement_ce_l7_z
+        """
         out = []
         for r in rows:
             uid = int(r.get("user_id") or 0)
 
+            if mode == "l7z":
+                phone_val    = float(r.get("phone_ce_l7_z") or 0)
+                quote_val    = float(r.get("quote_ce_l7_z") or 0)
+                movement_val = float(r.get("movement_ce_l7_z") or 0)
+            else:
+                phone_val    = float(r.get("phone_activity_score") or 0)
+                quote_val    = float(r.get("quote_activity_score") or 0)
+                movement_val = float(r.get("movement_activity_score") or 0)
+
             out.append({
                 "name": (r.get("user_name") or r.get("email") or "Unknown"),
-                "phone": float(r.get("phone_activity_score") or 0),
-                "quote": float(r.get("quote_activity_score") or 0),
-                "movement": float(r.get("movement_activity_score") or 0),
-
-                # ✅ new column
+                "phone": phone_val,
+                "quote": quote_val,
+                "movement": movement_val,
                 "index_score": float(index_map.get(uid, 0.0)),
             })
 
@@ -639,6 +652,10 @@ def main(manager_id: int):
         rep_summaries,
         web_usage,
         pacific_date_str,
-        snapshot_yesterday=build_bucket_rows(fact_rows_yesterday, index_map_yesterday),
-        snapshot_l7=build_bucket_rows(fact_rows_l7, index_map_l7),
+        # ✅ Yesterday table = bucket z-scores (activity_score columns) from yesterday row
+        snapshot_yesterday = build_bucket_rows(fact_rows_yesterday, index_map_yesterday, mode="bucket")
+
+        # ✅ L-7 table = CE L7 z-scores (phone_ce_l7_z etc) from the SAME yesterday row
+        snapshot_l7        = build_bucket_rows(fact_rows_yesterday, index_map_l7, mode="l7z")
+
     )
