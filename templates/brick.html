@@ -4,56 +4,57 @@
 
 {% block content %}
 <style>
-  /* ✅ Brick Game: force true centering inside the content area */
+  /* ===============================
+     ✅ Brick Game page layout fixes
+     =============================== */
+
+  /* Kill any inherited horizontal push/transform from base */
   .timekeeping-layout{
     width: 100%;
     max-width: none;
     margin: 0;
     box-sizing: border-box;
-
-    /* key: kill weird offsets coming from base/page styles */
-    padding-left: 0 !important;
-    padding-right: 0 !important;
+    padding: 0 !important;
     transform: none !important;
   }
 
-  /* ✅ Center the title */
-  .timekeeping-layout .top-bar{
+  /* Make sure the actual content area doesn't shift */
+  .main-content{
+    transform: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  /* ✅ Center the canvas in the CONTENT AREA (right of sidebar) */
+  .brick-center{
     width: 100%;
+    min-height: calc(100vh - 70px); /* gives it breathing room under top banner */
     display: flex;
     justify-content: center;
     align-items: center;
-    margin: 0;
-    padding: 14px 0 0 0;
-  }
-  .timekeeping-layout .top-bar h1{
-    margin: 0;
-    text-align: center;
   }
 
-  /* ✅ Center the canvas */
-  .brick-center{
+  /* Canvas wrapper */
+  .brick-wrap{
     width: 100%;
     display: flex;
     justify-content: center;
-    align-items: flex-start;
-    padding: 30px 0 0 0;
   }
+
+  /* Stop any sideways scrolling on this page */
+  body{ overflow-x: hidden; }
 </style>
 
-
-  <div class="main-content timekeeping-layout">
-    <div class="top-bar">
-      <h1>Brick Game</h1>
-    </div>
-
-    <div class="brick-center">
-      <div style="max-width: 700px; width: 100%;">
-        <canvas id="brickCanvas" width="640" height="400"
-          style="background-color:#111; border:2px solid #00f0ff; display:block; margin:auto;"></canvas>
-      </div>
+<div class="main-content timekeeping-layout">
+  <!-- ✅ No title -->
+  <div class="brick-center">
+    <div class="brick-wrap">
+      <!-- ✅ 50% bigger: 640x400 -> 960x600 -->
+      <canvas id="brickCanvas" width="960" height="600"
+        style="background-color:#111; border:2px solid #00f0ff; display:block;"></canvas>
     </div>
   </div>
+</div>
 {% endblock %}
 
 {% block scripts %}
@@ -63,31 +64,33 @@ const canvas = document.getElementById("brickCanvas");
 const ctx = canvas.getContext("2d");
 
 /* === Tunables === */
-const REFLEXX = "#00f0ff";                 // bright Reflexx blue
-const REFLEXX_FADE = "rgba(0,240,255,0.85)"; // bricks
-const BALL_START_SPEED = 3.6;               // was 2
-const PADDLE_SPEED = 9;                     // was 5
+const REFLEXX = "#00f0ff";
+const REFLEXX_FADE = "rgba(0,240,255,0.85)";
+const BALL_START_SPEED = 3.6;
+const PADDLE_SPEED = 9;
 
+// ✅ Canvas is bigger now
 let x = canvas.width / 2;
-let y = canvas.height - 30;
+let y = canvas.height - 40;
 let dx = BALL_START_SPEED;
 let dy = -BALL_START_SPEED;
-const ballRadius = 7;
 
-const paddleHeight = 10;
-const paddleWidth = 75;
+const ballRadius = 9;     // slightly larger for bigger canvas
+const paddleHeight = 12;
+const paddleWidth = 110;  // wider paddle for bigger canvas
 let paddleX = (canvas.width - paddleWidth) / 2;
 
 let rightPressed = false;
 let leftPressed = false;
 
+// ✅ Brick layout tuned for 960px wide canvas
 let brickRowCount = 5;
-const brickColumnCount = 7;
-const brickWidth = 75;
-const brickHeight = 20;
-const brickPadding = 8;
-const brickOffsetTop = 30;
-const brickOffsetLeft = 30;
+const brickColumnCount = 9;
+const brickWidth = 90;
+const brickHeight = 22;
+const brickPadding = 10;
+const brickOffsetTop = 40;
+const brickOffsetLeft = 40;
 
 const bricks = [];
 for (let c = 0; c < brickColumnCount; c++) {
@@ -106,20 +109,20 @@ document.addEventListener("keydown", keyDownHandler, { passive: false });
 document.addEventListener("keyup", keyUpHandler, { passive: false });
 
 function keyDownHandler(e) {
-  if (e.key === "Right" || e.key === "ArrowRight") {
+  if (e.key === "ArrowRight" || e.key === "Right") {
     e.preventDefault();
     rightPressed = true;
-  } else if (e.key === "Left" || e.key === "ArrowLeft") {
+  } else if (e.key === "ArrowLeft" || e.key === "Left") {
     e.preventDefault();
     leftPressed = true;
   }
 }
 
 function keyUpHandler(e) {
-  if (e.key === "Right" || e.key === "ArrowRight") {
+  if (e.key === "ArrowRight" || e.key === "Right") {
     e.preventDefault();
     rightPressed = false;
-  } else if (e.key === "Left" || e.key === "ArrowLeft") {
+  } else if (e.key === "ArrowLeft" || e.key === "Left") {
     e.preventDefault();
     leftPressed = false;
   }
@@ -140,16 +143,18 @@ function collisionDetection() {
           if (levelBricksBroken === brickRowCount * brickColumnCount) {
             brickRowCount++;
             levelBricksBroken = 0;
-            bricks.length = 0;
+
+            // rebuild bricks with new row count
             for (let c = 0; c < brickColumnCount; c++) {
               bricks[c] = [];
               for (let r = 0; r < brickRowCount; r++) {
                 bricks[c][r] = { x: 0, y: 0, status: 1 };
               }
             }
+
             x = canvas.width / 2;
-            y = canvas.height - 30;
-            dx *= 1.12;  // slightly bigger boost than before
+            y = canvas.height - 40;
+            dx *= 1.12;
             dy *= 1.12;
             paddleX = (canvas.width - paddleWidth) / 2;
           }
@@ -183,6 +188,7 @@ function drawBricks() {
         const brickY = r * (brickHeight + brickPadding) + brickOffsetTop;
         bricks[c][r].x = brickX;
         bricks[c][r].y = brickY;
+
         ctx.beginPath();
         ctx.rect(brickX, brickY, brickWidth, brickHeight);
         ctx.fillStyle = REFLEXX_FADE;
@@ -194,9 +200,9 @@ function drawBricks() {
 }
 
 function drawScore() {
-  ctx.font = "14px Arial";
+  ctx.font = "16px Arial";
   ctx.fillStyle = REFLEXX;
-  ctx.fillText("Score: " + score, 8, 20);
+  ctx.fillText("Score: " + score, 14, 26);
 }
 
 function draw() {
@@ -222,7 +228,7 @@ function draw() {
     }
   }
 
-  // paddle movement with faster speed
+  // paddle movement
   if (rightPressed && paddleX < canvas.width - paddleWidth) paddleX += PADDLE_SPEED;
   else if (leftPressed && paddleX > 0) paddleX -= PADDLE_SPEED;
 
@@ -234,3 +240,4 @@ function draw() {
 draw();
 </script>
 {% endblock %}
+
