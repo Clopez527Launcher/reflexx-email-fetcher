@@ -163,6 +163,39 @@ def normalize_ai_language(text: str) -> str:
         text = text.replace(bad, good)
 
     return text
+    
+def fetch_index_scores_for_manager(conn, manager_id: int, target_day: date):
+    """
+    Returns dict[user_id] = index_score for a specific day.
+    Index Score = (daily_elite_calls / daily_talk_seconds) * 60 * 100
+    (same idea as "elite per minute" scaled by 100)
+    """
+    cur = conn.cursor(dictionary=True)
+
+    sql = """
+        SELECT
+            user_id,
+            daily_elite_calls,
+            daily_talk_seconds
+        FROM elite_calls_fact_daily
+        WHERE manager_id = %s
+          AND day = %s
+    """
+    cur.execute(sql, (manager_id, target_day))
+
+    out = {}
+    for r in cur.fetchall():
+        elite = float(r.get("daily_elite_calls") or 0)
+        talk_secs = float(r.get("daily_talk_seconds") or 0)
+
+        if talk_secs <= 0:
+            score = 0.0
+        else:
+            score = (elite / talk_secs) * 60.0 * 100.0
+
+        out[int(r["user_id"])] = round(score, 2)
+
+    return out    
 
 # ---------- AI summaries (office + per rep) ----------
 def get_ai_summaries(fact_rows, pacific_date_str: str):
@@ -465,14 +498,14 @@ def generate_pdf_bytes(office_summary, rep_summaries, web_usage, pacific_date_st
             elements.append(Spacer(1, 8))
             return
 
-        data = [["Rep", "Phone", "Quote", "Movement", "Binary VC"]]
+        data = [["Rep", "Phone", "Quote", "Movement", "Index Score"]]
         for r in rows:
             data.append([
                 r["name"],
                 f'{r["phone"]:.2f}',
                 f'{r["quote"]:.2f}',
                 f'{r["movement"]:.2f}',
-                f'{r["binary_vc"]:.2f}',
+                f'{r["index_score"]:.2f}',
             ])
 
         t = Table(data, colWidths=[content_width*0.40, content_width*0.15, content_width*0.15, content_width*0.15, content_width*0.15], hAlign="LEFT")
@@ -497,14 +530,10 @@ def generate_pdf_bytes(office_summary, rep_summaries, web_usage, pacific_date_st
 
     # Continue with the normal report sections
     elements += [
-        Paragraph("<b>AI Summary – Office</b>", styles["H2"]),
-        Spacer(1, 6),
-        Paragraph(office_summary or "No office summary returned.", styles["Body"]),
-        Spacer(1, 12),
-
         Paragraph("<b>AI Summary – By Rep</b>", styles["H2"]),
         Spacer(1, 6),
     ]
+
 
     # ✅ NOW loop and append per-rep paragraphs
     for rep_name in sorted(rep_summaries.keys()):
@@ -562,15 +591,15 @@ def main(manager_id: int):
     # Pull fact_daily rows for YESTERDAY + L-7 (manager-scoped)
     conn = mysql.connector.connect(**MYSQL_CONFIG)
 
-    fact_rows_yesterday = fetch_fact_daily_for_manager(
-        conn, manager_id, pacific_yesterday_date
-    )
+    fact_rows_yesterday = fetch_fact_daily_for_manager(conn, manager_id, pacific_yesterday_date)
+    fact_rows_l7        = fetch_fact_daily_for_manager(conn, manager_id, pacific_l7_date)
 
-    fact_rows_l7 = fetch_fact_daily_for_manager(
-        conn, manager_id, pacific_l7_date
-    )
+    # ✅ Index Score maps (from elite_calls_fact_daily)
+    index_map_yesterday = fetch_index_scores_for_manager(conn, manager_id, pacific_yesterday_date)
+    index_map_l7        = fetch_index_scores_for_manager(conn, manager_id, pacific_l7_date)
 
     conn.close()
+
 
 
     # AI summaries come ONLY from fact_daily now (yesterday)
@@ -586,31 +615,23 @@ def main(manager_id: int):
         rep_summaries[k] = normalize_ai_language(rep_summaries[k])
 
     # ✅ Build snapshot tables (bucket scores only)
-    def build_bucket_rows(rows):
+    def build_bucket_rows(rows, index_map):
         out = []
         for r in rows:
+            uid = int(r.get("user_id") or 0)
+
             out.append({
                 "name": (r.get("user_name") or r.get("email") or "Unknown"),
                 "phone": float(r.get("phone_activity_score") or 0),
                 "quote": float(r.get("quote_activity_score") or 0),
                 "movement": float(r.get("movement_activity_score") or 0),
-                "binary_vc": float(r.get("binary_vc_score") or 0),
+
+                # ✅ new column
+                "index_score": float(index_map.get(uid, 0.0)),
             })
-        # Sort by name so it’s stable
+
         out.sort(key=lambda x: x["name"].lower())
         return out
-
-    snapshot_yesterday = build_bucket_rows(fact_rows_yesterday)
-    snapshot_l7 = build_bucket_rows(fact_rows_l7)
-
-    
-    # ✅ normalize wording so we don't say "talk minutes"
-    office_summary = normalize_ai_language(office_summary)
-
-    # ✅ normalize wording for each rep summary too
-    for k in list(rep_summaries.keys()):
-        rep_summaries[k] = normalize_ai_language(rep_summaries[k])
-
 
     # Agent table removed → PDF no longer needs totals / agent_rows
     return generate_pdf_bytes(
@@ -618,6 +639,6 @@ def main(manager_id: int):
         rep_summaries,
         web_usage,
         pacific_date_str,
-        snapshot_yesterday=snapshot_yesterday,
-        snapshot_l7=snapshot_l7
+        snapshot_yesterday = build_bucket_rows(fact_rows_yesterday, index_map_yesterday)
+        snapshot_l7        = build_bucket_rows(fact_rows_l7, index_map_l7)
     )
