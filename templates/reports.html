@@ -21,93 +21,200 @@
     margin: 0;
     box-sizing: border-box;
 
-    /* same “feel” as Dashboard */
     padding-top: 16px;
     padding-right: 26px;
     transform: translateX(-14px);
   }
 
-  /* ✅ Header spacing + size like other tabs */
-  .reports-layout .top-bar h1{
-    margin-top: 22px;
+  /* ===============================
+     ✅ DASHBOARD-STYLE WIDGET CARD
+     =============================== */
+  .reports-widget{
+    background: #0e151d;
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 14px;
+    padding: 18px 18px 16px;
+    box-shadow:
+      0 10px 30px rgba(0,0,0,0.35),
+      inset 0 0 0 1px rgba(0,230,230,0.06);
+  }
+
+  .reports-widget-header{
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14px;
     margin-bottom: 14px;
-    padding-left: 6px;
+  }
+
+  .reports-title{
+    margin: 0;
     font-size: 30px;
+    font-weight: 700;
+    color: #e9f6ff;
+    letter-spacing: 0.2px;
+  }
+
+  .btn-generate{
+    background-color: #00e6e6;
+    color: black;
+    font-weight: 800;
+    padding: 9px 14px;
+    border: none;
+    border-radius: 10px;
+    cursor: pointer;
+    box-shadow: 0 6px 18px rgba(0,230,230,0.18);
+    white-space: nowrap;
+  }
+  .btn-generate:active{ transform: translateY(1px); }
+
+  /* Filter row */
+  .reports-filter{
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 10px 0 14px;
+    flex-wrap: wrap;
+  }
+
+  .reports-filter label{
+    color: #e9f6ff;
+    font-weight: 700;
+    margin-right: 4px;
+  }
+
+  .reports-filter input[type="date"]{
+    padding: 6px 10px;
+    border-radius: 8px;
+    background: #111a24;
+    color: #00e6e6;
+    border: 1px solid rgba(0,230,230,0.55);
+    outline: none;
+  }
+
+  .btn-apply{
+    padding: 7px 12px;
+    border: none;
+    border-radius: 8px;
+    background-color: #00e6e6;
+    color: black;
+    font-weight: 800;
+    cursor: pointer;
+  }
+
+  .btn-clear{
+    color: #ff6666;
+    font-weight: 800;
+    text-decoration: none;
+    margin-left: 4px;
+  }
+
+  /* Reports list */
+  .reports-list{
+    list-style: none;
+    padding: 0;
+    margin: 0;
+  }
+
+  .reports-list li{
+    margin-bottom: 10px;
+  }
+
+  .report-link{
+    color: #00e6e6;
+    text-decoration: none;
+    font-weight: 800;
+  }
+
+  /* Pagination */
+  .reports-pagination{
+    margin-top: 18px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+
+  .reports-pagination a{
+    color: #00e6e6;
+    text-decoration: none;
+    font-weight: 800;
+  }
+
+  .reports-pagination span{
+    color: #e9f6ff;
     font-weight: 700;
   }
 
-  /* ✅ Align filter + list with the cards edge */
-  .reports-layout form,
-  .reports-layout ul,
-  .reports-layout > div {
-    padding-left: 6px;
+  .no-reports{
+    color: #c9d6e6;
+    margin: 8px 0 0;
   }
 </style>
 
-  <div class="reports-layout">
-    <div class="top-bar" style="display: flex; justify-content: space-between; align-items: center;">
-      <h1>Reports</h1>
+<div class="reports-layout">
+
+  <!-- ✅ Everything is inside the widget now -->
+  <div class="reports-widget">
+
+    <!-- Header row INSIDE widget -->
+    <div class="reports-widget-header">
+      <h1 class="reports-title">Reports</h1>
+
       <form action="{{ url_for('generate_report_now') }}" method="post" style="margin: 0;">
-        <button type="submit"
-                style="background-color: #00e6e6; color: black; font-weight: bold; padding: 8px 16px; border: none; border-radius: 5px; cursor: pointer;">
-          📝 Generate New Report
-        </button>
+        <button type="submit" class="btn-generate">📝 Generate New Report</button>
       </form>
     </div>
 
-    <!-- ✅ Calendar Filter -->
-    <form method="get" action="{{ url_for('reports') }}" style="margin: 30px 0 20px;">
-      <label for="date" style="color: white; margin-right: 10px;">📅 Filter by Date:</label>
-      <input type="date" id="date" name="date"
-             value="{{ selected_date }}"
-             style="padding: 5px; border-radius: 4px; background: #222; color: #00e6e6; border: 1px solid #00e6e6;">
-      <button type="submit"
-              style="margin-left: 10px; padding: 6px 12px; border: none; border-radius: 4px; background-color: #00e6e6; color: black; font-weight: bold; cursor: pointer;">
-        Apply
-      </button>
+    <!-- Calendar Filter INSIDE widget -->
+    <form method="get" action="{{ url_for('reports') }}" class="reports-filter">
+      <label for="date">📅 Filter by Date:</label>
+
+      <input type="date"
+             id="date"
+             name="date"
+             value="{{ selected_date }}">
+
+      <button type="submit" class="btn-apply">Apply</button>
+
       {% if selected_date %}
-        <a href="{{ url_for('reports') }}"
-           style="margin-left: 10px; color: #ff6666; font-weight: bold; text-decoration: none;">Clear</a>
+        <a href="{{ url_for('reports') }}" class="btn-clear">Clear</a>
       {% endif %}
     </form>
 
-    <div style="margin-top: 20px;">
-      {% if reports %}
-        <ul style="list-style-type: none; padding: 0;">
-          {% for report in reports %}
-            <li style="margin-bottom: 12px;">
-              <a href="{{ url_for('download_report', report_id=report.id) }}"
-                 target="_blank"
-                 rel="noopener noreferrer"
-                 style="color: #00e6e6; text-decoration: none; font-weight: bold;">
-                 📄 {{ report.filename }}
-              </a>
-            </li>
-          {% endfor %}
-        </ul>
+    <!-- List INSIDE widget -->
+    {% if reports %}
+      <ul class="reports-list">
+        {% for report in reports %}
+          <li>
+            <a class="report-link"
+               href="{{ url_for('download_report', report_id=report.id) }}"
+               target="_blank"
+               rel="noopener noreferrer">
+              📄 {{ report.filename }}
+            </a>
+          </li>
+        {% endfor %}
+      </ul>
 
-        <!-- ✅ Always-Visible Pagination Controls -->
-        <div style="margin-top: 30px; display: flex; align-items: center; gap: 10px;">
-          <a href="{{ url_for('reports', page=1, date=selected_date) }}"
-             style="color: #00e6e6; text-decoration: none; font-weight: bold;">⏮ First</a>
+      <!-- Pagination INSIDE widget -->
+      <div class="reports-pagination">
+        <a href="{{ url_for('reports', page=1, date=selected_date) }}">⏮ First</a>
 
-          <a href="{{ url_for('reports', page=page-1 if page > 1 else 1, date=selected_date) }}"
-             style="color: #00e6e6; text-decoration: none; font-weight: bold;">⟵ Prev</a>
+        <a href="{{ url_for('reports', page=page-1 if page > 1 else 1, date=selected_date) }}">⟵ Prev</a>
 
-          <span style="color: white;">Page {{ page }} of {{ total_pages }}</span>
+        <span>Page {{ page }} of {{ total_pages }}</span>
 
-          <a href="{{ url_for('reports', page=page+1 if page < total_pages else total_pages, date=selected_date) }}"
-             style="color: #00e6e6; text-decoration: none; font-weight: bold;">Next ⟶</a>
+        <a href="{{ url_for('reports', page=page+1 if page < total_pages else total_pages, date=selected_date) }}">Next ⟶</a>
 
-          <a href="{{ url_for('reports', page=total_pages, date=selected_date) }}"
-             style="color: #00e6e6; text-decoration: none; font-weight: bold;">Last ⏭</a>
-        </div>
-      {% else %}
-        <p style="color: #ccc;">No reports found{{ " for this date" if selected_date else "" }}.</p>
-      {% endif %}
-    </div>
+        <a href="{{ url_for('reports', page=total_pages, date=selected_date) }}">Last ⏭</a>
+      </div>
+    {% else %}
+      <p class="no-reports">No reports found{{ " for this date" if selected_date else "" }}.</p>
+    {% endif %}
+
   </div>
+</div>
 {% endblock %}
-
 
 
