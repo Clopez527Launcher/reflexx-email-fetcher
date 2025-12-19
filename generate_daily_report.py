@@ -290,7 +290,8 @@ def get_ai_summaries(fact_rows, pacific_date_str: str):
     payload = []
     for r in fact_rows:
         payload.append({
-            "name": r.get("email") or r.get("user_name"),
+            "name": (r.get("email") or "").strip().lower() or (r.get("user_name") or "unknown"),
+            "display_name": (r.get("user_name") or "").strip(),
             "display_name": r.get("user_name"),
             "outbounds": int(r.get("outbounds") or 0),
             "total_talk_minutes": float(r.get("total_talk_minutes") or 0),
@@ -307,13 +308,19 @@ IMPORTANT:
 - Use ONLY these fields: outbounds, total_talk_minutes, advisor_pro_minutes, movement_activity_score, idle_minutes.
 - Do NOT talk about inbound/outbound talk TIME separately (we already gave total_talk_minutes).
 - If values are low or 0, say it plainly.
+- ALWAYS say "talk time" (not "talk").
+- The office_summary MUST be 4–5 sentences total and include:
+  1) Individual highlights: mention who did well and who struggled (based only on the data).
+  2) ONE team-wide pattern sentence (no names) describing a common pattern or constraint across the whole team.
+  3) ONE directional focus sentence for today's team meeting (no names) telling the manager what to emphasize today.
+  2) and 3) MUST NOT include any rep names (only team-level language).
 
 DATA (per rep):
 {json.dumps(payload, indent=2)}
 
 Return STRICT JSON only with this exact shape:
 {{
-  "office_summary": "THREE short sentences about the office overall. Mention who did well and who struggled (based only on the data).",
+  "office_summary": "4–5 sentences. Include: (1) individual highlights, (2) one team-wide pattern sentence (no names), (3) one directional focus sentence for today's team meeting (no names).",
   "rep_summaries": [
     {{
       "name": "MUST match the input name exactly (email). Example: jcardona5@allstate.com",
