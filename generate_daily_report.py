@@ -202,7 +202,7 @@ def label_to_pdf_color(label: str) -> str:
     if label == "Above Average":
         return '<font color="#00C853"><b>Above Average</b></font>'  # green
     if label == "Average":
-        return '<font color="#FFD600"><b>Average</b></font>'  # yellow
+        return '<font color="#D4AF37"><b>Average</b></font>'  # Gold
     if label == "Below Average":
         return '<font color="#FF9100"><b>Below Average</b></font>'  # orange
     if label == "Poor":
@@ -511,12 +511,31 @@ def generate_pdf_bytes(office_summary, rep_summaries, web_usage, pacific_date_st
         leading=16
     ))
     styles.add(ParagraphStyle(
+        name="H2Emoji",
+        parent=styles["Heading2"],
+        fontName="Helvetica-Bold",  # ✅ supports ✨ more reliably
+        fontSize=13,
+        leading=16
+    ))
+    styles.add(ParagraphStyle(
         name="HeaderWhiteSmall",
         fontName=FONT_BOLD,
         fontSize=7.0,
         leading=8.6,
         alignment=1,
         textColor=colors.white
+    ))
+    from reportlab.lib.enums import TA_CENTER
+
+    styles.add(ParagraphStyle(
+        name="ScoreStyle",
+        parent=styles["Body"],
+        fontName=FONT_BOLD,   # ✅ bold like dashboard
+        fontSize=9,           # ✅ smaller so it stays 1 line
+        leading=10,
+        alignment=TA_CENTER,  # ✅ centered
+        spaceBefore=0,
+        spaceAfter=0,
     ))
 
     # ✅ Build elements FIRST (no loops inside the list)
@@ -526,7 +545,7 @@ def generate_pdf_bytes(office_summary, rep_summaries, web_usage, pacific_date_st
         Paragraph(f"<i>Data window: Pacific calendar day {pacific_date_str}</i>", styles["Body"]),
         Spacer(1, 10),
 
-        Paragraph("<b>Office AI Summary ✨</b>", styles["H2"]),
+        Paragraph("Office AI Summary ✨", styles["H2Emoji"]),
         Spacer(1, 6),
         Paragraph(office_summary or "No office summary returned.", styles["Body"]),
         Spacer(1, 12),
@@ -553,9 +572,9 @@ def generate_pdf_bytes(office_summary, rep_summaries, web_usage, pacific_date_st
                 r["name"],
 
                 # ✅ Paragraph() makes ReportLab parse <font> tags
-                Paragraph(str(r["phone"]), styles["Body"]),
-                Paragraph(str(r["quote"]), styles["Body"]),
-                Paragraph(str(r["movement"]), styles["Body"]),
+                Paragraph(str(r["phone"]), styles["ScoreStyle"]),
+                Paragraph(str(r["quote"]), styles["ScoreStyle"]),
+                Paragraph(str(r["movement"]), styles["ScoreStyle"]),
 
                 f'{float(r["index_score"]):.2f}',
             ])
