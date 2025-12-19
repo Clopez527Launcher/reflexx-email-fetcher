@@ -148,6 +148,21 @@ def safe_int(x):
     except Exception:
         return 0
 
+def normalize_ai_language(text: str) -> str:
+    if not text:
+        return text
+
+    replacements = {
+        "increase talk minutes": "increase their talk time",
+        "increase their total talk minutes significantly": "increase their talk time",
+        "increase total talk minutes": "increase their talk time",
+        "increase talk minute": "increase their talk time",
+    }
+
+    for bad, good in replacements.items():
+        text = text.replace(bad, good)
+
+    return text
 
 # ---------- AI summaries (office + per rep) ----------
 def get_ai_summaries(fact_rows, pacific_date_str: str):
@@ -375,7 +390,8 @@ def fetch_metrics(manager_id: int, pacific_date: date = None):
 
 
 # ---------- PDF generation (returns BYTES) ----------
-def generate_pdf_bytes(office_summary, rep_summaries, web_usage, pacific_date_str: str):
+def generate_pdf_bytes(office_summary, rep_summaries, web_usage, pacific_date_str: str,
+                       snapshot_yesterday=None, snapshot_l7=None):
     pacific = timezone("US/Pacific")
     now = datetime.now(pacific)
     timestamp = now.strftime('%b %d, %Y at %I:%M %p')
@@ -435,6 +451,57 @@ def generate_pdf_bytes(office_summary, rep_summaries, web_usage, pacific_date_st
         Paragraph(office_summary or "No office summary returned.", styles["Body"]),
         Spacer(1, 12),
 
+        Paragraph("<b>Bucket Score Snapshot</b>", styles["H2"]),
+        Spacer(1, 6),
+    ]
+
+    # ✅ helper to build a ReportLab table for the snapshot
+    def snapshot_table(title, rows):
+        elements.append(Paragraph(f"<b>{title}</b>", styles["Body"]))
+        elements.append(Spacer(1, 4))
+
+        if not rows:
+            elements.append(Paragraph("No data available.", styles["Body"]))
+            elements.append(Spacer(1, 8))
+            return
+
+        data = [["Rep", "Phone", "Quote", "Movement", "Binary VC"]]
+        for r in rows:
+            data.append([
+                r["name"],
+                f'{r["phone"]:.2f}',
+                f'{r["quote"]:.2f}',
+                f'{r["movement"]:.2f}',
+                f'{r["binary_vc"]:.2f}',
+            ])
+
+        t = Table(data, colWidths=[content_width*0.40, content_width*0.15, content_width*0.15, content_width*0.15, content_width*0.15], hAlign="LEFT")
+        t.setStyle(TableStyle([
+            ('FONTNAME', (0, 0), (-1, -1), FONT_MAIN),
+            ('FONTSIZE', (0, 0), (-1, -1), 9),
+            ('BACKGROUND', (0, 0), (-1, 0), colors.darkblue),
+            ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
+            ('GRID', (0, 0), (-1, -1), 0.35, colors.black),
+            ('ALIGN', (1, 1), (-1, -1), 'RIGHT'),
+            ('LEFTPADDING', (0, 0), (-1, -1), 3),
+            ('RIGHTPADDING', (0, 0), (-1, -1), 3),
+            ('TOPPADDING', (0, 0), (-1, -1), 2),
+            ('BOTTOMPADDING', (0, 0), (-1, -1), 2),
+        ]))
+        elements.append(t)
+        elements.append(Spacer(1, 10))
+
+    # ✅ add Yesterday + L-7 tables
+    snapshot_table("Yesterday", snapshot_yesterday or [])
+    snapshot_table("L-7", snapshot_l7 or [])
+
+    # Continue with the normal report sections
+    elements += [
+        Paragraph("<b>AI Summary – Office</b>", styles["H2"]),
+        Spacer(1, 6),
+        Paragraph(office_summary or "No office summary returned.", styles["Body"]),
+        Spacer(1, 12),
+
         Paragraph("<b>AI Summary – By Rep</b>", styles["H2"]),
         Spacer(1, 6),
     ]
@@ -489,24 +556,68 @@ def main(manager_id: int):
         datetime.now(timezone("US/Pacific")).date() - timedelta(days=1)
     )
 
-    # Pull fact_daily rows for that day (manager-scoped)
+    # ✅ L-7 = 7 days before yesterday (Pacific calendar)
+    pacific_l7_date = pacific_yesterday_date - timedelta(days=7)
+
+    # Pull fact_daily rows for YESTERDAY + L-7 (manager-scoped)
     conn = mysql.connector.connect(**MYSQL_CONFIG)
-    fact_rows = fetch_fact_daily_for_manager(
+
+    fact_rows_yesterday = fetch_fact_daily_for_manager(
         conn, manager_id, pacific_yesterday_date
     )
+
+    fact_rows_l7 = fetch_fact_daily_for_manager(
+        conn, manager_id, pacific_l7_date
+    )
+
     conn.close()
 
-    # AI summaries come ONLY from fact_daily now
+
+    # AI summaries come ONLY from fact_daily now (yesterday)
     office_summary, rep_summaries = get_ai_summaries(
-        fact_rows, pacific_date_str
+        fact_rows_yesterday, pacific_date_str
     )
+
+    # ✅ normalize wording so we don't say "talk minutes"
+    office_summary = normalize_ai_language(office_summary)
+
+    # ✅ normalize wording for each rep summary too
+    for k in list(rep_summaries.keys()):
+        rep_summaries[k] = normalize_ai_language(rep_summaries[k])
+
+    # ✅ Build snapshot tables (bucket scores only)
+    def build_bucket_rows(rows):
+        out = []
+        for r in rows:
+            out.append({
+                "name": (r.get("user_name") or r.get("email") or "Unknown"),
+                "phone": float(r.get("phone_activity_score") or 0),
+                "quote": float(r.get("quote_activity_score") or 0),
+                "movement": float(r.get("movement_activity_score") or 0),
+                "binary_vc": float(r.get("binary_vc_score") or 0),
+            })
+        # Sort by name so it’s stable
+        out.sort(key=lambda x: x["name"].lower())
+        return out
+
+    snapshot_yesterday = build_bucket_rows(fact_rows_yesterday)
+    snapshot_l7 = build_bucket_rows(fact_rows_l7)
+
+    
+    # ✅ normalize wording so we don't say "talk minutes"
+    office_summary = normalize_ai_language(office_summary)
+
+    # ✅ normalize wording for each rep summary too
+    for k in list(rep_summaries.keys()):
+        rep_summaries[k] = normalize_ai_language(rep_summaries[k])
+
 
     # Agent table removed → PDF no longer needs totals / agent_rows
     return generate_pdf_bytes(
         office_summary,
         rep_summaries,
         web_usage,
-        pacific_date_str
+        pacific_date_str,
+        snapshot_yesterday=snapshot_yesterday,
+        snapshot_l7=snapshot_l7
     )
-
-
