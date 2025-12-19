@@ -540,9 +540,7 @@ def generate_pdf_bytes(office_summary, rep_summaries, web_usage, pacific_date_st
 
     # ✅ Build elements FIRST (no loops inside the list)
     elements = [
-        Paragraph(f"<b>Reflexx Daily Report – {timestamp}</b>", styles["ReportTitle"]),
-        Spacer(1, 6),
-        Paragraph(f"<i>Data window: Pacific calendar day {pacific_date_str}</i>", styles["Body"]),
+        Paragraph(f"<b>Report for {pacific_date_str}</b>", styles["ReportTitle"]),
         Spacer(1, 10),
 
         Paragraph("AI Office Summary", styles["H2Emoji"]),
@@ -585,7 +583,7 @@ def generate_pdf_bytes(office_summary, rep_summaries, web_usage, pacific_date_st
             ('GRID', (0, 0), (-1, -1), 0.35, colors.black),
 
             # ✅ Center the score cells (Phone/Quote/Movement)
-            ('ALIGN', (1, 1), (-1, -1), 'CENTER'),
+            ('ALIGN', (0, 0), (-1, 0), 'CENTER'),
             ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
 
             ('LEFTPADDING', (0, 0), (-1, -1), 3),
@@ -673,12 +671,28 @@ def main(manager_id: int):
 
     conn.close()
 
-
-
     # AI summaries come ONLY from fact_daily now (yesterday)
     office_summary, rep_summaries = get_ai_summaries(
         fact_rows_yesterday, pacific_date_str
     )
+
+    # ✅ Build email -> display name map (from fact_rows_yesterday)
+    email_to_name = {}
+    for r in fact_rows_yesterday:
+        email = (r.get("email") or "").strip().lower()
+        name  = (r.get("user_name") or "").strip()
+        if email:
+            email_to_name[email] = name or email
+
+    # ✅ Convert rep_summaries keys from email -> display name (for PDF display only)
+    rep_summaries_named = {}
+    for email, summary in rep_summaries.items():
+        key = email_to_name.get((email or "").strip().lower(), email)
+        rep_summaries_named[key] = summary
+
+    # ✅ Use the named version for rendering
+    rep_summaries = rep_summaries_named
+
 
     # ✅ normalize wording so we don't say "talk minutes"
     office_summary = normalize_ai_language(office_summary)
