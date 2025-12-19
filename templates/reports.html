@@ -46,17 +46,25 @@
     justify-content: space-between;
     gap: 14px;
     margin-bottom: 12px;
+    position: relative; /* needed for override nuke consistency */
   }
 
   .reports-title{
-    margin: 0;             /* ✅ prevents weird vertical drift */
+    margin: 0;
     font-size: 30px;
     font-weight: 700;
     color: #e9f6ff;
     letter-spacing: 0.2px;
   }
 
-  /* ✅ Keep generate button aligned (not floating high/right) */
+  /* ✅ Put the generate form inside a wrapper so we can nuke global positioning */
+  .reports-header-actions{
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    margin: 0;
+  }
+
   .generate-form{
     margin: 0;
     display: flex;
@@ -162,6 +170,27 @@
     color: #c9d6e6;
     margin: 8px 0 0;
   }
+
+  /* ==========================================================
+     🔥 OVERRIDE NUKE: if base.html forces the button to top-right
+     ========================================================== */
+  .reports-layout .reports-widget .reports-widget-header,
+  .reports-layout .reports-widget .reports-header-actions,
+  .reports-layout .reports-widget .generate-form,
+  .reports-layout .reports-widget .btn-generate{
+    position: static !important;
+    top: auto !important;
+    right: auto !important;
+    left: auto !important;
+    bottom: auto !important;
+    transform: none !important;
+    float: none !important;
+  }
+
+  /* If base uses z-index/fixed, kill it too */
+  .reports-layout .reports-widget .btn-generate{
+    z-index: auto !important;
+  }
 </style>
 
 <div class="reports-layout">
@@ -173,9 +202,11 @@
     <div class="reports-widget-header">
       <h1 class="reports-title">Reports</h1>
 
-      <form class="generate-form" action="{{ url_for('generate_report_now') }}" method="post">
-        <button type="submit" class="btn-generate">📝 Generate New Report</button>
-      </form>
+      <div class="reports-header-actions">
+        <form class="generate-form" action="{{ url_for('generate_report_now') }}" method="post">
+          <button type="submit" class="btn-generate">📝 Generate New Report</button>
+        </form>
+      </div>
     </div>
 
     <!-- ✅ Calendar Filter INSIDE widget -->
@@ -228,3 +259,4 @@
   </div>
 </div>
 {% endblock %}
+
