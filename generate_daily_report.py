@@ -168,6 +168,31 @@ def normalize_ai_language(text: str) -> str:
         text = text.replace(bad, good)
 
     return text
+
+def score_to_label(z) -> str:
+    """
+    Matches your JS cutoffs:
+      > 1.5  Excellent
+      > 0.5  Above Average
+      >= -0.5 Average
+      >= -1.5 Below Average
+      else   Poor
+    """
+    try:
+        zNum = float(z)
+    except Exception:
+        return "Average"
+
+    if zNum > 1.5:
+        return "Excellent"
+    if zNum > 0.5:
+        return "Above Average"
+    if zNum >= -0.5:
+        return "Average"
+    if zNum >= -1.5:
+        return "Below Average"
+    return "Poor"
+
     
 def fetch_index_scores_for_manager(conn, manager_id: int, target_day: date):
     """
@@ -484,7 +509,7 @@ def generate_pdf_bytes(office_summary, rep_summaries, web_usage, pacific_date_st
         Paragraph(f"<i>Data window: Pacific calendar day {pacific_date_str}</i>", styles["Body"]),
         Spacer(1, 10),
 
-        Paragraph("<b>AI Summary – Office</b>", styles["H2"]),
+        Paragraph("<b>Office AI Summary 🪄</b>", styles["H2"]),
         Spacer(1, 6),
         Paragraph(office_summary or "No office summary returned.", styles["Body"]),
         Spacer(1, 12),
@@ -509,11 +534,12 @@ def generate_pdf_bytes(office_summary, rep_summaries, web_usage, pacific_date_st
         for r in rows:
             data.append([
                 r["name"],
-                f'{r["phone"]:.2f}',
-                f'{r["quote"]:.2f}',
-                f'{r["movement"]:.2f}',
-                f'{r["index_score"]:.2f}',
+                str(r["phone"]),
+                str(r["quote"]),
+                str(r["movement"]),
+                f'{float(r["index_score"]):.2f}',
             ])
+
 
         t = Table(data, colWidths=[content_width*0.40, content_width*0.15, content_width*0.15, content_width*0.15, content_width*0.15], hAlign="LEFT")
         t.setStyle(TableStyle([
@@ -642,13 +668,17 @@ def main(manager_id: int):
 
             out.append({
                 "name": (r.get("user_name") or r.get("email") or "Unknown"),
-                "phone": phone_val,
-                "quote": quote_val,
-                "movement": movement_val,
+
+                # ✅ convert number -> label
+                "phone": score_to_label(phone_val),
+                "quote": score_to_label(quote_val),
+                "movement": score_to_label(movement_val),
+
                 "index_score": float(index_map.get(uid, 0.0)),
             })
 
-        out.sort(key=lambda x: x["name"].lower())
+        # ✅ Sort by Index Score high → low
+        out.sort(key=lambda x: float(x.get("index_score", 0.0)), reverse=True)
         return out
 
     # Agent table removed → PDF no longer needs totals / agent_rows
