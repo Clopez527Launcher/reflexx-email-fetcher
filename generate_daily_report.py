@@ -193,6 +193,23 @@ def score_to_label(z) -> str:
         return "Below Average"
     return "Poor"
 
+def label_to_pdf_color(label: str) -> str:
+    """
+    Wraps a label in a ReportLab <font> tag to match dashboard colors.
+    """
+    if label == "Excellent":
+        return '<font color="#00E5FF"><b>Excellent</b></font>'  # cyan
+    if label == "Above Average":
+        return '<font color="#00C853"><b>Above Average</b></font>'  # green
+    if label == "Average":
+        return '<font color="#FFD600"><b>Average</b></font>'  # yellow
+    if label == "Below Average":
+        return '<font color="#FF9100"><b>Below Average</b></font>'  # orange
+    if label == "Poor":
+        return '<font color="#FF1744"><b>Poor</b></font>'  # red
+
+    return label
+
     
 def fetch_index_scores_for_manager(conn, manager_id: int, target_day: date):
     """
@@ -670,9 +687,9 @@ def main(manager_id: int):
                 "name": (r.get("user_name") or r.get("email") or "Unknown"),
 
                 # ✅ convert number -> label
-                "phone": score_to_label(phone_val),
-                "quote": score_to_label(quote_val),
-                "movement": score_to_label(movement_val),
+                "phone": label_to_pdf_color(score_to_label(phone_val)),
+                "quote": label_to_pdf_color(score_to_label(quote_val)),
+                "movement": label_to_pdf_color(score_to_label(movement_val)),
 
                 "index_score": float(index_map.get(uid, 0.0)),
             })
