@@ -82,7 +82,12 @@ def fetch_fact_daily_for_manager(conn, manager_id, pacific_yesterday_date):
             fd.phone_activity_score,
             fd.movement_activity_score,
             fd.quote_activity_score,
-            fd.binary_vc_score,
+
+            -- ✅ CE L7 Z-Scores (needed for the L-7 table in the PDF)
+            fd.phone_ce_l7_z,
+            fd.quote_ce_l7_z,
+            fd.movement_ce_l7_z,
+
 
             fd.idle_time_seconds,
             ROUND((COALESCE(fd.idle_time_seconds,0) / 60.0), 0) AS idle_minutes,
