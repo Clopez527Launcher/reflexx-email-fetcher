@@ -22,7 +22,7 @@
     width: 100%;
     max-width: none;
     margin: 0;
-    padding: 18px 26px 30px 26px;
+    padding: 18px 44px 30px 26px;
     box-sizing: border-box;
   }
 
@@ -168,6 +168,39 @@
     <div id="usersList" class="loading">Loading users...</div>
 
     <div id="saveToast">Saved ✅</div>
+				<!-- ===============================
+									✅ Weekly Manager Summary (New Widget)
+									=============================== -->
+				<div style="height:18px;"></div>
+
+				<div class="settings-widget">
+						<div class="widget-header">
+								<div>
+										<h3 class="widget-title">Weekly Manager Summary Email</h3>
+										<p class="widget-subtitle">
+												Send a weekly performance summary email to you (manager only).
+										</p>
+								</div>
+						</div>
+
+						<div class="user-row" style="border-bottom:none;">
+								<div class="user-left">
+										<div class="user-name">Enable Weekly Summary</div>
+										<div class="user-email">You will receive one email each week.</div>
+								</div>
+
+								<label class="toggle-wrap">
+										<input type="checkbox" id="weeklySummaryToggle" />
+										<span>Enabled</span>
+								</label>
+						</div>
+
+						<div id="weeklyToast" style="display:none; margin-top:12px; padding:10px 12px; border-radius:10px;
+											background: rgba(0,230,230,0.12); border: 1px solid rgba(0,230,230,0.35);
+											color:#bffcff; font-weight:800; width:fit-content;">
+								Saved ✅
+						</div>
+				</div>
   </div>
 </div>
 
@@ -253,6 +286,46 @@ async function loadUsers() {
   });
 }
 
-document.addEventListener("DOMContentLoaded", loadUsers);
+async function loadWeeklySummaryToggle(){
+  const el = document.getElementById("weeklySummaryToggle");
+  if (!el) return;
+
+  const res = await fetch("/api/manager/weekly-summary-toggle", { credentials: "include" });
+  const data = await res.json();
+
+  if (!res.ok || !data.ok) return;
+
+  el.checked = (data.enabled == 1);
+
+  el.addEventListener("change", async () => {
+    const enabled = el.checked;
+
+    const r = await fetch("/api/manager/weekly-summary-toggle", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify({ enabled })
+    });
+
+    let out = {};
+    try { out = await r.json(); } catch (e) {}
+
+    if (!r.ok || !out.ok) {
+      el.checked = !enabled;
+      alert("Save failed (" + r.status + "): " + JSON.stringify(out));
+      return;
+    }
+
+    const toast = document.getElementById("weeklyToast");
+    toast.style.display = "block";
+    setTimeout(() => toast.style.display = "none", 1200);
+  });
+}
+
+document.addEventListener("DOMContentLoaded", async () => {
+  await loadUsers();
+  await loadWeeklySummaryToggle();
+});
+
 </script>
 {% endblock %}

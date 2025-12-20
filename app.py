@@ -2940,6 +2940,42 @@ def api_manager_set_user_email_reminder():
     conn.close()
 
     return jsonify({"ok": True, "user_id": int(target_user_id), "enabled": bool(enabled)})
+
+@app.route("/api/manager/weekly-summary-toggle", methods=["GET", "POST"])
+@login_required
+def api_manager_weekly_summary_toggle():
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    # ✅ Resolve manager_id safely
+    cursor.execute("SELECT role, manager_id FROM users WHERE id = %s", (current_user.id,))
+    me = cursor.fetchone()
+
+    if not me:
+        return jsonify(ok=False, error="User not found"), 404
+
+    role = me[0] if isinstance(me, tuple) else me.get("role")
+    mgr_id = current_user.id if role == "manager" else (me[1] if isinstance(me, tuple) else me.get("manager_id"))
+
+    if request.method == "GET":
+        cursor.execute(
+            "SELECT manager_summary_weekly_enabled FROM users WHERE id = %s AND role = 'manager'",
+            (mgr_id,)
+        )
+        row = cursor.fetchone()
+        val = row[0] if row else 0
+        return jsonify(ok=True, enabled=int(val))
+
+    # POST
+    data = request.get_json(force=True) or {}
+    enabled = 1 if data.get("enabled") else 0
+
+    cursor.execute(
+        "UPDATE users SET manager_summary_weekly_enabled = %s WHERE id = %s AND role = 'manager'",
+        (enabled, mgr_id)
+    )
+    conn.commit()
+    return jsonify(ok=True, enabled=enabled)
     
 
 # ✅ User Model for Flask-Login
