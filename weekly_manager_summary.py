@@ -127,33 +127,131 @@ def pull_team_metrics_l7(conn, manager_id, start_day, end_day):
 
 def pull_team_index_l7(conn, manager_id, start_day, end_day):
     """
-    Team index trend/average across L-7.
-    Adjust table/column names to your setup.
-
-    If you store team index in totals_activity or a team_daily table, point this there.
+    Returns:
+      team_rows: list of {day, team_index}
+      team_index_avg: float
+    Tries totals_activity first.
+    If not found, falls back to averaging user-level daily index from another table.
     """
+
+    def table_exists(table_name: str) -> bool:
+        cur = conn.cursor()
+        cur.execute(
+            """
+            SELECT COUNT(*)
+            FROM information_schema.tables
+            WHERE table_schema = DATABASE()
+              AND table_name = %s
+            """,
+            (table_name,)
+        )
+        ok = (cur.fetchone()[0] or 0) > 0
+        cur.close()
+        return ok
+
+    def column_exists(table_name: str, col: str) -> bool:
+        cur = conn.cursor()
+        cur.execute(
+            """
+            SELECT COUNT(*)
+            FROM information_schema.columns
+            WHERE table_schema = DATABASE()
+              AND table_name = %s
+              AND column_name = %s
+            """,
+            (table_name, col)
+        )
+        ok = (cur.fetchone()[0] or 0) > 0
+        cur.close()
+        return ok
+
     cur = conn.cursor(dictionary=True)
 
-    # Try a totals_activity style table first (edit if your name differs)
-    cur.execute("""
+    # -----------------------------
+    # ✅ OPTION A: totals_activity exists (original plan)
+    # -----------------------------
+    if table_exists("totals_activity"):
+        # prefer the most likely column names (we check which exists)
+        if column_exists("totals_activity", "team_index"):
+            idx_col = "team_index"
+        elif column_exists("totals_activity", "team_adjusted_index"):
+            idx_col = "team_adjusted_index"
+        elif column_exists("totals_activity", "adjusted_team_index"):
+            idx_col = "adjusted_team_index"
+        else:
+            idx_col = None
+
+        if idx_col:
+            cur.execute(
+                f"""
+                SELECT day, {idx_col} AS team_index
+                FROM totals_activity
+                WHERE manager_id = %s
+                  AND day >= %s
+                  AND day <= %s
+                ORDER BY day ASC
+                """,
+                (manager_id, str(start_day), str(end_day))
+            )
+            rows = cur.fetchall() or []
+            vals = [float(r["team_index"]) for r in rows if r.get("team_index") is not None]
+            avg = sum(vals) / len(vals) if vals else 0.0
+            cur.close()
+            return rows, avg
+
+    # -----------------------------
+    # ✅ OPTION B: fallback (NO totals_activity table)
+    # We compute "team index" by averaging user daily index across all users under this manager.
+    # This works as long as you have ANY table that stores daily index per user.
+    # -----------------------------
+    candidates = [
+        # most likely names in your project
+        ("elite_daily_index", "daily_elite_per_minute"),
+        ("fact_daily", "daily_elite_per_minute"),
+        ("fact_daily", "adjusted_index"),
+        ("fact_daily_scores", "adjusted_index"),
+        ("fact_daily_scores", "elite_per_minute"),
+    ]
+
+    chosen = None
+    for tname, col in candidates:
+        if table_exists(tname) and column_exists(tname, "day") and column_exists(tname, "user_id") and column_exists(tname, col):
+            chosen = (tname, col)
+            break
+
+    if not chosen:
+        cur.close()
+        # Give a helpful error instead of crashing
+        raise RuntimeError(
+            "Could not compute team index. Missing totals_activity AND no known daily index table found.\n"
+            "Expected one of: elite_daily_index(day,user_id,daily_elite_per_minute) or fact_daily(...), etc."
+        )
+
+    tname, idx_col = chosen
+
+    # For each day, average the index across team members (users.manager_id = manager_id)
+    cur.execute(
+        f"""
         SELECT
-          day,
-          team_adjusted_index
-        FROM totals_activity
-        WHERE manager_id=%s
-          AND day >= %s
-          AND day <= %s
-        ORDER BY day ASC
-    """, (manager_id, str(start_day), str(end_day)))
+          t.day AS day,
+          AVG(t.{idx_col}) AS team_index
+        FROM {tname} t
+        JOIN users u ON u.id = t.user_id
+        WHERE u.manager_id = %s
+          AND t.day >= %s
+          AND t.day <= %s
+        GROUP BY t.day
+        ORDER BY t.day ASC
+        """,
+        (manager_id, str(start_day), str(end_day))
+    )
+    rows = cur.fetchall() or []
+    vals = [float(r["team_index"]) for r in rows if r.get("team_index") is not None]
+    avg = sum(vals) / len(vals) if vals else 0.0
 
-    rows = cur.fetchall()
     cur.close()
+    return rows, avg
 
-    # Compute average if we got anything
-    vals = [r["team_adjusted_index"] for r in rows if r.get("team_adjusted_index") is not None]
-    avg_val = round(sum(vals) / len(vals), 2) if vals else None
-
-    return rows, avg_val
 
 # =========================
 # Message building
