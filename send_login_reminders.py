@@ -76,10 +76,6 @@ def main():
                   <p style="margin:0 0 18px 0;">
                     <b>Happy Selling!</b>
                   </p>
-
-                  <p style="margin:0;">
-                    👉 <a href="{LOGIN_URL}">Log into Reflexx</a>
-                  </p>
                 </div>
                 """
             )
