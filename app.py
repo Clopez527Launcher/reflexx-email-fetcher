@@ -2945,37 +2945,43 @@ def api_manager_set_user_email_reminder():
 @login_required
 def api_manager_weekly_summary_toggle():
     conn = get_db_connection()
-    cursor = conn.cursor()
+    cur = conn.cursor()
+    try:
+        # ✅ Resolve manager_id safely (tuple or dict)
+        cur.execute("SELECT role, manager_id FROM users WHERE id = %s", (current_user.id,))
+        me = cur.fetchone()
 
-    # ✅ Resolve manager_id safely
-    cursor.execute("SELECT role, manager_id FROM users WHERE id = %s", (current_user.id,))
-    me = cursor.fetchone()
+        if not me:
+            return jsonify(ok=False, error="User not found"), 404
 
-    if not me:
-        return jsonify(ok=False, error="User not found"), 404
+        role = me[0] if isinstance(me, tuple) else me.get("role")
+        mgr_id = current_user.id if role == "manager" else (me[1] if isinstance(me, tuple) else me.get("manager_id"))
 
-    role = me[0] if isinstance(me, tuple) else me.get("role")
-    mgr_id = current_user.id if role == "manager" else (me[1] if isinstance(me, tuple) else me.get("manager_id"))
+        if request.method == "GET":
+            cur.execute(
+                "SELECT manager_summary_weekly_enabled FROM users WHERE id = %s AND role = 'manager'",
+                (mgr_id,)
+            )
+            row = cur.fetchone()
+            val = (row[0] if isinstance(row, tuple) else row.get("manager_summary_weekly_enabled")) if row else 0
+            return jsonify(ok=True, enabled=int(val or 0))
 
-    if request.method == "GET":
-        cursor.execute(
-            "SELECT manager_summary_weekly_enabled FROM users WHERE id = %s AND role = 'manager'",
-            (mgr_id,)
+        # POST
+        data = request.get_json(silent=True) or {}
+        enabled = 1 if data.get("enabled") else 0
+
+        cur.execute(
+            "UPDATE users SET manager_summary_weekly_enabled = %s WHERE id = %s AND role = 'manager'",
+            (enabled, mgr_id)
         )
-        row = cursor.fetchone()
-        val = row[0] if row else 0
-        return jsonify(ok=True, enabled=int(val))
+        conn.commit()
+        return jsonify(ok=True, enabled=enabled)
 
-    # POST
-    data = request.get_json(force=True) or {}
-    enabled = 1 if data.get("enabled") else 0
-
-    cursor.execute(
-        "UPDATE users SET manager_summary_weekly_enabled = %s WHERE id = %s AND role = 'manager'",
-        (enabled, mgr_id)
-    )
-    conn.commit()
-    return jsonify(ok=True, enabled=enabled)
+    finally:
+        try: cur.close()
+        except: pass
+        try: conn.close()
+        except: pass
     
 
 # ✅ User Model for Flask-Login
