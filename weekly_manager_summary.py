@@ -346,7 +346,7 @@ def send_postmark_email(to_email, subject, html_body):
 
 # -----------------------------
 # Main
-# -----------------------------
+# ----------------------------
 def main():
     start_day, end_day = l7_range_ending_yesterday()
     prior_start, prior_end = prior_l7_range(start_day)
