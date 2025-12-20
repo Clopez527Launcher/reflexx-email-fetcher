@@ -32,6 +32,15 @@
     font-weight: 800;
     letter-spacing: 0.2px;
   }
+		
+		:root{
+				--reflexx-blue: #00e6e6;   /* matches dashboard neon */
+		}
+
+		.widget-title.blue-title{
+				color: var(--reflexx-blue) !important;
+				text-shadow: 0 0 12px rgba(0,230,230,0.28);
+		}
 
   /* Dashboard-style widget card */
   .settings-widget{
@@ -158,7 +167,7 @@
   <div class="settings-widget">
     <div class="widget-header">
       <div>
-        <h3 class="widget-title">Daily Login Reminder Emails</h3>
+        <h3 class="widget-title blue-title">Daily Login Reminder Emails</h3>
         <p class="widget-subtitle">
           Toggle reminders ON/OFF for each user assigned to you.
         </p>
@@ -176,7 +185,7 @@
 				<div class="settings-widget">
 						<div class="widget-header">
 								<div>
-										<h3 class="widget-title">Weekly Manager Summary Email</h3>
+										<h3 class="widget-title blue-title">Weekly Manager Summary Email</h3>
 										<p class="widget-subtitle">
 												Send a weekly performance summary email to you (manager only).
 										</p>
