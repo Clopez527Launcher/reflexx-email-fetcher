@@ -1,5 +1,6 @@
 import os
 import json
+import math
 import requests
 import mysql.connector
 from datetime import datetime, timedelta
@@ -7,27 +8,17 @@ from zoneinfo import ZoneInfo
 
 PACIFIC = ZoneInfo("America/Los_Angeles")
 
-# =========================
-# CONFIG (Railway Variables)
-# =========================
 POSTMARK_API_TOKEN = os.getenv("POSTMARK_API_TOKEN", "")
 FROM_EMAIL = os.getenv("FROM_EMAIL", "no-reply@reflexxapp.com")
 
-# If you already use MYSQL_URL, keep it.
-MYSQL_URL = os.getenv("MYSQL_URL") or os.getenv("DATABASE_URL")  # optional
 MYSQLHOST = os.getenv("MYSQLHOST")
 MYSQLUSER = os.getenv("MYSQLUSER")
 MYSQLPASSWORD = os.getenv("MYSQLPASSWORD")
 MYSQL_DATABASE = os.getenv("MYSQL_DATABASE")
 
-OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")  # optional
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")  # optional (polish language)
 
-# =========================
-# DB Helpers
-# =========================
 def get_db_connection():
-    # If you already have a shared helper in your app, mirror that.
-    # This version uses discrete vars because that’s what Railway shows in your screenshot.
     return mysql.connector.connect(
         host=MYSQLHOST,
         user=MYSQLUSER,
@@ -36,309 +27,282 @@ def get_db_connection():
         autocommit=False,
     )
 
-def pacific_yesterday():
+def pacific_yesterday_date():
     now_pt = datetime.now(PACIFIC)
-    y = (now_pt - timedelta(days=1)).date()
-    return y
+    return (now_pt - timedelta(days=1)).date()
 
-def date_range_last_7_days_ending_yesterday():
-    end_day = pacific_yesterday()
-    start_day = end_day - timedelta(days=6)  # 7 days total
+def l7_range_ending_yesterday():
+    end_day = pacific_yesterday_date()
+    start_day = end_day - timedelta(days=6)
     return start_day, end_day
 
-# =========================
-# Data pulls (EDIT TABLE/COLS IF NEEDED)
-# =========================
+def safe_float(x, default=0.0):
+    try:
+        if x is None:
+            return default
+        return float(x)
+    except:
+        return default
+
+def safe_int(x, default=0):
+    try:
+        if x is None:
+            return default
+        return int(x)
+    except:
+        return default
+
+def minutes_from_seconds(sec):
+    return round(safe_float(sec, 0.0) / 60.0, 0)
+
+# -----------------------------
+# DB pulls
+# -----------------------------
 def get_enabled_managers(conn):
     cur = conn.cursor(dictionary=True)
     cur.execute("""
-        SELECT id, email, nickname
+        SELECT id, email, COALESCE(nickname, email) AS name
         FROM users
         WHERE role='manager'
           AND manager_summary_weekly_enabled=1
+          AND email IS NOT NULL
+          AND email <> ''
     """)
-    rows = cur.fetchall()
+    rows = cur.fetchall() or []
     cur.close()
     return rows
 
 def get_team_users(conn, manager_id):
     cur = conn.cursor(dictionary=True)
     cur.execute("""
-        SELECT id, email, nickname
+        SELECT id, email, COALESCE(nickname, email) AS name
         FROM users
         WHERE role='user'
           AND manager_id=%s
-        ORDER BY nickname ASC
+        ORDER BY name ASC
     """, (manager_id,))
-    rows = cur.fetchall()
+    rows = cur.fetchall() or []
     cur.close()
     return rows
 
-def pull_team_metrics_l7(conn, manager_id, start_day, end_day):
-    """
-    IMPORTANT:
-    You might store these metrics in different tables.
-    Update the FROM/JOIN below to match your real schema.
-
-    Strategy:
-    - pull per-user rollups across last 7 days
-    - keep it defensive with COALESCE
-    """
-
+def pull_team_aggregate_l7(conn, manager_id, start_day, end_day):
+    """Office-level totals/averages over fact_daily for L-7."""
     cur = conn.cursor(dictionary=True)
-
-    # ---- Example: if you have a fact_daily table with talk_seconds, idle_seconds, etc.
-    # If your actual table is named differently, swap it here.
     cur.execute("""
         SELECT
-            u.id AS user_id,
-            u.nickname AS name,
+          COUNT(DISTINCT fd.user_id) AS reps_with_data,
+          COUNT(*) AS rows_days,
 
-            -- Talk time
-            COALESCE(SUM(fd.talk_seconds), 0) AS talk_seconds,
+          COALESCE(SUM(fd.inbounds),0) AS inbounds,
+          COALESCE(SUM(fd.outbounds),0) AS outbounds,
+          COALESCE(SUM(fd.ib_time_minutes),0) AS ib_mins,
+          COALESCE(SUM(fd.ob_time_minutes),0) AS ob_mins,
 
-            -- Idle time
-            COALESCE(SUM(fd.idle_seconds), 0) AS idle_seconds,
+          COALESCE(SUM(fd.quoted_items),0) AS quoted_items,
+          COALESCE(SUM(fd.quotes_unique),0) AS quotes_unique,
 
-            -- Movement
-            COALESCE(SUM(fd.keystrokes), 0) AS keystrokes,
-            COALESCE(SUM(fd.mouse_clicks), 0) AS mouse_clicks,
+          COALESCE(SUM(fd.vc_policies),0) AS vc_policies,
+          COALESCE(SUM(fd.vc_items),0) AS vc_items,
+          COALESCE(SUM(fd.vc_premium),0) AS vc_premium,
 
-            -- Quotes (rename if needed)
-            COALESCE(SUM(fd.quotes_count), 0) AS quotes_count,
+          COALESCE(SUM(fd.idle_time_seconds),0) AS idle_seconds,
+          COALESCE(SUM(fd.advisor_pro_minutes),0) AS advisor_pro_minutes,
 
-            -- Index (daily)
-            COALESCE(AVG(fd.adjusted_index), NULL) AS avg_adjusted_index
+          COALESCE(AVG(fd.phone_activity_score),0) AS avg_phone_score,
+          COALESCE(AVG(fd.quote_activity_score),0) AS avg_quote_score,
+          COALESCE(AVG(fd.movement_activity_score),0) AS avg_movement_score,
+          COALESCE(AVG(fd.binary_vc_score),0) AS avg_binary_vc_score
+
+        FROM fact_daily fd
+        JOIN users u ON u.id = fd.user_id
+        WHERE u.manager_id=%s
+          AND fd.date >= %s
+          AND fd.date <= %s
+    """, (manager_id, str(start_day), str(end_day)))
+    row = cur.fetchone() or {}
+    cur.close()
+    return row
+
+def pull_per_rep_l7(conn, manager_id, start_day, end_day):
+    """Per rep rollups & bucket averages for L-7."""
+    cur = conn.cursor(dictionary=True)
+    cur.execute("""
+        SELECT
+          u.id AS user_id,
+          COALESCE(u.nickname, u.email) AS name,
+
+          COALESCE(SUM(fd.inbounds),0) AS inbounds,
+          COALESCE(SUM(fd.outbounds),0) AS outbounds,
+          COALESCE(SUM(fd.ib_time_minutes),0) AS ib_mins,
+          COALESCE(SUM(fd.ob_time_minutes),0) AS ob_mins,
+
+          COALESCE(SUM(fd.quoted_items),0) AS quoted_items,
+          COALESCE(SUM(fd.quotes_unique),0) AS quotes_unique,
+
+          COALESCE(SUM(fd.vc_policies),0) AS vc_policies,
+          COALESCE(SUM(fd.vc_items),0) AS vc_items,
+          COALESCE(SUM(fd.vc_premium),0) AS vc_premium,
+
+          COALESCE(SUM(fd.idle_time_seconds),0) AS idle_seconds,
+          COALESCE(SUM(fd.advisor_pro_minutes),0) AS advisor_pro_minutes,
+
+          COALESCE(AVG(fd.phone_activity_score),0) AS phone_score,
+          COALESCE(AVG(fd.quote_activity_score),0) AS quote_score,
+          COALESCE(AVG(fd.movement_activity_score),0) AS movement_score,
+          COALESCE(AVG(fd.binary_vc_score),0) AS binary_vc_score,
+
+          COUNT(*) AS days_with_rows
 
         FROM users u
         LEFT JOIN fact_daily fd
-               ON fd.user_id = u.id
-              AND fd.day >= %s
-              AND fd.day <= %s
+          ON fd.user_id = u.id
+         AND fd.date >= %s
+         AND fd.date <= %s
         WHERE u.role='user'
           AND u.manager_id=%s
-        GROUP BY u.id, u.nickname
-        ORDER BY u.nickname ASC
+        GROUP BY u.id, u.nickname, u.email
+        ORDER BY name ASC
     """, (str(start_day), str(end_day), manager_id))
-
-    rows = cur.fetchall()
+    rows = cur.fetchall() or []
     cur.close()
     return rows
 
-def pull_team_index_l7(conn, manager_id, start_day, end_day):
-    """
-    Returns:
-      team_rows: list of {day, team_index}
-      team_index_avg: float
-    Tries totals_activity first.
-    If not found, falls back to averaging user-level daily index from another table.
-    """
-
-    def table_exists(table_name: str) -> bool:
-        cur = conn.cursor()
-        cur.execute(
-            """
-            SELECT COUNT(*)
-            FROM information_schema.tables
-            WHERE table_schema = DATABASE()
-              AND table_name = %s
-            """,
-            (table_name,)
-        )
-        ok = (cur.fetchone()[0] or 0) > 0
-        cur.close()
-        return ok
-
-    def column_exists(table_name: str, col: str) -> bool:
-        cur = conn.cursor()
-        cur.execute(
-            """
-            SELECT COUNT(*)
-            FROM information_schema.columns
-            WHERE table_schema = DATABASE()
-              AND table_name = %s
-              AND column_name = %s
-            """,
-            (table_name, col)
-        )
-        ok = (cur.fetchone()[0] or 0) > 0
-        cur.close()
-        return ok
-
-    cur = conn.cursor(dictionary=True)
-
-    # -----------------------------
-    # ✅ OPTION A: totals_activity exists (original plan)
-    # -----------------------------
-    if table_exists("totals_activity"):
-        # prefer the most likely column names (we check which exists)
-        if column_exists("totals_activity", "team_index"):
-            idx_col = "team_index"
-        elif column_exists("totals_activity", "team_adjusted_index"):
-            idx_col = "team_adjusted_index"
-        elif column_exists("totals_activity", "adjusted_team_index"):
-            idx_col = "adjusted_team_index"
-        else:
-            idx_col = None
-
-        if idx_col:
-            cur.execute(
-                f"""
-                SELECT day, {idx_col} AS team_index
-                FROM totals_activity
-                WHERE manager_id = %s
-                  AND day >= %s
-                  AND day <= %s
-                ORDER BY day ASC
-                """,
-                (manager_id, str(start_day), str(end_day))
-            )
-            rows = cur.fetchall() or []
-            vals = [float(r["team_index"]) for r in rows if r.get("team_index") is not None]
-            avg = sum(vals) / len(vals) if vals else 0.0
-            cur.close()
-            return rows, avg
-
-    # -----------------------------
-    # ✅ OPTION B: fallback (NO totals_activity table)
-    # We compute "team index" by averaging user daily index across all users under this manager.
-    # This works as long as you have ANY table that stores daily index per user.
-    # -----------------------------
-    candidates = [
-        # most likely names in your project
-        ("elite_daily_index", "daily_elite_per_minute"),
-        ("fact_daily", "daily_elite_per_minute"),
-        ("fact_daily", "adjusted_index"),
-        ("fact_daily_scores", "adjusted_index"),
-        ("fact_daily_scores", "elite_per_minute"),
-    ]
-
-    chosen = None
-    for tname, col in candidates:
-        if table_exists(tname) and column_exists(tname, "day") and column_exists(tname, "user_id") and column_exists(tname, col):
-            chosen = (tname, col)
-            break
-
-    if not chosen:
-        cur.close()
-        # Give a helpful error instead of crashing
-        raise RuntimeError(
-            "Could not compute team index. Missing totals_activity AND no known daily index table found.\n"
-            "Expected one of: elite_daily_index(day,user_id,daily_elite_per_minute) or fact_daily(...), etc."
-        )
-
-    tname, idx_col = chosen
-
-    # For each day, average the index across team members (users.manager_id = manager_id)
-    cur.execute(
-        f"""
-        SELECT
-          t.day AS day,
-          AVG(t.{idx_col}) AS team_index
-        FROM {tname} t
-        JOIN users u ON u.id = t.user_id
-        WHERE u.manager_id = %s
-          AND t.day >= %s
-          AND t.day <= %s
-        GROUP BY t.day
-        ORDER BY t.day ASC
-        """,
-        (manager_id, str(start_day), str(end_day))
+# -----------------------------
+# Coaching logic (human-style)
+# -----------------------------
+def bucket_rank(rep):
+    # Higher is better. Weight phone + quote most; movement is supportive.
+    return (
+        safe_float(rep.get("phone_score")) * 0.45 +
+        safe_float(rep.get("quote_score")) * 0.45 +
+        safe_float(rep.get("movement_score")) * 0.10
     )
-    rows = cur.fetchall() or []
-    vals = [float(r["team_index"]) for r in rows if r.get("team_index") is not None]
-    avg = sum(vals) / len(vals) if vals else 0.0
 
-    cur.close()
-    return rows, avg
+def pick_strengths_weaknesses(rep):
+    buckets = [
+        ("Phone", safe_float(rep.get("phone_score"))),
+        ("Quoting", safe_float(rep.get("quote_score"))),
+        ("Movement", safe_float(rep.get("movement_score"))),
+        ("VC", safe_float(rep.get("binary_vc_score"))),
+    ]
+    buckets_sorted = sorted(buckets, key=lambda x: x[1], reverse=True)
+    strength = buckets_sorted[0]
+    weakness = buckets_sorted[-1]
+    return strength, weakness, buckets
 
+def coaching_for_rep(rep):
+    name = rep.get("name", "Rep")
 
-# =========================
-# Message building
-# =========================
-def minutes(sec):
-    try:
-        return round((sec or 0) / 60.0)
-    except:
-        return 0
+    inb = safe_int(rep.get("inbounds"))
+    outb = safe_int(rep.get("outbounds"))
+    ib_m = safe_int(rep.get("ib_mins"))
+    ob_m = safe_int(rep.get("ob_mins"))
+    talk_total = ib_m + ob_m
 
-def build_summary_text(manager_name, start_day, end_day, team_index_avg, team_rows, rep_rows):
+    quoted_items = safe_int(rep.get("quoted_items"))
+    quotes_unique = safe_int(rep.get("quotes_unique"))
+
+    idle_min = minutes_from_seconds(rep.get("idle_seconds"))
+    adv_min = safe_int(rep.get("advisor_pro_minutes"))
+
+    phone_score = safe_float(rep.get("phone_score"))
+    quote_score = safe_float(rep.get("quote_score"))
+    move_score = safe_float(rep.get("movement_score"))
+    vc_score = safe_float(rep.get("binary_vc_score"))
+
+    strength, weakness, buckets = pick_strengths_weaknesses(rep)
+
+    # Build coaching: praise + focus on the weakest bucket
+    lines = []
+    lines.append(f"{name}")
+    lines.append(f"- Last week snapshot: Talk {talk_total} mins (IB {ib_m} / OB {ob_m}), Inbounds {inb}, Outbounds {outb}, Quoted Items {quoted_items}, Unique Quotes {quotes_unique}, Idle {int(idle_min)} mins.")
+
+    lines.append(f"- Strength: {strength[0]} (avg score {strength[1]:.2f}).")
+
+    # Weakness deep dive
+    w = weakness[0]
+    lines.append(f"- Focus this week: {w} (avg score {weakness[1]:.2f}).")
+
+    if w == "Phone":
+        if talk_total < 120:
+            lines.append("- Coaching: increase talk time with two protected call blocks per day. Keep the first 90 minutes outbound-heavy.")
+        if outb < 40:
+            lines.append("- Coaching: outbound count is light — set a daily outbound floor and track it at lunch + end of day.")
+        lines.append("- Coaching: reduce short gaps between calls — stay in ‘call mode’ during your blocks and batch admin after.")
+
+    elif w == "Quoting":
+        if quotes_unique < 8:
+            lines.append("- Coaching: quoting volume is low — set a minimum daily unique quote goal and protect a quoting block.")
+        if quoted_items < 15:
+            lines.append("- Coaching: increase quoted items by tightening your workflow (templates, fewer tab switches, fewer restarts).")
+        lines.append("- Coaching: focus on speed-to-quote → quote while the client is engaged, then follow up same day.")
+
+    elif w == "Movement":
+        # Movement is “weird” as you said: it often signals navigation/workflow issues.
+        if idle_min > 120:
+            lines.append("- Coaching: idle is high — likely workflow/navigation friction. Identify the top 1–2 tools causing stalls and simplify the path.")
+        if adv_min > 0 and adv_min < 60:
+            lines.append("- Coaching: AdvisorPro time is low — either work is happening elsewhere or there’s a navigation bottleneck. Confirm where time is being spent.")
+        lines.append("- Coaching: reduce context switching (too many tabs) — pick one workflow lane for 60–90 minutes at a time.")
+
+    else:  # VC weakness
+        lines.append("- Coaching: VC contribution is light — set a weekly VC target and review your pipeline daily.")
+        lines.append("- Coaching: identify 3 lead sources most likely to convert to VC and prioritize those touches first.")
+
+    lines.append("")  # spacer
+    return "\n".join(lines)
+
+def build_office_summary(manager_name, start_day, end_day, team, reps):
+    reps_with_data = safe_int(team.get("reps_with_data"))
+    inb = safe_int(team.get("inbounds"))
+    outb = safe_int(team.get("outbounds"))
+    ib_m = safe_int(team.get("ib_mins"))
+    ob_m = safe_int(team.get("ob_mins"))
+    talk_total = ib_m + ob_m
+
+    quoted_items = safe_int(team.get("quoted_items"))
+    quotes_unique = safe_int(team.get("quotes_unique"))
+
+    idle_min = minutes_from_seconds(team.get("idle_seconds"))
+    adv_min = safe_int(team.get("advisor_pro_minutes"))
+
+    avg_phone = safe_float(team.get("avg_phone_score"))
+    avg_quote = safe_float(team.get("avg_quote_score"))
+    avg_move = safe_float(team.get("avg_movement_score"))
+    avg_vc = safe_float(team.get("avg_binary_vc_score"))
+
+    # Rank reps by composite
+    reps_sorted = sorted(reps, key=bucket_rank, reverse=True)
+    top3 = [r.get("name") for r in reps_sorted[:3] if r.get("name")]
+    bottom3 = [r.get("name") for r in reps_sorted[-3:] if r.get("name")]
+
     lines = []
     lines.append("Weekly Manager Summary")
     lines.append("")
-    lines.append(f"{manager_name}, here’s your weekly Reflexx summary.")
-    lines.append("")
+    lines.append(f"{manager_name}, here’s what happened over the last 7 days (short-term coaching view).")
     lines.append(f"Week: {start_day} to {end_day}")
     lines.append("")
 
-    # ---- Office Summary (no tables)
     lines.append("Office Summary (last week)")
-    if team_index_avg is not None:
-        lines.append(f"- Team Adjusted Index (L-7 average): {team_index_avg}")
-    else:
-        lines.append("- Team Adjusted Index (L-7 average): (not available yet)")
-
-    # Simple “what happened” signals
-    # (You can refine these once you like the feel.)
-    if rep_rows:
-        # Find top/bottom talk, idle
-        talk_sorted = sorted(rep_rows, key=lambda r: (r.get("talk_seconds") or 0), reverse=True)
-        idle_sorted = sorted(rep_rows, key=lambda r: (r.get("idle_seconds") or 0), reverse=True)
-
-        top_talk = talk_sorted[0]
-        top_idle = idle_sorted[0]
-
-        lines.append(f"- Highest talk time: {top_talk.get('name')} ({minutes(top_talk.get('talk_seconds'))} mins)")
-        lines.append(f"- Highest idle time: {top_idle.get('name')} ({minutes(top_idle.get('idle_seconds'))} mins)")
+    lines.append(f"- Team activity: Talk {talk_total} mins (IB {ib_m} / OB {ob_m}), Inbounds {inb}, Outbounds {outb}.")
+    lines.append(f"- Quoting: Quoted Items {quoted_items}, Unique Quotes {quotes_unique}.")
+    lines.append(f"- Workflow signals: Idle {int(idle_min)} mins, AdvisorPro {adv_min} mins.")
+    lines.append(f"- Bucket averages: Phone {avg_phone:.2f}, Quoting {avg_quote:.2f}, Movement {avg_move:.2f}, VC {avg_vc:.2f}.")
+    if top3:
+        lines.append(f"- Top performers (overall): {', '.join(top3)}.")
+    if bottom3:
+        lines.append(f"- Needs attention (overall): {', '.join(bottom3)}.")
     lines.append("")
-
-    # ---- Coaching Suggestions (this week)
     lines.append("Coaching Suggestions (this week)")
-    for r in rep_rows:
-        name = r.get("name") or "Rep"
-        talk_m = minutes(r.get("talk_seconds"))
-        idle_m = minutes(r.get("idle_seconds"))
-        quotes = int(r.get("quotes_count") or 0)
-
-        # Basic rule-based coaching (fast + consistent).
-        # Later, we can replace/augment with AI once you like the structure.
-        bullets = []
-
-        if idle_m >= 120:
-            bullets.append("Reduce idle blocks — set a 30/30 rhythm (30 mins calling, 30 mins quoting/admin).")
-        elif idle_m >= 90:
-            bullets.append("Idle is a bit high — tighten transitions between tasks and stay in a single workflow.")
-        else:
-            bullets.append("Idle looks controlled — keep your workflow tight.")
-
-        if talk_m < 120:
-            bullets.append("Push talk time up — aim for a stronger daily call block and fewer short gaps.")
-        else:
-            bullets.append("Talk time is healthy — keep the volume consistent.")
-
-        if quotes < 10:
-            bullets.append("Quoting volume is light — set a minimum daily quote target and track it.")
-        else:
-            bullets.append("Quoting volume is solid — focus on quality + speed to bind more.")
-
-        lines.append(f"{name}:")
-        for b in bullets[:3]:
-            lines.append(f"- {b}")
-        lines.append("")
-
-    lines.append("Happy Selling!")
+    lines.append("- Keep coaching tight: focus each rep on their weakest bucket first; don’t over-coach everything at once.")
+    lines.append("")
     return "\n".join(lines)
 
-# =========================
-# Optional AI polish (keeps same content, nicer wording)
-# =========================
 def ai_polish(text):
+    # optional — if you don’t set OPENAI_API_KEY, the email still sends with rule-based coaching
     if not OPENAI_API_KEY:
         return text
-
     try:
-        # If you already have an OpenAI helper elsewhere, use that instead.
-        # Keeping this simple and non-fancy.
         resp = requests.post(
             "https://api.openai.com/v1/chat/completions",
             headers={
@@ -348,7 +312,8 @@ def ai_polish(text):
             json={
                 "model": "gpt-4.1-mini",
                 "messages": [
-                    {"role": "system", "content": "Rewrite for a manager weekly coaching email. Keep it short, punchy, and actionable. No tables. Preserve names, numbers, and structure."},
+                    {"role": "system",
+                     "content": "Rewrite as a weekly manager email. Keep it short, punchy, and actionable. No tables. Preserve names and numbers."},
                     {"role": "user", "content": text},
                 ],
                 "temperature": 0.4,
@@ -361,10 +326,7 @@ def ai_polish(text):
     except:
         return text
 
-# =========================
-# Postmark send
-# =========================
-def send_postmark_email(to_email, subject, body_text):
+def send_postmark_email(to_email, subject, text_body):
     if not POSTMARK_API_TOKEN:
         raise RuntimeError("Missing POSTMARK_API_TOKEN")
 
@@ -372,8 +334,8 @@ def send_postmark_email(to_email, subject, body_text):
         "From": f"ReflexxApp <{FROM_EMAIL}>",
         "To": to_email,
         "Subject": subject,
-        "TextBody": body_text,
-        "MessageStream": "outbound",  # if you use a different stream name, change it
+        "TextBody": text_body,
+        "MessageStream": "outbound",
     }
 
     r = requests.post(
@@ -388,11 +350,8 @@ def send_postmark_email(to_email, subject, body_text):
     if r.status_code >= 300:
         raise RuntimeError(f"Postmark send failed {r.status_code}: {r.text}")
 
-# =========================
-# MAIN
-# =========================
 def main():
-    start_day, end_day = date_range_last_7_days_ending_yesterday()
+    start_day, end_day = l7_range_ending_yesterday()
 
     conn = get_db_connection()
     try:
@@ -401,19 +360,28 @@ def main():
         for m in managers:
             manager_id = m["id"]
             manager_email = m["email"]
-            manager_name = m.get("nickname") or "Manager"
+            manager_name = m.get("name") or "Manager"
 
-            team_rows, team_index_avg = pull_team_index_l7(conn, manager_id, start_day, end_day)
-            rep_rows = pull_team_metrics_l7(conn, manager_id, start_day, end_day)
+            team = pull_team_aggregate_l7(conn, manager_id, start_day, end_day)
+            reps = pull_per_rep_l7(conn, manager_id, start_day, end_day)
 
-            body = build_summary_text(manager_name, start_day, end_day, team_index_avg, team_rows, rep_rows)
+            # Build email
+            parts = []
+            parts.append(build_office_summary(manager_name, start_day, end_day, team, reps))
+
+            # Per rep coaching (no tables, short)
+            for rep in reps:
+                parts.append(coaching_for_rep(rep))
+
+            parts.append("Happy Selling!")
+
+            body = "\n".join(parts)
             body = ai_polish(body)
 
-            subject = f"[EXTERNAL] Reflexx Weekly Summary ({start_day} – {end_day})"
+            subject = f"[EXTERNAL] Reflexx Weekly Coaching Summary ({start_day} – {end_day})"
             send_postmark_email(manager_email, subject, body)
 
         conn.commit()
-
     finally:
         conn.close()
 
