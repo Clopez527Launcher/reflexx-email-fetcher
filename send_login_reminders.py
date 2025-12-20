@@ -60,16 +60,25 @@ def main():
                 To=to_email,
                 Subject="Reflexx Daily Login Reminder",
                 HtmlBody=f"""
-                <div style="font-family:Arial,sans-serif; line-height:1.4;">
-                  <h2 style="margin:0 0 10px 0;">Good morning {name},</h2>
-                  <p style="margin:0 0 12px 0;">
-                    Quick reminder to log into <b>Reflexx</b> and start tracking your day.
+                <div style="font-family:Arial,sans-serif; line-height:1.5;">
+                  <p style="margin:0 0 14px 0; font-size:16px;">
+                    Good morning {name},
                   </p>
-                  <p style="margin:0 0 12px 0;">
+
+                  <p style="margin:0 0 14px 0;">
+                    Quick reminder to log into <b>Reflexx</b>.
+                  </p>
+
+                  <p style="margin:0 0 14px 0;">
+                    Thank you for your partnership.
+                  </p>
+
+                  <p style="margin:0 0 18px 0;">
+                    <b>Happy Selling!</b>
+                  </p>
+
+                  <p style="margin:0;">
                     👉 <a href="{LOGIN_URL}">Log into Reflexx</a>
-                  </p>
-                  <p style="color:#777; font-size:12px; margin:18px 0 0 0;">
-                    You’re receiving this because your manager enabled daily reminders.
                   </p>
                 </div>
                 """
