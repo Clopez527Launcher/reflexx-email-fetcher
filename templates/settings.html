@@ -3,25 +3,171 @@
 
 {% block content %}
 <style>
-  /* ✅ Settings page cleanup */
-  .page-wrapper, .page-wrapper * { color: #fff !important; }
-  .muted { color: #cfe6ff !important; }
+  /* ===============================
+     ✅ SETTINGS PAGE (Dashboard Theme)
+     =============================== */
+
+  /* Match dashboard background */
+  body,
+  .content,
+  .content-wrapper,
+  .page-wrapper,
+  .main-content {
+    background: #12243b !important;
+    color: #e9f6ff;
+  }
+
+  /* Full-width like dashboard (hug sidebar) */
+  .settings-layout{
+    width: 100%;
+    max-width: none;
+    margin: 0;
+    padding: 18px 26px 30px 26px;
+    box-sizing: border-box;
+  }
+
+  .settings-title{
+    margin: 0 0 14px 0;
+    font-size: 34px;
+    font-weight: 800;
+    letter-spacing: 0.2px;
+  }
+
+  /* Dashboard-style widget card */
+  .settings-widget{
+    background: #0e151d;
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 16px;
+    padding: 18px 18px;
+    box-shadow: 0 14px 40px rgba(0,0,0,0.35);
+  }
+
+  .widget-header{
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 14px;
+  }
+
+  .widget-title{
+    margin: 0;
+    font-size: 18px;
+    font-weight: 800;
+  }
+
+  .widget-subtitle{
+    margin: 6px 0 0 0;
+    color: rgba(233,246,255,0.75);
+    font-size: 13px;
+    line-height: 1.35;
+  }
+
+  /* List */
+  #usersList{
+    margin-top: 10px;
+    border-top: 1px solid rgba(255,255,255,0.06);
+  }
+
+  .user-row{
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14px;
+    padding: 12px 6px;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+  }
+
+  .user-row:hover{
+    background: rgba(255,255,255,0.03);
+    border-radius: 10px;
+  }
+
+  .user-left{
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .user-name{
+    font-weight: 800;
+    font-size: 14px;
+    color: #e9f6ff;
+  }
+
+  .user-email{
+    font-size: 12px;
+    color: rgba(233,246,255,0.70);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 520px;
+  }
+
+  /* Toggle area */
+  .toggle-wrap{
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    user-select: none;
+    cursor: pointer;
+    font-weight: 700;
+    color: rgba(233,246,255,0.85);
+  }
+
+  /* Make checkbox look cleaner */
+  .toggle-wrap input[type="checkbox"]{
+    width: 18px;
+    height: 18px;
+    accent-color: #00e6e6; /* modern browsers */
+    cursor: pointer;
+  }
+
+  /* Toast */
+  #saveToast{
+    margin-top: 12px;
+    display: none;
+    padding: 10px 12px;
+    border-radius: 10px;
+    background: rgba(0,230,230,0.12);
+    border: 1px solid rgba(0,230,230,0.35);
+    color: #bffcff;
+    font-weight: 800;
+    width: fit-content;
+  }
+
+  /* Loading */
+  .loading{
+    padding: 14px 6px;
+    color: rgba(233,246,255,0.70);
+    font-size: 13px;
+  }
+
+  /* Small screens */
+  @media (max-width: 720px){
+    .settings-layout{ padding: 14px 14px 24px 14px; }
+    .settings-title{ font-size: 28px; }
+    .user-email{ max-width: 220px; }
+  }
 </style>
 
-<div class="page-wrapper" style="max-width:1200px; margin:0 auto; padding:20px;">
-  <h1 style="margin: 0 0 16px 0;">Settings</h1>
+<div class="settings-layout">
+  <h1 class="settings-title">Settings</h1>
 
-  <div class="card-dark" style="padding:16px; border-radius:12px;">
-    <h3 style="margin:0 0 8px 0;">Daily Login Reminder Emails</h3>
-    <p class="muted" style="margin:0 0 12px 0;">
-      Toggle reminders ON/OFF for each user assigned to you.
-    </p>
-
-    <div id="usersList" class="muted">Loading users...</div>
-
-    <div id="saveToast" class="muted" style="margin-top:10px; display:none;">
-      Saved ✅
+  <div class="settings-widget">
+    <div class="widget-header">
+      <div>
+        <h3 class="widget-title">Daily Login Reminder Emails</h3>
+        <p class="widget-subtitle">
+          Toggle reminders ON/OFF for each user assigned to you.
+        </p>
+      </div>
     </div>
+
+    <div id="usersList" class="loading">Loading users...</div>
+
+    <div id="saveToast">Saved ✅</div>
   </div>
 </div>
 
@@ -32,21 +178,17 @@ async function loadUsers() {
   const res = await fetch("/api/manager/users-email-reminders", { credentials: "include" });
   const data = await res.json();
 
-  console.log("users-email-reminders GET:", data);
-  console.log("first user:", data?.users?.[0]);
-
   if (!data || !Array.isArray(data.users)) {
-    usersList.innerHTML = "Failed to load users ❌";
+    usersList.innerHTML = "<div class='loading'>Failed to load users ❌</div>";
     return;
   }
 
   if (data.users.length === 0) {
-    usersList.innerHTML = "No users found for your manager_id.";
+    usersList.innerHTML = "<div class='loading'>No users found for your manager_id.</div>";
     return;
   }
 
   const rowsHtml = data.users.map(u => {
-    // ✅ use bracket notation (most defensive)
     const id = u["id"];
     const email = u["email"];
     const displayName = u["display_name"];
@@ -56,21 +198,18 @@ async function loadUsers() {
     const checked = (enabled == 1) ? "checked" : "";
 
     return `
-      <div style="display:flex; align-items:center; justify-content:space-between; padding:10px 0; border-bottom:1px solid #1f2a36;">
-        <div style="min-width:0;">
-          <div style="font-weight:600;">${nameText}</div>
-          <div class="muted" style="font-size:12px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:520px;">
-            ${email || ""}
-          </div>
+      <div class="user-row">
+        <div class="user-left">
+          <div class="user-name">${nameText}</div>
+          <div class="user-email">${email || ""}</div>
         </div>
 
-        <label style="display:flex; align-items:center; gap:10px; cursor:pointer;">
+        <label class="toggle-wrap">
           <input
             type="checkbox"
             class="reminderToggle"
             data-user-id="${id}"
             ${checked}
-            style="transform:scale(1.2);"
           />
           <span>Reminder</span>
         </label>
@@ -83,11 +222,8 @@ async function loadUsers() {
   document.querySelectorAll(".reminderToggle").forEach(cb => {
     cb.addEventListener("change", async (e) => {
       const enabled = e.target.checked;
-
-      // ✅ MOST IMPORTANT FIX: dataset read (avoids NaN/null issues)
       const userId = Number(e.target.dataset.userId);
 
-      // If userId is bad, stop and show it
       if (!userId || Number.isNaN(userId)) {
         alert("Bad userId coming from checkbox: " + e.target.dataset.userId);
         e.target.checked = !enabled;
@@ -101,12 +237,11 @@ async function loadUsers() {
         body: JSON.stringify({ user_id: userId, enabled: enabled })
       });
 
-      // ✅ Read JSON even if 400 so we can SEE the error
       let out = {};
       try { out = await r.json(); } catch (err) {}
 
       if (!r.ok || !out.ok) {
-        e.target.checked = !enabled; // revert
+        e.target.checked = !enabled;
         alert("Save failed (" + r.status + "): " + JSON.stringify(out));
         return;
       }
@@ -121,4 +256,3 @@ async function loadUsers() {
 document.addEventListener("DOMContentLoaded", loadUsers);
 </script>
 {% endblock %}
-
