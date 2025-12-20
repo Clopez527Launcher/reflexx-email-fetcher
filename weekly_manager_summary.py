@@ -197,7 +197,7 @@ def composite(rep):
 
 
 # -----------------------------
-# Coaching copy (2–3 sentences with meat)
+# Coaching copy - (2–3 sentences with meat)
 # -----------------------------
 def coaching_sentences(rep, focus):
     """
