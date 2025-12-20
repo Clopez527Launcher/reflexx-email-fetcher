@@ -145,6 +145,16 @@ def pull_reps_week(conn, manager_id, start_day, end_day):
     """, (str(start_day), str(end_day), manager_id))
     rows = cur.fetchall() or []
     cur.close()
+    
+    # ✅ Normalize AVG() Decimal values to float so math works
+    for r in rows:
+        r["phone_z"] = safe_float(r.get("phone_z"), 0.0)
+        r["quote_z"] = safe_float(r.get("quote_z"), 0.0)
+        r["movement_z"] = safe_float(r.get("movement_z"), 0.0)
+
+        # Also normalize names just in case
+        r["name"] = r.get("name") or "Rep"
+
     return rows
 
 
