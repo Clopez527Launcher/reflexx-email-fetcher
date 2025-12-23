@@ -3525,49 +3525,12 @@ def log_activity():
     return jsonify({"message": "Activity logged successfully"}), 200
 
 # ✅ Homepage Route
+from flask import render_template
+
 @app.route("/")
 def home():
-    return """
-    <html>
-    <head>
-        <title>Welcome to Reflexx</title>
-        <style>
-            body {
-                display: flex;
-                justify-content: center;
-                align-items: center;
-                height: 100vh;
-                flex-direction: column;
-                text-align: center;
-                font-family: Arial, sans-serif;
-                background-color: black;
-                color: white;
-            }
-            img {
-                width: 100px;  /* Adjusted icon size */
-                height: auto;
-                margin-bottom: 15px;
-            }
-            a {
-                text-decoration: none;
-                margin: 10px;
-                font-size: 18px;
-                color: white;
-            }
-            a:hover {
-                color: #ffcc00;  /* Yellow on hover */
-            }
-        </style>
-    </head>
-    <body>
-        <img src="/static/reflexx_logo.png" alt="Reflexx Logo">  <!-- Smaller logo -->
-        <h1>Welcome to Reflexx!</h1>
-        <p>
-            <a href='/login'>🔑 Login</a> | 
-        </p>
-    </body>
-    </html>
-    """
+    return render_template("landing_page.html")
+
     
 from flask import send_file
 
