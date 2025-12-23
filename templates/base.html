@@ -30,7 +30,26 @@
       --pad-top: 0px;         /* ✅ bring content UP/DOWN under banner (smaller = higher) */
       --sidebar-bottom-gap: 50px; /* ✅ makes sidebar NOT feel too tall */
     }
+				/* ===============================
+							✅ GLOBAL BACKGROUND (Reflexx mock gradient)
+							=============================== */
+				:root{
+						--bg-0: #060a12;
+						--bg-1: #071a26;
+						--bg-2: #0b2a33;
+						--bg-3: #062033;
+				}
 
+				/* Apply the gradient to the whole page */
+				body{
+						background:
+								radial-gradient(1200px 600px at 70% 20%, rgba(0, 230, 230, 0.16), transparent 60%),
+								radial-gradient(900px 500px at 30% 65%, rgba(0, 255, 153, 0.10), transparent 60%),
+								radial-gradient(700px 420px at 85% 85%, rgba(255, 255, 255, 0.06), transparent 60%),
+								linear-gradient(180deg, var(--bg-0), var(--bg-1) 40%, var(--bg-2) 75%, var(--bg-3));
+						background-attachment: fixed;
+				}
+				
     html, body { margin: 0; padding: 0; }
 
     /* ✅ Push the whole page down exactly 1 banner height (prevents double spacing) */
