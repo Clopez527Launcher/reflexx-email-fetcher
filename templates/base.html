@@ -19,64 +19,45 @@
 
   {% block head %}{% endblock %}
 
+  <!-- ✅ Layout: locked top banner + fixed sidebar + content aligned correctly -->
   <style>
     :root{
-      --banner-h: 70px;
-      --sidebar-w: 230px;
-      --sidebar-x: 20px;
-      --gap: 18px;
-      --pad-x: 22px;
-      --pad-top: 0px;
-      --sidebar-bottom-gap: 50px;
-
-      /* ✅ SUBTLE NAVY GRADIENT (what you asked for) */
-      --navy-0: #0b1b2a;   /* darkest */
-      --navy-1: #0f2437;   /* main */
-      --navy-2: #12304a;   /* lighter */
+      --banner-h: 70px;       /* top banner height */
+      --sidebar-w: 230px;     /* sidebar width */
+      --sidebar-x: 20px;      /* sidebar distance from left edge */
+      --gap: 18px;            /* space between sidebar and content */
+      --pad-x: 22px;          /* content left/right padding */
+      --pad-top: 0px;         /* ✅ bring content UP/DOWN under banner (smaller = higher) */
+      --sidebar-bottom-gap: 50px; /* ✅ makes sidebar NOT feel too tall */
     }
+				/* ===============================
+							✅ GLOBAL BACKGROUND (Reflexx mock gradient)
+							=============================== */
+				:root{
+						--bg-0: #060a12;
+						--bg-1: #071a26;
+						--bg-2: #0b2a33;
+						--bg-3: #062033;
+				}
 
-    html, body { margin:0; padding:0; height:100%; }
+				/* Apply the gradient to the whole page */
+				body{
+						background:
+								radial-gradient(1200px 600px at 70% 20%, rgba(0, 230, 230, 0.16), transparent 60%),
+								radial-gradient(900px 500px at 30% 65%, rgba(0, 255, 153, 0.10), transparent 60%),
+								radial-gradient(700px 420px at 85% 85%, rgba(255, 255, 255, 0.06), transparent 60%),
+								linear-gradient(180deg, var(--bg-0), var(--bg-1) 40%, var(--bg-2) 75%, var(--bg-3));
+						background-attachment: fixed;
+				}
+				
+    html, body { margin: 0; padding: 0; }
 
-    /* ✅ Put the gradient on the entire page */
+    /* ✅ Push the whole page down exactly 1 banner height (prevents double spacing) */
     body{
       padding-top: var(--banner-h);
-
-      background:
-        radial-gradient(900px 500px at 80% 15%, rgba(0, 230, 230, 0.08), transparent 60%),
-        radial-gradient(900px 500px at 15% 85%, rgba(0, 255, 153, 0.06), transparent 60%),
-        linear-gradient(180deg, var(--navy-0), var(--navy-1) 45%, var(--navy-2));
-      background-attachment: fixed;
     }
 
-    /* ✅ This is the KEY: the navy slab is usually on main-content or wrappers.
-       So we FORCE those to also use the gradient (wins over style.css). */
-    .main-content{
-      margin-left: calc(var(--sidebar-x) + var(--sidebar-w) + var(--gap));
-      padding: var(--pad-top) var(--pad-x) 40px var(--pad-x);
-      padding-right: calc(var(--pad-x) + 12px);
-      box-sizing: border-box;
-      min-height: calc(100vh - var(--banner-h));
-
-      /* ✅ Make the “big navy area” become a gradient */
-      background:
-        radial-gradient(900px 500px at 80% 15%, rgba(0, 230, 230, 0.08), transparent 60%),
-        radial-gradient(900px 500px at 15% 85%, rgba(0, 255, 153, 0.06), transparent 60%),
-        linear-gradient(180deg, var(--navy-0), var(--navy-1) 45%, var(--navy-2)) !important;
-      background-attachment: fixed;
-    }
-
-    /* ✅ Kill any other wrapper backgrounds that may be covering it */
-    .content,
-    .content-wrapper,
-    .page-wrapper,
-    .timekeeping-layout,
-    .timekeeping-layout .content,
-    .timekeeping-layout .content-wrapper,
-    .timekeeping-layout .page-wrapper{
-      background: transparent !important;
-    }
-
-    /* ✅ Top banner */
+    /* ✅ LOCK banner at top (stays while scrolling) */
     .top-banner{
       height: var(--banner-h);
       position: fixed;
@@ -84,20 +65,34 @@
       left: 0;
       right: 0;
       z-index: 1000;
-      background: #000;
+
+      /* optional but recommended so it always looks like a true header */
+      background: #000000;
       border-bottom: 1px solid rgba(255,255,255,0.06);
     }
 
     /* ✅ Sidebar fixed under banner */
     .floating-nav{
       position: fixed !important;
-      top: calc(var(--banner-h) + 22px) !important;
+      top: calc(var(--banner-h) + 22px) !important; /* ✅ small gap under banner */
       left: var(--sidebar-x) !important;
       width: var(--sidebar-w) !important;
+
+      /* ✅ Not “too tall” */
       height: calc(100vh - var(--banner-h) - 12px - var(--sidebar-bottom-gap)) !important;
+
       overflow-y: auto;
-      padding-bottom: 14px;
+      padding-bottom: 14px; /* keeps logout from hugging bottom */
       z-index: 900;
+    }
+
+    /* ✅ Content starts right of sidebar (NO margin-top anymore) */
+    .main-content{
+      margin-left: calc(var(--sidebar-x) + var(--sidebar-w) + var(--gap));
+      padding: var(--pad-top) var(--pad-x) 40px var(--pad-x);
+      padding-right: calc(var(--pad-x) + 12px);
+      box-sizing: border-box;
+      min-height: calc(100vh - var(--banner-h));
     }
 
     /* ✅ Mobile fallback */
@@ -124,7 +119,7 @@
 <body data-manager-id="{{ (session.get('manager_id') or 4) | int }}">
 
   <!-- 🌈 Gradient Definition (shared across all pages) -->
-  <svg style="display:none;">
+  <svg style="display: none;">
     <defs>
       <linearGradient id="progressGradient" x1="0%" y1="0%" x2="100%" y2="0%">
         <stop offset="0%" stop-color="#00aaff" />
@@ -136,7 +131,10 @@
 
   <!-- 🔝 Top Banner -->
   <div class="top-banner" style="display:flex; align-items:center; justify-content:center;">
-    <img src="{{ url_for('static', filename='Reflexx_Icon.ico') }}" alt="Reflexx Logo" style="display:block; height:36px; width:auto;">
+    <!-- Centered logo -->
+    <img src="{{ url_for('static', filename='Reflexx_Icon.ico') }}" alt="Reflexx Logo" style="display:block;">
+
+    <!-- ⚙️ Settings gear (top right) -->
     <a href="{{ url_for('settings') }}" title="Settings"
        style="position:absolute; right:16px; top:50%; transform:translateY(-50%);
               color:#ffffff; text-decoration:none; font-size:20px; line-height:20px;">
@@ -146,20 +144,45 @@
 
   <!-- 🔗 Sidebar + Main -->
   <div>
+    <!-- Sidebar Navigation -->
     <div class="floating-nav">
       <h2 class="app-title" style="margin-top:18px;">Reflexx</h2>
 
-      <a href="{{ url_for('dashboard_new') }}" class="nav-btn {% if request.endpoint == 'dashboard_new' %}active{% endif %}">Dashboard</a>
-      <a href="{{ url_for('uploads') }}" class="nav-btn {% if request.endpoint == 'uploads' %}active{% endif %}">Uploads</a>
-      <a href="{{ url_for('manager_portal') }}" class="nav-btn {% if request.endpoint == 'manager_portal' %}active{% endif %}">Analytics</a>
-      <a href="{{ url_for('analytics') }}" class="nav-btn {% if request.endpoint == 'analytics' %}active{% endif %}">Graphs</a>
-      <a href="{{ url_for('ai_insights_tab') }}" class="nav-btn {% if request.endpoint == 'ai_insights_tab' %}active{% endif %}">AI Insights</a>
-      <a href="{{ url_for('reports') }}" class="nav-btn {% if request.endpoint == 'reports' %}active{% endif %}">Reports</a>
+      <a href="{{ url_for('dashboard_new') }}"
+         class="nav-btn {% if request.endpoint == 'dashboard_new' %}active{% endif %}">
+        Dashboard
+      </a>
+
+      <a href="{{ url_for('uploads') }}"
+         class="nav-btn {% if request.endpoint == 'uploads' %}active{% endif %}">
+        Uploads
+      </a>
+
+      <a href="{{ url_for('manager_portal') }}"
+         class="nav-btn {% if request.endpoint == 'manager_portal' %}active{% endif %}">
+        Analytics
+      </a>
+
+      <a href="{{ url_for('analytics') }}"
+         class="nav-btn {% if request.endpoint == 'analytics' %}active{% endif %}">
+        Graphs
+      </a>
+
+      <a href="{{ url_for('ai_insights_tab') }}"
+         class="nav-btn {% if request.endpoint == 'ai_insights_tab' %}active{% endif %}">
+        AI Insights
+      </a>
+
+      <a href="{{ url_for('reports') }}"
+         class="nav-btn {% if request.endpoint == 'reports' %}active{% endif %}">
+        Reports
+      </a>
 
       <button class="logout-btn" id="logoutBtn">Logout</button>
       <a href="{{ url_for('brick') }}" class="easter-egg">🎮</a>
     </div>
 
+    <!-- Page Content -->
     <div class="main-content">
       {% block content %}{% endblock %}
     </div>
@@ -167,6 +190,7 @@
 
   {% block scripts %}{% endblock %}
 
+  <!-- 🔗 Auto-refresh RingCentral (single copy, safe globally) + logout cache clear -->
   <script>
   document.addEventListener('DOMContentLoaded', () => {
     const startEl = document.getElementById('cm-start');
@@ -189,6 +213,7 @@
       el.addEventListener('keydown', e => { if (e.key === 'Enter') triggerRC(); });
     });
 
+    // ✅ Clear manager/employee cache on logout
     document.getElementById('logoutBtn')?.addEventListener('click', () => {
       localStorage.removeItem('MANAGER_ID');
       localStorage.removeItem('employee_id');
@@ -199,4 +224,3 @@
 
 </body>
 </html>
-
