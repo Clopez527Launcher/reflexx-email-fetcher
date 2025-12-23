@@ -49,17 +49,26 @@
       justify-content:space-between;
       position: relative;
     }
+				/* ✅ LEFT brand text (Reflexx) */
+				.brand-left{
+						color:#ffffff;
+						font-weight:900;
+						font-size:18px;
+						letter-spacing:0.2px;
+				}
+
+				/* ✅ CENTER icon wrapper (true center of the banner) */
+				.brand-icon-center{
+						position:absolute;
+						left:50%;
+						transform:translateX(-50%);
+						display:flex;
+						align-items:center;
+						justify-content:center;
+						pointer-events:none;
+				}
 
     /* Center logo + wordmark */
-    .brand-center{
-      position:absolute;
-      left:50%;
-      transform:translateX(-50%);
-      display:flex;
-      align-items:center;
-      gap:10px;
-      pointer-events:none;
-    }
     .brand-icon{
 						width:56px;
 						height:56px;
@@ -308,14 +317,15 @@
   <div class="topbar">
     <div class="topbar-inner">
 
-      <!-- left spacer (keeps center brand truly centered) -->
-      <div style="width:140px;"></div>
+      <!-- LEFT brand text -->
+						<div class="brand-left">
+								Reflexx
+						</div>
 
-      <!-- centered brand -->
-      <div class="brand-center" aria-hidden="true">
-        <img class="brand-icon" src="{{ url_for('static', filename='Reflexx_Icon.ico') }}" alt="Reflexx Icon">
-        <div class="brand-text">Reflexx</div>
-      </div>
+						<!-- CENTER icon only -->
+						<div class="brand-icon-center" aria-hidden="true">
+								<img class="brand-icon" src="{{ url_for('static', filename='Reflexx_Icon.ico') }}" alt="Reflexx Icon">
+						</div>
 
       <!-- right actions -->
       <div class="top-actions">
@@ -331,7 +341,7 @@
        ========================= -->
   <section class="hero" id="inquire">
     <div class="hero-inner">
-      <h1>Take Control of Your Sales Team Today</h1>
+      <h1>Next Steps</h1>
       <p>
         Reflexx is a platform designed to equip managers with actionable insights to execute data driven 
 								decisions that will drive performance and growth.
