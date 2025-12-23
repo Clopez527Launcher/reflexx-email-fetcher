@@ -61,14 +61,14 @@
       pointer-events:none;
     }
     .brand-icon{
-      width:38px;
-      height:38px;
-      border-radius:10px;
-      display:block;
-      box-shadow: 0 10px 24px rgba(0,0,0,0.35);
-      background: rgba(255,255,255,0.06);
-      padding: 6px;
-    }
+						width:56px;
+						height:56px;
+						border-radius:14px;
+						display:block;
+						box-shadow: 0 12px 28px rgba(0,0,0,0.40);
+						background: rgba(255,255,255,0.06);
+						padding: 8px;
+				}
     .brand-text{
       font-weight:800;
       font-size:18px;
@@ -352,10 +352,8 @@
         </p>
 
         <div class="pill-row">
-          <a class="pill" href="{{ url_for('login') }}">View Demo</a>
-          <a class="pill" href="{{ url_for('login') }}">See Dashboard</a>
-          <a class="pill" href="{{ url_for('login') }}">Talk to Us</a>
-        </div>
+										<a class="pill" href="{{ url_for('login') }}">Schedule Demo</a>
+								</div>
 
         <div style="margin-top:14px;" class="tiny">
           (These buttons can later open a contact form or Calendly — for now they can route to login.)
