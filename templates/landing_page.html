@@ -63,11 +63,16 @@
     .brand-icon{
 						width:56px;
 						height:56px;
-						border-radius:14px;
 						display:block;
-						box-shadow: 0 12px 28px rgba(0,0,0,0.40);
-						background: rgba(255,255,255,0.06);
-						padding: 8px;
+
+						/* ✅ remove the “square” look */
+						background: transparent;
+						padding: 0;
+						border-radius: 0;
+						box-shadow: none;
+
+						/* ✅ keep it crisp on dark */
+						filter: drop-shadow(0 10px 18px rgba(0,0,0,0.55));
 				}
     .brand-text{
       font-weight:800;
@@ -326,10 +331,10 @@
        ========================= -->
   <section class="hero" id="inquire">
     <div class="hero-inner">
-      <h1>See performance. Catch slippage. Course-correct fast.</h1>
+      <h1>Take Control of Your Sales Team Today</h1>
       <p>
-        Reflexx exposes who’s performing, who’s falling behind, and exactly where managers should intervene
-        to lift sales results—using real activity signals, call outcomes, and coaching-ready insights.
+        Reflexx is a platform designed to equip managers with actionable insights to execute data driven 
+								decisions that will drive performance and growth.
       </p>
 
       <div class="hero-cta">
@@ -345,20 +350,16 @@
   <section class="tour" id="tour">
     <div class="tour-inner">
       <div>
-        <h2>Take a self-guided product tour</h2>
+        <h2>Take control of your sales</h2>
         <p>
-          Get a quick look at the manager dashboard, performance scorecards, web usage, and coaching insights —
-          all in one place. If you want, we’ll set up a demo tailored to your team.
+          Set up a meeting today to get a quick look of what Reflexx looks like under the hood.
+										Understand what we do to identify trends, how we correct them in a timely fashion and 
+										why we use AI to get the best results for you and your team.
         </p>
 
         <div class="pill-row">
 										<a class="pill" href="{{ url_for('login') }}">Schedule Demo</a>
 								</div>
-
-        <div style="margin-top:14px;" class="tiny">
-          (These buttons can later open a contact form or Calendly — for now they can route to login.)
-        </div>
-      </div>
 
       <div class="mock" role="img" aria-label="Reflexx dashboard preview">
         <div class="mock-top">
