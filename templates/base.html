@@ -29,14 +29,14 @@
       --pad-top: 0px;
       --sidebar-bottom-gap: 50px;
 
-      /* 🌈 Background palette */
-      --bg-0: #060a12;
-      --bg-1: #071a26;
-      --bg-2: #0b2a33;
-      --bg-3: #061a2d;
+      /* 🌈 Background palette (LIGHTER like the mock) */
+						--bg-0: #0b2a33;  /* teal-ish */
+						--bg-1: #0f3b44;  /* mid teal */
+						--bg-2: #0e3f4a;  /* deeper teal */
+						--bg-3: #0a2b3f;  /* soft navy-teal */
 
       /* Your typical widget background (keep dark cards) */
-      --card-bg: rgba(10, 16, 22, 0.78);
+      --card-bg: rgba(14, 32, 38, 0.55);
       --card-br: rgba(255,255,255,0.06);
     }
 
@@ -66,28 +66,33 @@
       pointer-events: none;
 
       background:
-        radial-gradient(1200px 680px at 72% 18%,
-          rgba(0, 230, 230, 0.18),
-          rgba(0, 230, 230, 0.06) 35%,
-          transparent 68%),
+						/* brighter teal glow top-right */
+						radial-gradient(1200px 680px at 72% 18%,
+								rgba(0, 230, 230, 0.30),
+								rgba(0, 230, 230, 0.12) 35%,
+								transparent 68%),
 
-        radial-gradient(980px 600px at 26% 62%,
-          rgba(0, 255, 153, 0.14),
-          rgba(0, 255, 153, 0.05) 40%,
-          transparent 72%),
+						/* brighter green glow mid-left */
+						radial-gradient(980px 600px at 26% 62%,
+								rgba(0, 255, 153, 0.24),
+								rgba(0, 255, 153, 0.10) 40%,
+								transparent 72%),
 
-        radial-gradient(760px 520px at 84% 86%,
-          rgba(255, 255, 255, 0.07),
-          rgba(255, 255, 255, 0.02) 45%,
-          transparent 75%),
+						/* soft white lift */
+						radial-gradient(760px 520px at 84% 86%,
+								rgba(255, 255, 255, 0.10),
+								rgba(255, 255, 255, 0.04) 45%,
+								transparent 75%),
 
-        linear-gradient(180deg,
-          var(--bg-0) 0%,
-          var(--bg-1) 38%,
-          var(--bg-2) 72%,
-          var(--bg-3) 100%);
+						/* lighter base fade */
+						linear-gradient(180deg,
+								var(--bg-0) 0%,
+								var(--bg-1) 38%,
+								var(--bg-2) 72%,
+								var(--bg-3) 100%);
 
-      filter: saturate(1.05) contrast(1.02);
+
+      filter: saturate(1.08) brightness(1.18);
       transform: translateZ(0); /* helps some browsers paint it clean */
     }
 
