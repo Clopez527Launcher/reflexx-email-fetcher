@@ -6,21 +6,25 @@
 
 <style>
   /* =========================================================
-     Dashboard (New) — tight spacing + clean grid
-     (Scoped to this page only — does NOT override base theme)
+     Dashboard (New) — spacing fixes (closer widgets + right padding)
+     - Adds right padding so right rail isn't glued to the edge
+     - Stretches LSP widget taller
+     - Pulls bottom row UP so Strengths/Weaknesses sit closer to it
      ========================================================= */
 
   /* ✅ ONE KNOB for spacing everywhere */
   :root{
-    --dash-gap: 12px; /* tighter than 18px */
+    --dash-gap: 12px;   /* tighter overall gaps */
+    --page-pad-l: 10px;
+    --page-pad-r: 22px; /* ✅ fixes “no gap on the right side” */
   }
 
   /* =========================
-     Page spacing
+     Page spacing (adds right padding)
      ========================= */
   .page-wrapper{
     margin: 0 !important;
-    padding: 12px 10px 16px 10px !important;
+    padding: 12px var(--page-pad-r) 16px var(--page-pad-l) !important;
     width: 100%;
     max-width: none;
     box-sizing: border-box;
@@ -31,14 +35,14 @@
     color: #fff;
     text-align: left;
     padding-left: 6px;
-    margin: 16px 0 10px 0; /* tighter */
+    margin: 16px 0 10px 0;
   }
 
   /* =========================
-     Use base.html card styling (but tighten padding)
+     Cards (slightly tighter so layout feels bigger)
      ========================= */
   .widget-card{
-    padding: 12px 14px; /* tighter than 16px */
+    padding: 12px 14px;
     border-radius: 12px;
     color: #fff;
     width: 100%;
@@ -46,13 +50,11 @@
     border: 1px solid rgba(255,255,255,0.10);
   }
 
-  /* Keep teal headers */
   .widget-card h2{
     margin: 0 0 10px 0;
     color: #00ffff;
   }
 
-  /* Strengths/Weakness accent headers */
   .h-green{ color:#00ffaa !important; }
   .h-red{ color:#ff5555 !important; }
 
@@ -60,14 +62,13 @@
      Main grid layout
      ========================= */
   .dash-grid{
-    margin-top: 10px; /* tighter than 18px */
+    margin-top: 10px;
     display: grid;
-    grid-template-columns: minmax(0, 1fr) 400px; /* stable right rail */
+    grid-template-columns: minmax(0, 1fr) 400px;
     gap: var(--dash-gap);
     align-items: start;
   }
 
-  /* ✅ Make sure items can shrink without overflow issues */
   .dash-grid > *{ min-width: 0; }
 
   .right-rail{
@@ -76,7 +77,15 @@
     width: 100%;
   }
 
-  /* Strengths/Weaknesses */
+  /* ✅ LSP widget: stretch taller (assumes it is first widget in the left column) */
+  .dash-grid > .widget-card:first-child{
+    min-height: 190px;          /* ✅ makes it feel “stretched down” */
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+  }
+
+  /* Strengths / Weaknesses row */
   #ai-insights-wrap{
     grid-column: 1;
     display: grid;
@@ -85,9 +94,9 @@
     width: 100%;
   }
 
-  /* Bottom row */
+  /* ✅ Pull the bottom row UP so the gap under Strengths/Weaknesses is smaller */
   .bottom-grid{
-    margin-top: 12px; /* was var(--dash-gap), felt too tall */
+    margin-top: 6px;            /* ✅ was bigger — now closer */
     width: 100%;
     box-sizing: border-box;
     display: grid;
@@ -95,10 +104,12 @@
     gap: var(--dash-gap);
   }
 
-  /* ✅ Responsive breakpoints so spacing stays clean */
+  /* ✅ Responsive */
   @media (max-width: 1250px){
+    :root{ --page-pad-r: 12px; }  /* keep right padding on small screens */
+
     .dash-grid{
-      grid-template-columns: 1fr; /* right rail drops below */
+      grid-template-columns: 1fr;
     }
     .right-rail{
       grid-column: 1;
@@ -109,6 +120,7 @@
     }
     .bottom-grid{
       grid-template-columns: 1fr;
+      margin-top: var(--dash-gap);
     }
   }
 
@@ -194,7 +206,7 @@
     display: flex;
     flex-direction: column;
     height: 100%;
-    min-height: 250px; /* slightly tighter */
+    min-height: 250px;
     max-height: 420px;
   }
 
@@ -241,7 +253,7 @@
   }
 
   .kpi-avg-card{
-    margin-top: 12px; /* tighter */
+    margin-top: 12px;
     flex: 1;
     border-radius: 10px;
     border: 1px dashed rgba(0,255,255,0.35);
@@ -251,7 +263,7 @@
     align-items:center;
     justify-content:center;
     text-align:center;
-    padding: 14px; /* tighter */
+    padding: 14px;
   }
 
   .kpi-adj-value{ font-size: 54px; font-weight: 800; }
