@@ -30,15 +30,16 @@
       --sidebar-bottom-gap: 50px;
 
       /* 🌈 Background palette (LIGHTER like the mock) */
-						--bg-0: #0b2a33;  /* teal-ish */
-						--bg-1: #0f3b44;  /* mid teal */
-						--bg-2: #0e3f4a;  /* deeper teal */
-						--bg-3: #0a2b3f;  /* soft navy-teal */
+      --bg-0: #0b2a33;  /* teal-ish */
+      --bg-1: #0f3b44;  /* mid teal */
+      --bg-2: #0e3f4a;  /* deeper teal */
+      --bg-3: #0a2b3f;  /* soft navy-teal */
 
-      /* 🧊 Glassy widget styling */
-						--card-bg: rgba(12, 26, 34, 0.28);      /* more transparent */
-						--card-br: rgba(255,255,255,0.10);      /* slightly brighter edge */
-						--card-in: rgba(255,255,255,0.06);      /* inner highlight */
+      /* ✅ Solid LIGHT GREY widget styling (no glass) */
+      --card-bg: #e6eaee;          /* light grey */
+      --card-br: rgba(0,0,0,0.10); /* soft border */
+      --card-tx: #0c1b22;          /* dark text */
+      --card-sub: rgba(12,27,34,0.70);
     }
 
     html, body {
@@ -51,14 +52,13 @@
     body{
       padding-top: var(--banner-h);
       min-height: 100vh;
-      color: #e9f6ff;
+      color: #e9f6ff; /* global default, widgets override below */
       overflow-x: hidden;
       position: relative;
     }
 
     /* =========================================
        ✅ TRUE GLOBAL GRADIENT LAYER
-       (Always visible behind everything)
        ========================================= */
     .bg-layer{
       position: fixed;
@@ -67,39 +67,33 @@
       pointer-events: none;
 
       background:
-						/* brighter teal glow top-right */
-						radial-gradient(1200px 680px at 72% 18%,
-								rgba(0, 230, 230, 0.30),
-								rgba(0, 230, 230, 0.12) 35%,
-								transparent 68%),
+        radial-gradient(1200px 680px at 72% 18%,
+          rgba(0, 230, 230, 0.30),
+          rgba(0, 230, 230, 0.12) 35%,
+          transparent 68%),
 
-						/* brighter green glow mid-left */
-						radial-gradient(980px 600px at 26% 62%,
-								rgba(0, 255, 153, 0.24),
-								rgba(0, 255, 153, 0.10) 40%,
-								transparent 72%),
+        radial-gradient(980px 600px at 26% 62%,
+          rgba(0, 255, 153, 0.24),
+          rgba(0, 255, 153, 0.10) 40%,
+          transparent 72%),
 
-						/* soft white lift */
-						radial-gradient(760px 520px at 84% 86%,
-								rgba(255, 255, 255, 0.10),
-								rgba(255, 255, 255, 0.04) 45%,
-								transparent 75%),
+        radial-gradient(760px 520px at 84% 86%,
+          rgba(255, 255, 255, 0.10),
+          rgba(255, 255, 255, 0.04) 45%,
+          transparent 75%),
 
-						/* lighter base fade */
-						linear-gradient(180deg,
-								var(--bg-0) 0%,
-								var(--bg-1) 38%,
-								var(--bg-2) 72%,
-								var(--bg-3) 100%);
-
+        linear-gradient(180deg,
+          var(--bg-0) 0%,
+          var(--bg-1) 38%,
+          var(--bg-2) 72%,
+          var(--bg-3) 100%);
 
       filter: saturate(1.08) brightness(1.18);
-      transform: translateZ(0); /* helps some browsers paint it clean */
+      transform: translateZ(0);
     }
 
     /* =========================================
        ✅ FORCE ALL PAGE WRAPPERS TRANSPARENT
-       This is the real reason it wasn't showing
        ========================================= */
     .main-content,
     .content,
@@ -149,70 +143,67 @@
     }
 
     /* =========================================
-       ✅ OPTIONAL: If your widgets rely on inherited
-       backgrounds, this helps keep “cards” dark
-       without killing the global gradient.
-       (Won't harm if unused.)
+       ✅ SOLID LIGHT GREY WIDGETS (NO GLASS)
        ========================================= */
     .kpi-card,
-				.widget,
-				.widget-card,
-				.panel,
-				.card{
-						position: relative;
-						background: var(--card-bg) !important;
-						border: 1px solid var(--card-br) !important;
-						border-radius: 16px;
-						backdrop-filter: blur(14px) saturate(1.15);
-						-webkit-backdrop-filter: blur(14px) saturate(1.15);
+    .widget,
+    .widget-card,
+    .panel,
+    .card{
+      position: relative;
+      background: var(--card-bg) !important;
+      border: 1px solid var(--card-br) !important;
+      border-radius: 16px;
 
-						/* softer shadow so it feels like glass floating */
-						box-shadow:
-								0 12px 34px rgba(0,0,0,0.30),
-								inset 0 0 0 1px rgba(255,255,255,0.03);
-				}
+      /* ❌ no glass */
+      backdrop-filter: none !important;
+      -webkit-backdrop-filter: none !important;
 
-				/* ✅ glass “shine” overlay */
-				.kpi-card::before,
-				.widget::before,
-				.widget-card::before,
-				.panel::before,
-				.card::before{
-						content: "";
-						position: absolute;
-						inset: 0;
-						border-radius: inherit;
-						pointer-events: none;
+      /* ✅ clean shadow */
+      box-shadow: 0 10px 24px rgba(0,0,0,0.18);
+    }
 
-						background:
-								linear-gradient(180deg,
-										rgba(255,255,255,0.10) 0%,
-										rgba(255,255,255,0.03) 18%,
-										rgba(255,255,255,0.00) 60%);
+    /* ❌ remove any glass overlay layers */
+    .kpi-card::before,
+    .widget::before,
+    .widget-card::before,
+    .panel::before,
+    .card::before,
+    .kpi-card::after,
+    .widget::after,
+    .widget-card::after,
+    .panel::after,
+    .card::after{
+      content: none !important;
+      display: none !important;
+    }
 
-						opacity: 0.9;
-				}
+    /* ✅ Force readable text on light grey widgets */
+    .kpi-card,
+    .widget,
+    .widget-card,
+    .panel,
+    .card{
+      color: var(--card-tx) !important;
+    }
 
-				/* ✅ subtle bottom tint (makes the glass feel “aqua”) */
-				.kpi-card::after,
-				.widget::after,
-				.widget-card::after,
-				.panel::after,
-				.card::after{
-						content: "";
-						position: absolute;
-						inset: 0;
-						border-radius: inherit;
-						pointer-events: none;
+    /* ✅ If some inner elements were hard-coded white, this fixes most of them */
+    .kpi-card * ,
+    .widget * ,
+    .widget-card * ,
+    .panel * ,
+    .card *{
+      color: inherit;
+    }
 
-						background:
-								radial-gradient(900px 260px at 50% 115%,
-										rgba(0, 230, 230, 0.10),
-										transparent 60%);
-
-						opacity: 0.85;
-				}
-
+    /* ✅ Optional: make “muted” text actually muted (safe if unused) */
+    .kpi-card .muted,
+    .widget .muted,
+    .widget-card .muted,
+    .panel .muted,
+    .card .muted{
+      color: var(--card-sub) !important;
+    }
 
     /* ✅ Mobile fallback */
     @media (max-width: 900px){
