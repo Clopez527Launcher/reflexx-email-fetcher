@@ -35,9 +35,10 @@
 						--bg-2: #0e3f4a;  /* deeper teal */
 						--bg-3: #0a2b3f;  /* soft navy-teal */
 
-      /* Your typical widget background (keep dark cards) */
-      --card-bg: rgba(14, 32, 38, 0.55);
-      --card-br: rgba(255,255,255,0.06);
+      /* 🧊 Glassy widget styling */
+						--card-bg: rgba(12, 26, 34, 0.28);      /* more transparent */
+						--card-br: rgba(255,255,255,0.10);      /* slightly brighter edge */
+						--card-in: rgba(255,255,255,0.06);      /* inner highlight */
     }
 
     html, body {
@@ -154,15 +155,64 @@
        (Won't harm if unused.)
        ========================================= */
     .kpi-card,
-    .widget,
-    .widget-card,
-    .panel,
-    .card{
-      background: var(--card-bg);
-      border: 1px solid var(--card-br);
-      border-radius: 14px;
-      backdrop-filter: blur(6px);
-    }
+				.widget,
+				.widget-card,
+				.panel,
+				.card{
+						position: relative;
+						background: var(--card-bg) !important;
+						border: 1px solid var(--card-br) !important;
+						border-radius: 16px;
+						backdrop-filter: blur(14px) saturate(1.15);
+						-webkit-backdrop-filter: blur(14px) saturate(1.15);
+
+						/* softer shadow so it feels like glass floating */
+						box-shadow:
+								0 12px 34px rgba(0,0,0,0.30),
+								inset 0 0 0 1px rgba(255,255,255,0.03);
+				}
+
+				/* ✅ glass “shine” overlay */
+				.kpi-card::before,
+				.widget::before,
+				.widget-card::before,
+				.panel::before,
+				.card::before{
+						content: "";
+						position: absolute;
+						inset: 0;
+						border-radius: inherit;
+						pointer-events: none;
+
+						background:
+								linear-gradient(180deg,
+										rgba(255,255,255,0.10) 0%,
+										rgba(255,255,255,0.03) 18%,
+										rgba(255,255,255,0.00) 60%);
+
+						opacity: 0.9;
+				}
+
+				/* ✅ subtle bottom tint (makes the glass feel “aqua”) */
+				.kpi-card::after,
+				.widget::after,
+				.widget-card::after,
+				.panel::after,
+				.card::after{
+						content: "";
+						position: absolute;
+						inset: 0;
+						border-radius: inherit;
+						pointer-events: none;
+
+						background:
+								radial-gradient(900px 260px at 50% 115%,
+										rgba(0, 230, 230, 0.10),
+										transparent 60%);
+
+						opacity: 0.85;
+				}
+
 
     /* ✅ Mobile fallback */
     @media (max-width: 900px){
