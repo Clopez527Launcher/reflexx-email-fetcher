@@ -5,19 +5,20 @@
 {% block content %}
 
 <style>
-  /* =========================
-     Page spacing
-     ========================= */
+  /* =========================================================
+     Dashboard (New) — spacing + layout only
+     (DOES NOT override base.html theme)
+     ========================================================= */
+
   .page-wrapper{
-    margin-top: 0 !important;
-    padding-top: 10px !important;
+    margin: 0 !important;
+    padding: 12px 12px 18px 12px !important;
     width: 100%;
     max-width: none;
-    margin: 0;
-    padding-left: 0px;
-    padding-right: 26px;
-    transform: translateX(-14px);
     box-sizing: border-box;
+
+    /* ✅ one knob for all spacing (scoped to this page only) */
+    --dash-gap: 18px;
   }
 
   /* ✅ Dashboard title */
@@ -25,20 +26,24 @@
     color: #fff;
     text-align:left;
     padding-left: 6px;
-    margin-top: 26px;
-    margin-bottom: 16px;
+    margin: 14px 0 14px 0;   /* ✅ tighter + consistent */
   }
 
-  /* =========================
-     Use base.html card styling
-     ========================= */
+  /* ✅ Card wrapper (base.html will still provide bg/shadow) */
   .widget-card{
     padding: 16px;
     border-radius: 12px;
     color: #fff;
     width: 100%;
     box-sizing: border-box;
-    border: 1px solid rgba(255,255,255,0.10); /* subtle, not neon */
+
+    /* subtle edge (optional) */
+    border: 1px solid rgba(255,255,255,0.10);
+  }
+
+  /* ✅ kill accidental margins inside cards */
+  .widget-card *{
+    box-sizing: border-box;
   }
 
   /* Keep teal headers */
@@ -55,37 +60,44 @@
      Main grid layout
      ========================= */
   .dash-grid{
-    margin-top: 30px;
+    margin-top: 0;
     display: grid;
-    grid-template-columns: minmax(0, 1fr) clamp(360px, 28vw, 440px);
-    gap: 12px;
+    grid-template-columns: minmax(0, 1fr) 400px;
+    gap: var(--dash-gap);
     align-items: start;
   }
+
+  /* ✅ Make sure items can shrink without overflow issues */
+  .dash-grid > *{ min-width: 0; }
 
   .right-rail{
     grid-column: 2;
     grid-row: 1 / span 2;
     width: 100%;
-    justify-self: end;
   }
 
-  /* Strengths + weaknesses */
   #ai-insights-wrap{
     grid-column: 1;
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 12px;
+    gap: var(--dash-gap);
     width: 100%;
   }
 
-  /* Bottom row */
   .bottom-grid{
-    margin-top: 12px;
+    margin-top: var(--dash-gap);
     width: 100%;
-    box-sizing: border-box;
     display: grid;
     grid-template-columns: 2fr 1fr 1fr;
-    gap: 12px;
+    gap: var(--dash-gap);
+  }
+
+  /* ✅ Responsive breakpoints */
+  @media (max-width: 1250px){
+    .dash-grid{ grid-template-columns: 1fr; }
+    .right-rail{ grid-column: 1; grid-row: auto; }
+    #ai-insights-wrap{ grid-template-columns: 1fr; }
+    .bottom-grid{ grid-template-columns: 1fr; }
   }
 
   /* =========================
@@ -116,24 +128,9 @@
     font-size: 0.9rem;
   }
 
-  .lb-rank{
-    width: 1.6rem;
-    flex-shrink: 0;
-    color: #00ffff;
-  }
-
-  .lb-name{
-    flex: 1;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-
-  .lb-score{
-    min-width: 120px;
-    text-align: right;
-    font-weight: 600;
-  }
+  .lb-rank{ width: 1.6rem; flex-shrink: 0; color: #00ffff; }
+  .lb-name{ flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .lb-score{ min-width: 120px; text-align: right; font-weight: 600; }
 
   .score-excellent{ color: #00f6ff; }
   .score-above{     color: #12d87b; }
@@ -142,7 +139,6 @@
   .score-poor{      color: #ff4d4d; }
   .score-nodata{    color: #888888; }
 
-  /* Rico toggle button */
   .rico-toggle-btn{
     border: none;
     background: none;
@@ -219,7 +215,6 @@
 
   .kpi-avg-card{
     margin-top: 16px;
-    flex: 1;
     border-radius: 10px;
     border: 1px dashed rgba(0,255,255,0.35);
     background: rgba(0,0,0,0.15);
