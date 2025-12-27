@@ -24,14 +24,14 @@
 		.content-wrapper,
 		.page-wrapper {
 				background: transparent !important;
-				color:#e9f6ff;
+				/* ✅ removed color override so base.html controls text color */
 		}
 
-
   .card-dark {
-    background:#0e151d; border:1px solid #1f2a36; border-radius:12px;
-    padding:16px; color:#e9f6ff;
-  }
+				/* ✅ base.html controls widget colors now */
+				border-radius: 12px;
+				padding: 16px;
+		}
   .muted { color:#9ab; }
 
   /* Section inside the page-wrapper – DON'T center with margin:auto */
