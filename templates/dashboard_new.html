@@ -1,100 +1,116 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard (New){% endblock %}
+
+{% block content %}
+
 <style>
-  /* =========================================================
-     Dashboard (New) — BULLETPROOF LAYOUT
-     Fixes dead space + spacing + keeps base.html theme
-     ========================================================= */
-
+  /* =========================
+     Page spacing
+     ========================= */
   .page-wrapper{
-    margin: 0 !important;
-    padding: 14px 14px 22px 14px !important;
-    width: 100%;
-    max-width: none;
-    box-sizing: border-box;
+				margin: 0 !important;
+				padding: 12px 10px 18px 10px !important; /* ✅ consistent */
+				width: 100%;
+				max-width: none;
+				box-sizing: border-box;
+		}
 
-    --dash-gap: 18px;
-    --rail-w: 400px;
+  /* ✅ Dashboard title */
+  .dash-title{
+    color: #fff;
+    text-align:left;
+    padding-left: 6px;
+    margin-top: 26px;
+    margin-bottom: 16px;
   }
 
-  /* ✅ Card wrapper (base.html handles background/shadow) */
+  /* =========================
+     Use base.html card styling
+     ========================= */
   .widget-card{
-    width: 100%;
-    box-sizing: border-box;
     padding: 16px;
     border-radius: 12px;
     color: #fff;
-    border: 1px solid rgba(255,255,255,0.10);
+    width: 100%;
+    box-sizing: border-box;
+    border: 1px solid rgba(255,255,255,0.10); /* subtle, not neon */
   }
 
+  /* Keep teal headers */
   .widget-card h2{
     margin: 0 0 10px 0;
     color: #00ffff;
   }
 
+  /* Strengths/Weakness accent headers */
   .h-green{ color:#00ffaa !important; }
   .h-red{ color:#ff5555 !important; }
 
-  /* =========================================================
-     ✅ TOP ROW: LSP (left) + RIGHT RAIL (right)
-     ========================================================= */
-  .dash-top{
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) var(--rail-w);
-    gap: var(--dash-gap);
-    align-items: start;
-  }
-  .dash-top > *{ min-width: 0; }
+  /* =========================
+     Main grid layout
+     ========================= */
+  :root{
+				--dash-gap: 18px; /* ✅ one knob for all spacing */
+		}
 
-  /* Right rail should never affect the left column height */
-  .right-rail{
-    width: 100%;
-    align-self: start;
-    display: flex;
-    flex-direction: column;
-    gap: var(--dash-gap);
-  }
+		.dash-grid{
+				margin-top: 18px;
+				display: grid;
+				grid-template-columns: minmax(0, 1fr) 400px; /* ✅ stable right rail */
+				gap: var(--dash-gap);
+				align-items: start;
+		}
 
-  /* =========================================================
-     ✅ AI ROW: Strengths + Weaknesses (FULL WIDTH)
-     ========================================================= */
-  #ai-insights-wrap{
-    margin-top: var(--dash-gap);
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: var(--dash-gap);
-    width: 100%;
-  }
-  #ai-insights-wrap > *{ min-width: 0; }
+		/* ✅ Make sure items can shrink without overflow issues */
+		.dash-grid > *{ min-width: 0; }
 
-  /* =========================================================
-     ✅ BOTTOM ROW: AdvisorPro + Call Today + Call Yesterday
-     ========================================================= */
-  .bottom-grid{
-    margin-top: var(--dash-gap);
-    display: grid;
-    grid-template-columns: 2fr 1fr 1fr;
-    gap: var(--dash-gap);
-    width: 100%;
-  }
-  .bottom-grid > *{ min-width: 0; }
+		.right-rail{
+				grid-column: 2;
+				grid-row: 1 / span 2;
+				width: 100%;
+		}
 
-  /* =========================================================
-     ✅ RESPONSIVE
-     ========================================================= */
-  @media (max-width: 1250px){
-    .dash-top{
-      grid-template-columns: 1fr;
-    }
-    #ai-insights-wrap{
-      grid-template-columns: 1fr;
-    }
-    .bottom-grid{
-      grid-template-columns: 1fr;
-    }
-  }
+		/* Strengths/Weaknesses */
+		#ai-insights-wrap{
+				grid-column: 1;
+				display: grid;
+				grid-template-columns: 1fr 1fr;
+				gap: var(--dash-gap);
+				width: 100%;
+		}
 
-  /* =========================================================
+		/* Bottom row */
+		.bottom-grid{
+				margin-top: var(--dash-gap);
+				width: 100%;
+				box-sizing: border-box;
+				display: grid;
+				grid-template-columns: 2fr 1fr 1fr;
+				gap: var(--dash-gap);
+		}
+
+		/* ✅ Responsive breakpoints so spacing stays clean */
+		@media (max-width: 1250px){
+				.dash-grid{
+						grid-template-columns: 1fr; /* right rail drops below */
+				}
+				.right-rail{
+						grid-column: 1;
+						grid-row: auto;
+				}
+				.bottom-grid{
+						grid-template-columns: 1fr;
+				}
+				#ai-insights-wrap{
+						grid-template-columns: 1fr;
+				}
+		}
+
+
+  /* =========================
      LSP Performance lists
-     ========================================================= */
+     ========================= */
   .bucket-leaderboard{
     list-style: none;
     margin: 6px 0 0;
@@ -120,9 +136,24 @@
     font-size: 0.9rem;
   }
 
-  .lb-rank{ width: 1.6rem; flex-shrink: 0; color: #00ffff; }
-  .lb-name{ flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .lb-score{ min-width: 120px; text-align: right; font-weight: 600; }
+  .lb-rank{
+    width: 1.6rem;
+    flex-shrink: 0;
+    color: #00ffff;
+  }
+
+  .lb-name{
+    flex: 1;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .lb-score{
+    min-width: 120px;
+    text-align: right;
+    font-weight: 600;
+  }
 
   .score-excellent{ color: #00f6ff; }
   .score-above{     color: #12d87b; }
@@ -131,6 +162,7 @@
   .score-poor{      color: #ff4d4d; }
   .score-nodata{    color: #888888; }
 
+  /* Rico toggle button */
   .rico-toggle-btn{
     border: none;
     background: none;
@@ -154,12 +186,11 @@
   .ce-window-wrap{ font-size: 0; }
   .ce-window-wrap select{ font-size: 0.85rem; }
 
-  /* =========================================================
-     KPI styles
-     ========================================================= */
+  /* KPI styles */
   .kpi-card{
     display: flex;
     flex-direction: column;
+    height: 100%;
     min-height: 260px;
     max-height: 420px;
   }
@@ -207,6 +238,8 @@
   }
 
   .kpi-avg-card{
+    margin-top: 16px;
+    flex: 1;
     border-radius: 10px;
     border: 1px dashed rgba(0,255,255,0.35);
     background: rgba(0,0,0,0.15);
@@ -241,7 +274,7 @@
   <div class="dash-grid">
 
     <!-- LEFT / ROW 1: LSP Performance -->
-    <div class="widget-card lsp-block">
+    <div class="widget-card">
       <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
         <h2 style="margin:0;">LSP Performance</h2>
 
