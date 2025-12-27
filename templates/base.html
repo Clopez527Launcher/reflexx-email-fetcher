@@ -35,11 +35,12 @@
       --bg-2: #0e3f4a;  /* deeper teal */
       --bg-3: #0a2b3f;  /* soft navy-teal */
 
-      /* ✅ Solid LIGHT GREY widget styling (no glass) */
-      --card-bg: #e6eaee;          /* light grey */
-      --card-br: rgba(0,0,0,0.10); /* soft border */
-      --card-tx: #0c1b22;          /* dark text */
-      --card-sub: rgba(12,27,34,0.70);
+      /* ✅ DARK SOLID widgets (no glass) */
+      /* a little darker than the chart square */
+      --card-bg: #2b2f33;                 /* dark charcoal */
+      --card-br: rgba(255,255,255,0.10); /* soft edge */
+      --card-tx: #f1f6ff;                 /* white-ish text */
+      --card-sub: rgba(241,246,255,0.70);
     }
 
     html, body {
@@ -52,7 +53,7 @@
     body{
       padding-top: var(--banner-h);
       min-height: 100vh;
-      color: #e9f6ff; /* global default, widgets override below */
+      color: #e9f6ff;
       overflow-x: hidden;
       position: relative;
     }
@@ -143,7 +144,7 @@
     }
 
     /* =========================================
-       ✅ SOLID LIGHT GREY WIDGETS (NO GLASS)
+       ✅ DARK SOLID WIDGETS (NO GLASS)
        ========================================= */
     .kpi-card,
     .widget,
@@ -155,15 +156,15 @@
       border: 1px solid var(--card-br) !important;
       border-radius: 16px;
 
-      /* ❌ no glass */
+      /* ❌ kill all glass */
       backdrop-filter: none !important;
       -webkit-backdrop-filter: none !important;
 
-      /* ✅ clean shadow */
-      box-shadow: 0 10px 24px rgba(0,0,0,0.18);
+      /* ✅ solid card shadow */
+      box-shadow: 0 12px 28px rgba(0,0,0,0.35);
     }
 
-    /* ❌ remove any glass overlay layers */
+    /* ❌ remove any overlay layers if any widget CSS adds them */
     .kpi-card::before,
     .widget::before,
     .widget-card::before,
@@ -178,7 +179,7 @@
       display: none !important;
     }
 
-    /* ✅ Force readable text on light grey widgets */
+    /* ✅ Force readable WHITE text inside widgets */
     .kpi-card,
     .widget,
     .widget-card,
@@ -186,8 +187,6 @@
     .card{
       color: var(--card-tx) !important;
     }
-
-    /* ✅ If some inner elements were hard-coded white, this fixes most of them */
     .kpi-card * ,
     .widget * ,
     .widget-card * ,
@@ -196,13 +195,17 @@
       color: inherit;
     }
 
-    /* ✅ Optional: make “muted” text actually muted (safe if unused) */
     .kpi-card .muted,
     .widget .muted,
     .widget-card .muted,
     .panel .muted,
     .card .muted{
       color: var(--card-sub) !important;
+    }
+
+    /* ✅ Inputs / dropdowns look better on dark cards */
+    input, select, textarea{
+      color: #e9f6ff;
     }
 
     /* ✅ Mobile fallback */
