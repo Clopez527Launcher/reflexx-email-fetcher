@@ -6,14 +6,14 @@
 
 <!-- ======================= PAGE LAYOUT + POSITION FIXES ======================= -->
 <style>
-		/* Match Dashboard (New) background */
-  body,
-  .content,
-  .content-wrapper,
-  .page-wrapper {
-      background: #12243b !important;  /* same as --page-navy on Dashboard */
-      color: #e9f6ff;                  /* optional: match light text */
-  }
+		/* ✅ Let base.html control the page background + text color */
+		body,
+		.content,
+		.content-wrapper,
+		.page-wrapper {
+				background: transparent !important;
+		}
+
   .analytics-page-wrapper {
     width: 100%;
     max-width: none;
@@ -46,15 +46,20 @@
     padding-right: 0;
   }
 
-  /* ================= Employee Trends widget styles ================= */
-  .emp-card {
-    background:#0e151d;
-    border:1px solid #1f2a36;
-    border-radius:12px;
-    padding:16px;
-    color:#e9f6ff;
-    margin-top:18px;
-  }
+		/* ✅ Bridge: keep sizing/layout, but let base.html control the gray card look */
+		.emp-card{
+				border-radius: 12px;
+				padding: 16px;
+
+				/* ✅ base.html gray card variables (with safe fallback) */
+				background: var(--card-bg, rgba(255,255,255,0.06));
+				border: 1px solid var(--card-border, rgba(255,255,255,0.10));
+				box-shadow: var(--card-shadow, 0 8px 22px rgba(0,0,0,0.25));
+
+				color: inherit;        /* ✅ do NOT force text color */
+				margin-top: 18px;
+		}
+
 
 		/* ===================== HEADER ROW (DATES | CENTER TITLE | RIGHT CONTROLS) ===================== */
 		.emp-controls{
@@ -103,15 +108,19 @@
 		}
 
 
-  .emp-input,
-  .emp-select,
-  .emp-btn {
-    border:1px solid #1f2a36;
-    background:#0e151d;
-    color:#dff;
-    border-radius:8px;
-    padding:8px 10px;
-  }
+  /* ✅ Let base.html style inputs/selects/buttons.
+					Keep only sizing so your layout doesn’t change. */
+		.emp-input,
+		.emp-select,
+		.emp-btn{
+				border-radius: 8px;
+				padding: 8px 10px;
+				color: inherit;
+				background: transparent;
+				border: 1px solid var(--card-border, rgba(255,255,255,0.15));
+		}
+		.emp-btn{ cursor: pointer; }
+
 
   .emp-btn { cursor:pointer; }
 
