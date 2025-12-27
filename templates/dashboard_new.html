@@ -1,117 +1,100 @@
-{% extends "base.html" %}
-
-{% block title %}Dashboard (New){% endblock %}
-
-{% block content %}
-
 <style>
   /* =========================================================
-     Dashboard (New) — spacing + layout only
-     (DOES NOT override base.html theme)
+     Dashboard (New) — BULLETPROOF LAYOUT
+     Fixes dead space + spacing + keeps base.html theme
      ========================================================= */
 
   .page-wrapper{
     margin: 0 !important;
-    padding: 12px 12px 18px 12px !important;
+    padding: 14px 14px 22px 14px !important;
     width: 100%;
     max-width: none;
     box-sizing: border-box;
 
-    /* ✅ one knob for all spacing (scoped to this page only) */
     --dash-gap: 18px;
+    --rail-w: 400px;
   }
 
-  /* ✅ Dashboard title */
-  .dash-title{
-    color: #fff;
-    text-align:left;
-    padding-left: 6px;
-    margin: 14px 0 14px 0;   /* ✅ tighter + consistent */
-  }
-
-  /* ✅ Card wrapper (base.html will still provide bg/shadow) */
+  /* ✅ Card wrapper (base.html handles background/shadow) */
   .widget-card{
+    width: 100%;
+    box-sizing: border-box;
     padding: 16px;
     border-radius: 12px;
     color: #fff;
-    width: 100%;
-    box-sizing: border-box;
-
-    /* subtle edge (optional) */
     border: 1px solid rgba(255,255,255,0.10);
   }
 
-  /* ✅ kill accidental margins inside cards */
-  .widget-card *{
-    box-sizing: border-box;
-  }
-
-  /* Keep teal headers */
   .widget-card h2{
     margin: 0 0 10px 0;
     color: #00ffff;
   }
 
-  /* Strengths/Weakness accent headers */
   .h-green{ color:#00ffaa !important; }
   .h-red{ color:#ff5555 !important; }
 
-  /* =========================
-     Main grid layout
-     ========================= */
-  .dash-grid{
-				margin-top: 0;
-				display: grid;
-				grid-template-columns: minmax(0, 1fr) 400px;
-				grid-template-areas:
-						"lsp right"
-						"ai  right";
-				gap: var(--dash-gap);
-				align-items: start;
-		}
-		.lsp-block{ grid-area: lsp; }
-		#ai-insights-wrap{ grid-area: ai; }
-		.right-rail{ grid-area: right; }
+  /* =========================================================
+     ✅ TOP ROW: LSP (left) + RIGHT RAIL (right)
+     ========================================================= */
+  .dash-top{
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) var(--rail-w);
+    gap: var(--dash-gap);
+    align-items: start;
+  }
+  .dash-top > *{ min-width: 0; }
 
-		
-
-  /* ✅ Make sure items can shrink without overflow issues */
-  .dash-grid > *{ min-width: 0; }
-
+  /* Right rail should never affect the left column height */
   .right-rail{
-				grid-column: 2;
-				grid-row: auto;   /* ✅ don't force span */
-				width: 100%;
-				align-self: start;
-		}
+    width: 100%;
+    align-self: start;
+    display: flex;
+    flex-direction: column;
+    gap: var(--dash-gap);
+  }
 
+  /* =========================================================
+     ✅ AI ROW: Strengths + Weaknesses (FULL WIDTH)
+     ========================================================= */
   #ai-insights-wrap{
-    grid-column: 1;
+    margin-top: var(--dash-gap);
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: var(--dash-gap);
     width: 100%;
   }
+  #ai-insights-wrap > *{ min-width: 0; }
 
+  /* =========================================================
+     ✅ BOTTOM ROW: AdvisorPro + Call Today + Call Yesterday
+     ========================================================= */
   .bottom-grid{
     margin-top: var(--dash-gap);
-    width: 100%;
     display: grid;
     grid-template-columns: 2fr 1fr 1fr;
     gap: var(--dash-gap);
+    width: 100%;
   }
+  .bottom-grid > *{ min-width: 0; }
 
-  /* ✅ Responsive breakpoints */
+  /* =========================================================
+     ✅ RESPONSIVE
+     ========================================================= */
   @media (max-width: 1250px){
-    .dash-grid{ grid-template-columns: 1fr; }
-    .right-rail{ grid-column: 1; grid-row: auto; }
-    #ai-insights-wrap{ grid-template-columns: 1fr; }
-    .bottom-grid{ grid-template-columns: 1fr; }
+    .dash-top{
+      grid-template-columns: 1fr;
+    }
+    #ai-insights-wrap{
+      grid-template-columns: 1fr;
+    }
+    .bottom-grid{
+      grid-template-columns: 1fr;
+    }
   }
 
-  /* =========================
+  /* =========================================================
      LSP Performance lists
-     ========================= */
+     ========================================================= */
   .bucket-leaderboard{
     list-style: none;
     margin: 6px 0 0;
@@ -171,11 +154,12 @@
   .ce-window-wrap{ font-size: 0; }
   .ce-window-wrap select{ font-size: 0.85rem; }
 
-  /* KPI styles */
+  /* =========================================================
+     KPI styles
+     ========================================================= */
   .kpi-card{
     display: flex;
     flex-direction: column;
-    height: 100%;
     min-height: 260px;
     max-height: 420px;
   }
@@ -223,7 +207,6 @@
   }
 
   .kpi-avg-card{
-    margin-top: 16px;
     border-radius: 10px;
     border: 1px dashed rgba(0,255,255,0.35);
     background: rgba(0,0,0,0.15);
