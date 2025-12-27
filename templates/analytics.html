@@ -541,6 +541,30 @@
   // ---------------------------
 		// 📈 Chart factory
 		// ---------------------------
+
+		// ✅ Paint the chart plotting area a soft gray so it matches base.html cards
+		const chartAreaBg = {
+				id: 'chartAreaBg',
+				beforeDraw(chart, args, opts) {
+						const { ctx, chartArea } = chart;
+						if (!chartArea) return;
+
+						ctx.save();
+						ctx.fillStyle = (opts && opts.color) || 'rgba(255,255,255,0.07)'; // ✅ soft gray
+						ctx.fillRect(
+								chartArea.left,
+								chartArea.top,
+								chartArea.right - chartArea.left,
+								chartArea.bottom - chartArea.top
+						);
+						ctx.restore();
+				}
+		};
+
+		// ✅ Common scale styling (less “blackish”)
+		const AXIS_TICK = '#9ab';
+		const GRID_COL  = 'rgba(255,255,255,0.08)';
+
 		const mkLine = (ctx, label) => new Chart(ctx, {
 				type: 'line',
 				data: {
@@ -555,11 +579,14 @@
 								fill: true
 						}]
 				},
+
+				// ✅ IMPORTANT: actually enable the plugin
+				plugins: [chartAreaBg],
+
 				options: {
 						responsive: true,
 						maintainAspectRatio: false,
 
-						// ✅ Makes hover MUCH easier (snap to nearest day)
 						interaction: {
 								mode: 'index',
 								intersect: false,
@@ -568,6 +595,10 @@
 
 						plugins: {
 								legend: { display: false },
+
+								// ✅ chart area gray background
+								chartAreaBg: { color: 'rgba(255,255,255,0.07)' },
+
 								tooltip: {
 										enabled: true,
 										callbacks: {
@@ -576,12 +607,11 @@
 								}
 						},
 
-						// ✅ Bigger invisible “hitbox” for hovering
 						elements: {
 								point: {
-										radius: 0,        // keep dots hidden
-										hitRadius: 18,    // ✅ BIG hover area
-										hoverRadius: 6    // little pop when hovering
+										radius: 0,
+										hitRadius: 18,
+										hoverRadius: 6
 								},
 								line: { borderWidth: 2 }
 						},
@@ -589,29 +619,28 @@
 						scales: {
 								x: {
 										ticks: {
-												color: '#9ab',
+												color: AXIS_TICK,
 												callback(value) {
 														const label = this.getLabelForValue(value);
 														return /^\d{4}-\d{2}-\d{2}$/.test(label) ? label.slice(5) : label;
 												}
 										},
-										grid: { color: '#1f2a36' }
+										grid: { color: GRID_COL }
 								},
 								y: {
 										ticks: {
-												color: '#9ab',
-												callback: function(value) {
+												color: AXIS_TICK,
+												callback(value) {
 														return value;
 												}
 										},
-										grid: { color: '#1f2a36' }
+										grid: { color: GRID_COL }
 								}
 						}
 				}
 		});
 
-		
-		// ✅ PASTE THIS ENTIRE BLOCK RIGHT HERE (Step 2)
+
 		const mkLinePct = (ctx, label) => new Chart(ctx, {
 				type: 'line',
 				data: {
@@ -626,12 +655,21 @@
 								fill: true
 						}]
 				},
+
+				// ✅ IMPORTANT: actually enable the plugin
+				plugins: [chartAreaBg],
+
 				options: {
 						responsive: true,
 						maintainAspectRatio: false,
 						interaction: { mode: 'index', intersect: false, axis: 'x' },
+
 						plugins: {
 								legend: { display: false },
+
+								// ✅ chart area gray background
+								chartAreaBg: { color: 'rgba(255,255,255,0.07)' },
+
 								tooltip: {
 										enabled: true,
 										callbacks: {
@@ -639,31 +677,34 @@
 										}
 								}
 						},
+
 						elements: {
 								point: { radius: 0, hitRadius: 18, hoverRadius: 6 },
 								line: { borderWidth: 2 }
 						},
+
 						scales: {
 								x: {
 										ticks: {
-												color: '#9ab',
+												color: AXIS_TICK,
 												callback(value) {
 														const label = this.getLabelForValue(value);
 														return /^\d{4}-\d{2}-\d{2}$/.test(label) ? label.slice(5) : label;
 												}
 										},
-										grid: { color: '#1f2a36' }
+										grid: { color: GRID_COL }
 								},
 								y: {
 										ticks: {
-												color: '#9ab',
+												color: AXIS_TICK,
 												callback: (v) => (v * 100).toFixed(1)
 										},
-										grid: { color: '#1f2a36' }
+										grid: { color: GRID_COL }
 								}
 						}
 				}
 		});
+
 
   // ---------------------------
   // ✅ Movement charts
