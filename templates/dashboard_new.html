@@ -116,58 +116,18 @@
 				color: var(--text-main);
 		}
 
-
-		/* ================= Analytics-style skin for Dashboard (New) ================= */
-
-		:root{
-				/* NEW: make page background the old “light widget” color */
-				--page-navy:   #12243b;   /* lighter navy background */
-
-				/* NEW: make ALL widgets match the sleek dark one */
-				--card-bg:     #0e151d;   /* dark navy widget background */
-				--card-inner:  #0b131a;
-				--card-border: #1f2a36;   /* subtle outline */
-				--text-main:   #e9f6ff;
-				--text-muted:  #9ab;
-		}
-
-
 		/* ✅ Let base.html gradient show through */
 		body,
 		.content,
 		.content-wrapper,
 		.page-wrapper {
 				background: transparent !important;
-				color: var(--text-main);
 		}
-
-
-		/* ALL dashboard cards/widgets, even nested ones */
-		.page-wrapper div[style*="border:1px solid"]{
-				background: var(--card-bg) !important;
-				border-color: var(--card-border) !important;
-				border-radius: 12px !important;
-				box-shadow:
-						0 8px 24px rgba(0,0,0,0.45),
-						inset 0 0 0 1px rgba(255,255,255,0.02);
-		}
-
 
 		/* Any nested card-like blocks (strengths/weaknesses containers etc.) */
 		.page-wrapper div[style*="border-radius:10px"],
 		.page-wrapper div[style*="border-radius:12px"]{
 				border-radius: 12px !important;
-		}
-
-		/* Inputs / selects to match Analytics */
-		.page-wrapper select,
-		.page-wrapper input[type="date"]{
-				border: 1px solid var(--card-border) !important;
-				background: var(--card-bg) !important;
-				color: var(--text-main) !important;
-				border-radius: 8px !important;
-				padding: 6px 10px !important;
-				outline: none;
 		}
 
 		.page-wrapper select:focus,
