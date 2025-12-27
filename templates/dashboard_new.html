@@ -107,14 +107,15 @@
 				--widget-navy: #12243b;  /* tweak lighter/darker if you want */
 		}
 
-  /* Force the overall page background to black */
-  body,
+  /* ✅ Let base.html gradient show through */
+		body,
 		.content,
 		.content-wrapper,
 		.page-wrapper {
-				background: var(--page-navy) !important;
+				background: transparent !important;
 				color: var(--text-main);
 		}
+
 
 		/* ================= Analytics-style skin for Dashboard (New) ================= */
 
@@ -131,14 +132,15 @@
 		}
 
 
-		/* Page background back to deep navy */
+		/* ✅ Let base.html gradient show through */
 		body,
 		.content,
 		.content-wrapper,
 		.page-wrapper {
-				background: var(--page-navy) !important;
+				background: transparent !important;
 				color: var(--text-main);
 		}
+
 
 		/* ALL dashboard cards/widgets, even nested ones */
 		.page-wrapper div[style*="border:1px solid"]{
