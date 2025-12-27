@@ -5,36 +5,45 @@
 {% block content %}
 
 <style>
+  /* =========================================================
+     Dashboard (New) — tight spacing + clean grid
+     (Scoped to this page only — does NOT override base theme)
+     ========================================================= */
+
+  /* ✅ ONE KNOB for spacing everywhere */
+  :root{
+    --dash-gap: 12px; /* tighter than 18px */
+  }
+
   /* =========================
      Page spacing
      ========================= */
   .page-wrapper{
-				margin: 0 !important;
-				padding: 12px 10px 18px 10px !important; /* ✅ consistent */
-				width: 100%;
-				max-width: none;
-				box-sizing: border-box;
-		}
+    margin: 0 !important;
+    padding: 12px 10px 16px 10px !important;
+    width: 100%;
+    max-width: none;
+    box-sizing: border-box;
+  }
 
   /* ✅ Dashboard title */
   .dash-title{
     color: #fff;
-    text-align:left;
+    text-align: left;
     padding-left: 6px;
-    margin-top: 26px;
-    margin-bottom: 16px;
+    margin: 16px 0 10px 0; /* tighter */
   }
 
   /* =========================
-     Use base.html card styling
+     Use base.html card styling (but tighten padding)
      ========================= */
   .widget-card{
-    padding: 16px;
+    padding: 12px 14px; /* tighter than 16px */
     border-radius: 12px;
     color: #fff;
     width: 100%;
     box-sizing: border-box;
-    border: 1px solid rgba(255,255,255,0.10); /* subtle, not neon */
+    border: 1px solid rgba(255,255,255,0.10);
   }
 
   /* Keep teal headers */
@@ -50,63 +59,58 @@
   /* =========================
      Main grid layout
      ========================= */
-  :root{
-				--dash-gap: 18px; /* ✅ one knob for all spacing */
-		}
+  .dash-grid{
+    margin-top: 10px; /* tighter than 18px */
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 400px; /* stable right rail */
+    gap: var(--dash-gap);
+    align-items: start;
+  }
 
-		.dash-grid{
-				margin-top: 18px;
-				display: grid;
-				grid-template-columns: minmax(0, 1fr) 400px; /* ✅ stable right rail */
-				gap: var(--dash-gap);
-				align-items: start;
-		}
+  /* ✅ Make sure items can shrink without overflow issues */
+  .dash-grid > *{ min-width: 0; }
 
-		/* ✅ Make sure items can shrink without overflow issues */
-		.dash-grid > *{ min-width: 0; }
+  .right-rail{
+    grid-column: 2;
+    grid-row: 1 / span 2;
+    width: 100%;
+  }
 
-		.right-rail{
-				grid-column: 2;
-				grid-row: 1 / span 2;
-				width: 100%;
-		}
+  /* Strengths/Weaknesses */
+  #ai-insights-wrap{
+    grid-column: 1;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--dash-gap);
+    width: 100%;
+  }
 
-		/* Strengths/Weaknesses */
-		#ai-insights-wrap{
-				grid-column: 1;
-				display: grid;
-				grid-template-columns: 1fr 1fr;
-				gap: var(--dash-gap);
-				width: 100%;
-		}
+  /* Bottom row */
+  .bottom-grid{
+    margin-top: 12px; /* was var(--dash-gap), felt too tall */
+    width: 100%;
+    box-sizing: border-box;
+    display: grid;
+    grid-template-columns: 2fr 1fr 1fr;
+    gap: var(--dash-gap);
+  }
 
-		/* Bottom row */
-		.bottom-grid{
-				margin-top: var(--dash-gap);
-				width: 100%;
-				box-sizing: border-box;
-				display: grid;
-				grid-template-columns: 2fr 1fr 1fr;
-				gap: var(--dash-gap);
-		}
-
-		/* ✅ Responsive breakpoints so spacing stays clean */
-		@media (max-width: 1250px){
-				.dash-grid{
-						grid-template-columns: 1fr; /* right rail drops below */
-				}
-				.right-rail{
-						grid-column: 1;
-						grid-row: auto;
-				}
-				.bottom-grid{
-						grid-template-columns: 1fr;
-				}
-				#ai-insights-wrap{
-						grid-template-columns: 1fr;
-				}
-		}
-
+  /* ✅ Responsive breakpoints so spacing stays clean */
+  @media (max-width: 1250px){
+    .dash-grid{
+      grid-template-columns: 1fr; /* right rail drops below */
+    }
+    .right-rail{
+      grid-column: 1;
+      grid-row: auto;
+    }
+    #ai-insights-wrap{
+      grid-template-columns: 1fr;
+    }
+    .bottom-grid{
+      grid-template-columns: 1fr;
+    }
+  }
 
   /* =========================
      LSP Performance lists
@@ -117,7 +121,6 @@
     padding: 0;
     max-height: 110px;
     overflow-y: auto;
-
     scrollbar-width: thin;
     scrollbar-color: #00ffff33 transparent;
   }
@@ -191,7 +194,7 @@
     display: flex;
     flex-direction: column;
     height: 100%;
-    min-height: 260px;
+    min-height: 250px; /* slightly tighter */
     max-height: 420px;
   }
 
@@ -238,7 +241,7 @@
   }
 
   .kpi-avg-card{
-    margin-top: 16px;
+    margin-top: 12px; /* tighter */
     flex: 1;
     border-radius: 10px;
     border: 1px dashed rgba(0,255,255,0.35);
@@ -248,14 +251,14 @@
     align-items:center;
     justify-content:center;
     text-align:center;
-    padding: 16px;
+    padding: 14px; /* tighter */
   }
 
   .kpi-adj-value{ font-size: 54px; font-weight: 800; }
   .kpi-avg-value{ font-size: 38px; font-weight: 700; }
   .kpi-avg-divider{
     width: 90%;
-    margin: 14px auto;
+    margin: 12px auto;
     border-top: 1px dashed rgba(0,255,255,0.25);
   }
 
