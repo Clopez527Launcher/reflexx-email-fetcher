@@ -60,21 +60,30 @@
      Main grid layout
      ========================= */
   .dash-grid{
-    margin-top: 0;
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) 400px;
-    gap: var(--dash-gap);
-    align-items: start;
-  }
+				margin-top: 0;
+				display: grid;
+				grid-template-columns: minmax(0, 1fr) 400px;
+				grid-template-areas:
+						"lsp right"
+						"ai  right";
+				gap: var(--dash-gap);
+				align-items: start;
+		}
+		.lsp-block{ grid-area: lsp; }
+		#ai-insights-wrap{ grid-area: ai; }
+		.right-rail{ grid-area: right; }
+
+		
 
   /* ✅ Make sure items can shrink without overflow issues */
   .dash-grid > *{ min-width: 0; }
 
   .right-rail{
-    grid-column: 2;
-    grid-row: 1 / span 2;
-    width: 100%;
-  }
+				grid-column: 2;
+				grid-row: auto;   /* ✅ don't force span */
+				width: 100%;
+				align-self: start;
+		}
 
   #ai-insights-wrap{
     grid-column: 1;
@@ -249,7 +258,7 @@
   <div class="dash-grid">
 
     <!-- LEFT / ROW 1: LSP Performance -->
-    <div class="widget-card">
+    <div class="widget-card lsp-block">
       <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
         <h2 style="margin:0;">LSP Performance</h2>
 
