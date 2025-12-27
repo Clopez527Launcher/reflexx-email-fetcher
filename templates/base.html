@@ -21,78 +21,98 @@
 
   <style>
     :root{
-      --banner-h: 70px;       /* top banner height */
-      --sidebar-w: 230px;     /* sidebar width */
-      --sidebar-x: 20px;      /* sidebar distance from left edge */
-      --gap: 18px;            /* space between sidebar and content */
-      --pad-x: 22px;          /* content left/right padding */
-      --pad-top: 0px;         /* ✅ bring content UP/DOWN under banner (smaller = higher) */
-      --sidebar-bottom-gap: 50px; /* ✅ makes sidebar NOT feel too tall */
+      --banner-h: 70px;
+      --sidebar-w: 230px;
+      --sidebar-x: 20px;
+      --gap: 18px;
+      --pad-x: 22px;
+      --pad-top: 0px;
+      --sidebar-bottom-gap: 50px;
 
-      /* 🌈 Background palette (dark navy + teal/green glows) */
+      /* 🌈 Background palette */
       --bg-0: #060a12;
       --bg-1: #071a26;
       --bg-2: #0b2a33;
       --bg-3: #061a2d;
+
+      /* Your typical widget background (keep dark cards) */
+      --card-bg: rgba(10, 16, 22, 0.78);
+      --card-br: rgba(255,255,255,0.06);
     }
 
-    html, body { margin: 0; padding: 0; }
+    html, body {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      background: transparent !important;
+    }
 
-    /* ✅ Reserve space for fixed banner */
     body{
       padding-top: var(--banner-h);
       min-height: 100vh;
       color: #e9f6ff;
-      background: transparent; /* IMPORTANT: gradient is drawn by ::before */
       overflow-x: hidden;
       position: relative;
     }
 
-    /* ✅ This is the “fake dashboard” style gradient BEHIND widgets */
-    body::before{
-      content: "";
+    /* =========================================
+       ✅ TRUE GLOBAL GRADIENT LAYER
+       (Always visible behind everything)
+       ========================================= */
+    .bg-layer{
       position: fixed;
       inset: 0;
-      z-index: -1;            /* stays behind everything */
+      z-index: -999;
       pointer-events: none;
 
       background:
-        /* teal glow top-right */
-        radial-gradient(1100px 640px at 72% 18%,
+        radial-gradient(1200px 680px at 72% 18%,
           rgba(0, 230, 230, 0.18),
           rgba(0, 230, 230, 0.06) 35%,
-          transparent 65%),
+          transparent 68%),
 
-        /* green glow mid-left */
-        radial-gradient(950px 560px at 28% 60%,
+        radial-gradient(980px 600px at 26% 62%,
           rgba(0, 255, 153, 0.14),
-          rgba(0, 255, 153, 0.05) 38%,
-          transparent 70%),
-
-        /* subtle highlight bottom-right */
-        radial-gradient(780px 520px at 85% 86%,
-          rgba(255, 255, 255, 0.07),
-          rgba(255, 255, 255, 0.02) 40%,
+          rgba(0, 255, 153, 0.05) 40%,
           transparent 72%),
 
-        /* base fade (navy → teal → navy) */
+        radial-gradient(760px 520px at 84% 86%,
+          rgba(255, 255, 255, 0.07),
+          rgba(255, 255, 255, 0.02) 45%,
+          transparent 75%),
+
         linear-gradient(180deg,
           var(--bg-0) 0%,
-          var(--bg-1) 35%,
-          var(--bg-2) 70%,
+          var(--bg-1) 38%,
+          var(--bg-2) 72%,
           var(--bg-3) 100%);
 
-      /* optional: makes it feel “soft” like your mock */
       filter: saturate(1.05) contrast(1.02);
+      transform: translateZ(0); /* helps some browsers paint it clean */
     }
 
-    /* ✅ LOCK banner at top (stays while scrolling) */
+    /* =========================================
+       ✅ FORCE ALL PAGE WRAPPERS TRANSPARENT
+       This is the real reason it wasn't showing
+       ========================================= */
+    .main-content,
+    .content,
+    .content-wrapper,
+    .page-wrapper,
+    .container,
+    .container-fluid,
+    .reports-layout,
+    .dashboard-layout,
+    .graphs-layout,
+    .analytics-layout{
+      background: transparent !important;
+    }
+
+    /* ✅ LOCK banner at top */
     .top-banner{
       height: var(--banner-h);
       position: fixed;
-      top: 0;
-      left: 0;
-      right: 0;
+      top: 0; left: 0; right: 0;
       z-index: 1000;
 
       background: rgba(0,0,0,0.55);
@@ -108,36 +128,10 @@
       width: var(--sidebar-w) !important;
 
       height: calc(100vh - var(--banner-h) - 12px - var(--sidebar-bottom-gap)) !important;
-
       overflow-y: auto;
       padding-bottom: 14px;
       z-index: 900;
     }
-				/* =========================================
-							✅ FORCE GRADIENT TO SHOW ON ALL TABS
-							Some pages set backgrounds on wrappers.
-							We keep wrappers transparent so body::before shows through.
-							========================================= */
-				html, body { background: transparent !important; }
-
-				/* Common wrappers used across pages (your templates + older ones) */
-				.content,
-				.content-wrapper,
-				.page-wrapper,
-				.timekeeping-layout,
-				.timekeeping-layout .main-content,
-				.timekeeping-layout .content,
-				.timekeeping-layout .content-wrapper,
-				.timekeeping-layout .page-wrapper,
-				.main-content{
-						background: transparent !important;
-				}
-
-				/* If any pages use a full-width “panel” behind everything */
-				.container,
-				.container-fluid{
-						background: transparent !important;
-				}
 
     /* ✅ Content starts right of sidebar */
     .main-content{
@@ -148,10 +142,25 @@
       min-height: calc(100vh - var(--banner-h));
     }
 
+    /* =========================================
+       ✅ OPTIONAL: If your widgets rely on inherited
+       backgrounds, this helps keep “cards” dark
+       without killing the global gradient.
+       (Won't harm if unused.)
+       ========================================= */
+    .kpi-card,
+    .widget,
+    .widget-card,
+    .panel,
+    .card{
+      background: var(--card-bg);
+      border: 1px solid var(--card-br);
+      border-radius: 14px;
+      backdrop-filter: blur(6px);
+    }
+
     /* ✅ Mobile fallback */
     @media (max-width: 900px){
-      body{ padding-top: var(--banner-h); }
-
       .floating-nav{
         position: static !important;
         width: auto !important;
@@ -160,7 +169,6 @@
         top: 0 !important;
         margin: 12px 12px 0 12px;
       }
-
       .main-content{
         margin-left: 0;
         padding-top: 12px;
@@ -170,6 +178,9 @@
 </head>
 
 <body data-manager-id="{{ (session.get('manager_id') or 4) | int }}">
+
+  <!-- ✅ Global background gradient -->
+  <div class="bg-layer"></div>
 
   <!-- 🌈 Gradient Definition (shared across all pages) -->
   <svg style="display: none;">
@@ -239,7 +250,6 @@
 
   {% block scripts %}{% endblock %}
 
-  <!-- 🔗 Auto-refresh RingCentral (single copy, safe globally) + logout cache clear -->
   <script>
   document.addEventListener('DOMContentLoaded', () => {
     const startEl = document.getElementById('cm-start');
@@ -272,3 +282,4 @@
 
 </body>
 </html>
+
