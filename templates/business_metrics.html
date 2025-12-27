@@ -27,12 +27,19 @@
 				/* ✅ removed forced text color so base.html controls it */
 		}
 
-  .card-dark {
-				/* ✅ IMPORTANT: do NOT set background/border/color here.
-							This allows base.html to control widget colors (gray cards). */
+  /* ✅ Bridge: make .card-dark behave like base.html cards */
+		.card-dark{
+				/* keep your spacing */
 				border-radius: 12px;
 				padding: 16px;
+
+				/* ✅ IMPORTANT: inherit the base.html card look */
+				background: var(--card-bg, rgba(255,255,255,0.06));
+				border: 1px solid var(--card-border, rgba(255,255,255,0.10));
+				box-shadow: var(--card-shadow, 0 8px 22px rgba(0,0,0,0.25));
+				color: inherit; /* don’t force text color */
 		}
+
 
   .muted { color:#9ab; }
 
