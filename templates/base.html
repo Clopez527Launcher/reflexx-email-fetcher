@@ -19,7 +19,6 @@
 
   {% block head %}{% endblock %}
 
-  <!-- ✅ Layout: locked top banner + fixed sidebar + content aligned correctly -->
   <style>
     :root{
       --banner-h: 70px;       /* top banner height */
@@ -29,32 +28,62 @@
       --pad-x: 22px;          /* content left/right padding */
       --pad-top: 0px;         /* ✅ bring content UP/DOWN under banner (smaller = higher) */
       --sidebar-bottom-gap: 50px; /* ✅ makes sidebar NOT feel too tall */
-    }
-				/* ===============================
-							✅ GLOBAL BACKGROUND (Reflexx mock gradient)
-							=============================== */
-				:root{
-						--bg-0: #060a12;
-						--bg-1: #071a26;
-						--bg-2: #0b2a33;
-						--bg-3: #062033;
-				}
 
-				/* Apply the gradient to the whole page */
-				body{
-						background:
-								radial-gradient(1200px 600px at 70% 20%, rgba(0, 230, 230, 0.16), transparent 60%),
-								radial-gradient(900px 500px at 30% 65%, rgba(0, 255, 153, 0.10), transparent 60%),
-								radial-gradient(700px 420px at 85% 85%, rgba(255, 255, 255, 0.06), transparent 60%),
-								linear-gradient(180deg, var(--bg-0), var(--bg-1) 40%, var(--bg-2) 75%, var(--bg-3));
-						background-attachment: fixed;
-				}
-				
+      /* 🌈 Background palette (dark navy + teal/green glows) */
+      --bg-0: #060a12;
+      --bg-1: #071a26;
+      --bg-2: #0b2a33;
+      --bg-3: #061a2d;
+    }
+
     html, body { margin: 0; padding: 0; }
 
-    /* ✅ Push the whole page down exactly 1 banner height (prevents double spacing) */
+    /* ✅ Reserve space for fixed banner */
     body{
       padding-top: var(--banner-h);
+      min-height: 100vh;
+      color: #e9f6ff;
+      background: transparent; /* IMPORTANT: gradient is drawn by ::before */
+      overflow-x: hidden;
+      position: relative;
+    }
+
+    /* ✅ This is the “fake dashboard” style gradient BEHIND widgets */
+    body::before{
+      content: "";
+      position: fixed;
+      inset: 0;
+      z-index: -1;            /* stays behind everything */
+      pointer-events: none;
+
+      background:
+        /* teal glow top-right */
+        radial-gradient(1100px 640px at 72% 18%,
+          rgba(0, 230, 230, 0.18),
+          rgba(0, 230, 230, 0.06) 35%,
+          transparent 65%),
+
+        /* green glow mid-left */
+        radial-gradient(950px 560px at 28% 60%,
+          rgba(0, 255, 153, 0.14),
+          rgba(0, 255, 153, 0.05) 38%,
+          transparent 70%),
+
+        /* subtle highlight bottom-right */
+        radial-gradient(780px 520px at 85% 86%,
+          rgba(255, 255, 255, 0.07),
+          rgba(255, 255, 255, 0.02) 40%,
+          transparent 72%),
+
+        /* base fade (navy → teal → navy) */
+        linear-gradient(180deg,
+          var(--bg-0) 0%,
+          var(--bg-1) 35%,
+          var(--bg-2) 70%,
+          var(--bg-3) 100%);
+
+      /* optional: makes it feel “soft” like your mock */
+      filter: saturate(1.05) contrast(1.02);
     }
 
     /* ✅ LOCK banner at top (stays while scrolling) */
@@ -66,27 +95,26 @@
       right: 0;
       z-index: 1000;
 
-      /* optional but recommended so it always looks like a true header */
-      background: #000000;
+      background: rgba(0,0,0,0.55);
+      backdrop-filter: blur(10px);
       border-bottom: 1px solid rgba(255,255,255,0.06);
     }
 
     /* ✅ Sidebar fixed under banner */
     .floating-nav{
       position: fixed !important;
-      top: calc(var(--banner-h) + 22px) !important; /* ✅ small gap under banner */
+      top: calc(var(--banner-h) + 22px) !important;
       left: var(--sidebar-x) !important;
       width: var(--sidebar-w) !important;
 
-      /* ✅ Not “too tall” */
       height: calc(100vh - var(--banner-h) - 12px - var(--sidebar-bottom-gap)) !important;
 
       overflow-y: auto;
-      padding-bottom: 14px; /* keeps logout from hugging bottom */
+      padding-bottom: 14px;
       z-index: 900;
     }
 
-    /* ✅ Content starts right of sidebar (NO margin-top anymore) */
+    /* ✅ Content starts right of sidebar */
     .main-content{
       margin-left: calc(var(--sidebar-x) + var(--sidebar-w) + var(--gap));
       padding: var(--pad-top) var(--pad-x) 40px var(--pad-x);
@@ -131,10 +159,8 @@
 
   <!-- 🔝 Top Banner -->
   <div class="top-banner" style="display:flex; align-items:center; justify-content:center;">
-    <!-- Centered logo -->
     <img src="{{ url_for('static', filename='Reflexx_Icon.ico') }}" alt="Reflexx Logo" style="display:block;">
 
-    <!-- ⚙️ Settings gear (top right) -->
     <a href="{{ url_for('settings') }}" title="Settings"
        style="position:absolute; right:16px; top:50%; transform:translateY(-50%);
               color:#ffffff; text-decoration:none; font-size:20px; line-height:20px;">
@@ -144,7 +170,6 @@
 
   <!-- 🔗 Sidebar + Main -->
   <div>
-    <!-- Sidebar Navigation -->
     <div class="floating-nav">
       <h2 class="app-title" style="margin-top:18px;">Reflexx</h2>
 
@@ -182,7 +207,6 @@
       <a href="{{ url_for('brick') }}" class="easter-egg">🎮</a>
     </div>
 
-    <!-- Page Content -->
     <div class="main-content">
       {% block content %}{% endblock %}
     </div>
@@ -213,7 +237,6 @@
       el.addEventListener('keydown', e => { if (e.key === 'Enter') triggerRC(); });
     });
 
-    // ✅ Clear manager/employee cache on logout
     document.getElementById('logoutBtn')?.addEventListener('click', () => {
       localStorage.removeItem('MANAGER_ID');
       localStorage.removeItem('employee_id');
