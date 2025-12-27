@@ -5,384 +5,293 @@
 {% block content %}
 
 <style>
-		/* ✅ TOP SPACING FIX (Business Metrics page) */
-		.page-wrapper{
-				margin-top: 0 !important;
-				padding-top: 35px !important;   /* ✅ make sure it's px */
-		}
+  /* =========================================================
+     Uploads / Business Metrics — layout only
+     ✅ No forced widget colors (base.html controls cards + dropdowns)
+     ========================================================= */
 
-		.page-wrapper h1:first-child,
-		.page-wrapper h2:first-child{
-				margin-top: 0 !important;
-		}
+  /* Top spacing like Analytics/Dashboard */
+  .page-wrapper{
+    margin-top: 0 !important;
+    padding-top: 28px !important;
+  }
 
-  /* ===== Business Metrics / Uploads styles (no layout hacks) ===== */
-
-  /* ✅ Let base.html gradient show through (keep text color) */
-		body,
-		.content,
-		.content-wrapper,
-		.page-wrapper {
-				background: transparent !important;
-				/* ✅ removed color override so base.html controls text color */
-		}
-
-  .card-dark {
-				/* ✅ base.html controls widget colors now */
-				border-radius: 12px;
-				padding: 16px;
-		}
-  .muted { color:#9ab; }
-
-  /* Section inside the page-wrapper – DON'T center with margin:auto */
-  .bm-section {
+  /* Keep section aligned with Dashboard */
+  .bm-section{
     margin: 0;
-    padding-left: 6px;   /* line up with Dashboard's h1/cards */
+    padding-left: 6px;
     padding-right: 0;
   }
 
-  .bm-h1 { color:#fff; margin:0 0 12px; font-size:32px; font-weight:500; }
-
-  /* 🔹 Pull "Business Metric Trends" up closer to the File: row */
-  .bm-h2 {
-    color:#fff;
-    margin: 0;              /* let the header row control the spacing */
-    font-size:24px;
-    font-weight:700;
+  /* Title spacing */
+  .bm-h1{
+    margin: 0 0 12px 0;
+    font-size: 32px;
+    font-weight: 600;
   }
 
-  /* New header row: title on left, upload controls on right */
-  .bm-header-row {
+  /* Header row: title left, controls right */
+  .bm-header-row{
     display:flex;
     justify-content:space-between;
-    align-items:center;   /* keep title baseline lined up with controls */
+    align-items:flex-start;
     gap:16px;
     flex-wrap:wrap;
-    margin: 0px 0 16px;    /* 🔹 a bit more space under the row for the charts */
+    margin: 0 0 14px 0;
   }
 
+  .bm-h2{
+    margin: 0;
+    font-size: 22px;
+    font-weight: 700;
+  }
 
-  /* Controls row: inside the header, no extra outer margin */
-  .bm-controls {
+  /* Controls area */
+  .bm-controls{
     display:flex;
     align-items:center;
     gap:14px;
     flex-wrap:wrap;
-    margin:0;               /* no vertical margin – header row handles it */
+    margin:0;
     justify-content:flex-end;
   }
 
-
-
-  .bm-controls .left {
-    display:flex;
-    gap:8px;
+  /* Step columns inside the form */
+  .bm-steps{
+    display:grid;
+    grid-template-columns: auto auto auto;
     align-items:center;
-    flex-wrap:wrap;
+    column-gap: 22px;
+    row-gap: 10px;
   }
-		
-		.bm-controls .mid {
+
+  .bm-step{
     display:flex;
-    justify-content:flex-start;  /* ✅ no more centering across the row */
+    flex-direction:column;
+    align-items:center;
+    gap:6px;
   }
 
-  .bm-controls label { color:#cfe8ff; }
-
-  /* Upload buttons – match "Apply" button style */
-  .bm-upload .glow-btn {
-    background:#0e151d;                 /* dark base, not solid purple */
-    color:#e9f6ff;
-    border:1px solid #2b3240;
-    border-radius:12px;
-    padding:10px 20px;
-    font-weight:700;
-    cursor:pointer;
-    box-shadow:
-      0 0 0 0 rgba(138,92,255,.50),
-      0 0 18px 2px rgba(138,92,255,.35) inset;
-    transition:
-      transform .1s ease,
-      box-shadow .15s ease,
-      background .15s ease;
+  .bm-step-top{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    white-space:nowrap;
   }
 
-  .bm-upload .glow-btn:hover {
-    background:#8a5cff;                 /* 🔮 on hover they turn purple */
-    transform: translateY(-1px);
-    box-shadow:
-      0 0 22px 6px rgba(138,92,255,.45),
-      0 0 18px 2px rgba(138,92,255,.45) inset;
-  }
-		
-		/* Pager buttons (Prev / Next arrows) – subtle, not glowy */
-  .bm-upload .q-mini-btn {
-    background:#0e151d;
-    color:#cfe8ff;
-    border:1px solid #2b3240;
-    border-radius:4px;
-    padding:4px 8px;
-    min-width:26px;
+  .bm-help{
     font-size:12px;
-    font-weight:600;
-    cursor:pointer;
-    box-shadow:none;
+    opacity:0.8; /* base.html colors will show through */
   }
 
-  .bm-upload .q-mini-btn:hover:enabled {
-    background:#182230;
-    border-color:#3a4a60;
-  }
-
-  .bm-upload .q-mini-btn:disabled {
-    opacity:0.4;
-    cursor:default;
-  }
-
-		/* Grid for the 3 metric cards */
-  .bm-grid {
-    display: grid;
+  /* ✅ Charts/cards grid */
+  .bm-grid{
+    display:grid;
     grid-template-columns: repeat(3, minmax(260px, 1fr));
     gap: 16px;
   }
 
-  @media (max-width: 1100px) {
-    .bm-grid {
-      grid-template-columns: repeat(2, minmax(260px, 1fr));
-    }
+  @media (max-width: 1100px){
+    .bm-grid{ grid-template-columns: repeat(2, minmax(260px, 1fr)); }
+    .bm-steps{ grid-template-columns: 1fr; justify-items:start; }
+    .bm-step{ align-items:flex-start; }
   }
 
-  @media (max-width: 720px) {
-    .bm-grid {
-      grid-template-columns: 1fr;
-    }
+  @media (max-width: 720px){
+    .bm-grid{ grid-template-columns: 1fr; }
   }
 
-  .bm-card-title {
-    margin: 0 0 8px;
-    font-size: 16px;
-    color: #cfe8ff;
-  }
+  .bm-span-all{ grid-column: 1 / -1; }
 
-  .bm-legend {
-    font-size: 12px;
-    color: #9ab;
-    margin-bottom: 6px;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-  }
-
-  .bm-swatch {
-    width: 28px;
-    height: 10px;
-    border: 2px solid #00c0ff;
-    border-radius: 3px;
-    display: inline-block;
-  }
-
-  .bm-canvas-wrap {
+  /* Chart canvas sizing */
+  .bm-canvas-wrap{
     position: relative;
     width: 100%;
-    height: 180px;   /* 🔽 keeps charts compact */
+    height: 180px;
   }
 
-  /* make a card span the whole grid width (columns 1 → last) */
-  .bm-span-all {
-    grid-column: 1 / -1;
+  /* Minor text helpers (no color forcing) */
+  .bm-card-title{
+    margin: 0 0 8px;
+    font-size: 16px;
+    font-weight: 700;
   }
 
+  .bm-legend{
+    font-size: 12px;
+    margin-bottom: 6px;
+    display:flex;
+    align-items:center;
+    gap:8px;
+    opacity: 0.8;
+  }
+
+  .bm-swatch{
+    width: 28px;
+    height: 10px;
+    border: 2px solid currentColor; /* inherits base text color */
+    border-radius: 3px;
+    display:inline-block;
+    opacity: 0.8;
+  }
+
+  /* ✅ Make file input not explode the layout */
+  input[type="file"]{
+    max-width: 260px;
+  }
+
+  /* ✅ Pager row layout only */
+  .bm-pager{
+    display:flex;
+    gap:6px;
+    align-items:center;
+    justify-content:flex-end;
+    margin-top:8px;
+  }
+
+  /* ✅ Remove ONLY if some other CSS hides these */
+  #uploadHistory{ display:none; }
 </style>
 
-</style>
-
-<!-- ✅ SAME WRAPPER AS DASHBOARD_NEW -->
-<div class="page-wrapper" style="
-  width: 100%;
-  max-width: none;
-  margin: 0;
-  padding-top: 8px;
-
-  padding-left: 0px;
-  padding-right: 26px;
-
-  transform: translateX(-14px);
-  box-sizing: border-box;
-">
-
-  <h1 style="
-    color:#fff;
-    text-align:left;
-    padding-left: 6px;
-    margin-top: 60px;
-    margin-bottom: 8px;
-  ">
-    Uploads
-  </h1>
+<div class="page-wrapper">
+  <h1 class="bm-h1">Uploads</h1>
 
   <section class="bm-section bm-upload">
-    <!-- ========================= -->
-    <!-- HEADER ROW: TITLE + UPLOAD CONTROLS -->
-    <!-- ========================= -->
-				<!-- ✅ Business Metric Trends Widget -->
-				<div class="card-dark" style="
-						padding: 16px 18px;
-						margin-top: 10px;
-						border-radius: 14px;
-				">
-
-						<div style="
-								display:flex;
-								align-items:center;
-								justify-content:space-between;
-								gap:16px;
-						">
-								<h2 class="bm-h2" style="margin:0;">Business Metric Trends</h2>
-
-								<form id="metricsForm" enctype="multipart/form-data" style="margin:0;">
-										<!-- ✅ 3 “step columns” that stay vertically aligned -->
-										<div style="
-												display:grid;
-												grid-template-columns: auto auto auto;
-												align-items:center;
-												column-gap: 22px;
-										">
-
-												<!-- STEP 1 -->
-												<div style="display:flex; flex-direction:column; align-items:center; gap:4px;">
-														<div style="display:flex; align-items:center; gap:10px; white-space:nowrap;">
-																<span style="color:#b9d9ff;">Business Metric File:</span>
-																<input id="bm-file" type="file" name="file" accept=".xlsx" />
-														</div>
-														<div style="font-size:12px; color:#7f98b3;">Step 1: Choose file</div>
-												</div>
-
-												<!-- STEP 2 -->
-												<div style="display:flex; flex-direction:column; align-items:center; gap:4px;">
-														<div style="display:flex; align-items:center; gap:10px; white-space:nowrap;">
-																<span style="color:#b9d9ff;">Month:</span>
-																<select name="month" id="bm-month" required>
-																		<option value="">Select Month</option>
-																		{% set months = ['January','February','March','April','May','June','July','August','September','October','November','December'] %}
-																		{% for m in months %}
-																				<option value="{{ loop.index }}">{{ m }}</option>
-																		{% endfor %}
-																</select>
-
-																<span style="color:#b9d9ff;">Year:</span>
-																<select name="year" id="bm-year" required>
-																		{% for y in range(2024, 2031) %}
-																				<option value="{{ y }}">{{ y }}</option>
-																		{% endfor %}
-																</select>
-														</div>
-														<div style="font-size:12px; color:#7f98b3;">Step 2: Select month + year</div>
-												</div>
-
-												<!-- STEP 3 -->
-												<div style="display:flex; flex-direction:column; align-items:center; gap:6px;">
-														<button id="bm-upload-btn" type="submit" class="glow-btn">Upload Report</button>
-														<div style="font-size:12px; color:#7f98b3;">Step 3: Upload</div>
-												</div>
-
-										</div>
-
-										<!-- status line -->
-										<div id="bmStatus" class="muted" style="margin-top:10px; font-size:13px;"></div>
-								</form>
-						</div>
-				</div>
-
-
-
-    <!-- (Business metrics upload history kept for JS, but hidden in UI) -->
-    <ul id="uploadHistory" style="display:none;"></ul>
 
     <!-- ========================= -->
-    <!-- BUSINESS METRIC TRENDS -->
+    <!-- Header widget (base.html card) -->
     <!-- ========================= -->
-    <div class="bm-grid">
+    <div class="widget-card" style="padding:16px 18px; border-radius:14px; margin-top:10px;">
+      <div class="bm-header-row">
 
-      <!-- Net Retention -->
-      <div class="card-dark">
+        <h2 class="bm-h2">Business Metric Trends</h2>
+
+        <form id="metricsForm" enctype="multipart/form-data" style="margin:0;">
+          <div class="bm-steps">
+
+            <!-- STEP 1 -->
+            <div class="bm-step">
+              <div class="bm-step-top">
+                <span>Business Metric File:</span>
+                <input id="bm-file" type="file" name="file" accept=".xlsx" />
+              </div>
+              <div class="bm-help">Step 1: Choose file</div>
+            </div>
+
+            <!-- STEP 2 -->
+            <div class="bm-step">
+              <div class="bm-step-top">
+                <span>Month:</span>
+                <select name="month" id="bm-month" required>
+                  <option value="">Select Month</option>
+                  {% set months = ['January','February','March','April','May','June','July','August','September','October','November','December'] %}
+                  {% for m in months %}
+                    <option value="{{ loop.index }}">{{ m }}</option>
+                  {% endfor %}
+                </select>
+
+                <span>Year:</span>
+                <select name="year" id="bm-year" required>
+                  {% for y in range(2024, 2031) %}
+                    <option value="{{ y }}">{{ y }}</option>
+                  {% endfor %}
+                </select>
+              </div>
+              <div class="bm-help">Step 2: Select month + year</div>
+            </div>
+
+            <!-- STEP 3 -->
+            <div class="bm-step">
+              <!-- ✅ No custom button colors: let base.html style it -->
+              <button id="bm-upload-btn" type="submit">Upload Report</button>
+              <div class="bm-help">Step 3: Upload</div>
+            </div>
+
+          </div>
+
+          <div id="bmStatus" style="margin-top:10px; font-size:13px; opacity:0.85;"></div>
+        </form>
+
+      </div>
+    </div>
+
+    <!-- kept for JS, hidden -->
+    <ul id="uploadHistory"></ul>
+
+    <!-- ========================= -->
+    <!-- Business Metric Trends cards (base.html widget-card) -->
+    <!-- ========================= -->
+    <div class="bm-grid" style="margin-top:16px;">
+
+      <div class="widget-card">
         <h4 class="bm-card-title">Net Retention</h4>
         <div class="bm-legend"><span class="bm-swatch"></span> Net Retention</div>
         <div class="bm-canvas-wrap"><canvas id="bm-net"></canvas></div>
       </div>
 
-      <!-- W&A Premium -->
-      <div class="card-dark">
-        <h4 class="bm-card-title">W&A Premium</h4>
-        <div class="bm-legend"><span class="bm-swatch"></span> W&A Premium</div>
+      <div class="widget-card">
+        <h4 class="bm-card-title">W&amp;A Premium</h4>
+        <div class="bm-legend"><span class="bm-swatch"></span> W&amp;A Premium</div>
         <div class="bm-canvas-wrap"><canvas id="bm-wa"></canvas></div>
       </div>
 
-      <!-- 12MM Loss Ratio -->
-      <div class="card-dark">
+      <div class="widget-card">
         <h4 class="bm-card-title">12MM Loss Ratio</h4>
         <div class="bm-legend"><span class="bm-swatch"></span> 12MM Loss Ratio</div>
         <div class="bm-canvas-wrap"><canvas id="bm-loss"></canvas></div>
       </div>
 
-      <!-- New Business Details Upload (widget) -->
-      <div class="card-dark bm-span-all" id="nb-widget">
+      <!-- New Business Details -->
+      <div class="widget-card bm-span-all" id="nb-widget">
         <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
           <h4 class="bm-card-title" style="margin-right:auto;">New Business Details</h4>
 
           <form id="nbDetailsForm" enctype="multipart/form-data" style="margin:0;">
-            <input
-              id="nb-file"
-              type="file"
-              name="file"
-              accept=".xlsx"
-              style="display:none;"
-              required
-            />
-            <button type="button" id="nb-upload-btn" class="glow-btn">Upload</button>
+            <input id="nb-file" type="file" name="file" accept=".xlsx" style="display:none;" required />
+            <button type="button" id="nb-upload-btn">Upload</button>
           </form>
         </div>
 
-        <div class="muted" style="margin-top:10px;">
+        <div style="margin-top:10px; opacity:0.85;">
           <div style="font-size:14px; margin-bottom:6px;">Status</div>
-          <div id="nbStatus" style="font-size:13px; margin-bottom:10px;">
-            No NB upload yet.
-          </div>
+          <div id="nbStatus" style="font-size:13px; margin-bottom:10px;">No NB upload yet.</div>
 
           <div style="font-size:14px; margin-bottom:6px;">Recent NB uploads</div>
           <ul id="nb-ul" style="margin:0; padding-left:16px; max-height:150px; overflow:auto;"></ul>
 
-          <div id="nb-pager" style="display:flex; gap:6px; align-items:center; justify-content:flex-end; margin-top:8px;">
-            <button id="nb-prev" class="q-mini-btn" disabled>&lt;</button>
-            <span id="nb-page" class="muted">Page 1 of 1</span>
-            <button id="nb-next" class="q-mini-btn" disabled>&gt;</button>
+          <div id="nb-pager" class="bm-pager">
+            <button id="nb-prev" disabled>&lt;</button>
+            <span id="nb-page" style="opacity:0.85;">Page 1 of 1</span>
+            <button id="nb-next" disabled>&gt;</button>
           </div>
         </div>
       </div>
 
       <!-- Quotes Uploads -->
-      <div class="card-dark bm-span-all" id="quotes-widget">
+      <div class="widget-card bm-span-all" id="quotes-widget">
         <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap; justify-content:space-between; width:100%;">
           <h4 class="bm-card-title">Total Serious Quotes Detail</h4>
           <div>
             <input id="quotes-file" type="file" style="display:none;" />
-            <button id="quotes-upload-btn" class="glow-btn">Upload</button>
+            <button id="quotes-upload-btn">Upload</button>
           </div>
         </div>
 
-        <div id="quotes-list" class="muted" style="margin-top:10px;">
+        <div id="quotes-list" style="margin-top:10px; opacity:0.85;">
           <div style="font-size:14px; margin-bottom:6px;">Recent uploads</div>
           <ul id="quotes-ul" style="margin:0; padding-left:16px; max-height:180px; overflow:auto;"></ul>
 
-          <div id="quotes-pager" style="display:flex; gap:6px; align-items:center; justify-content:flex-end; margin-top:8px;">
-            <button id="quotes-prev" class="q-mini-btn" disabled>&lt;</button>
-            <span id="quotes-page" class="muted">Page 1 of 1</span>
-            <button id="quotes-next" class="q-mini-btn" disabled>&gt;</button>
+          <div id="quotes-pager" class="bm-pager">
+            <button id="quotes-prev" disabled>&lt;</button>
+            <span id="quotes-page" style="opacity:0.85;">Page 1 of 1</span>
+            <button id="quotes-next" disabled>&gt;</button>
           </div>
         </div>
       </div>
 
     </div>
   </section>
-</div> <!-- close page-wrapper -->
+</div>
 
 
 <script>
