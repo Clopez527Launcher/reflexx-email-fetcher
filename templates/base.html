@@ -113,6 +113,31 @@
       padding-bottom: 14px;
       z-index: 900;
     }
+				/* =========================================
+							✅ FORCE GRADIENT TO SHOW ON ALL TABS
+							Some pages set backgrounds on wrappers.
+							We keep wrappers transparent so body::before shows through.
+							========================================= */
+				html, body { background: transparent !important; }
+
+				/* Common wrappers used across pages (your templates + older ones) */
+				.content,
+				.content-wrapper,
+				.page-wrapper,
+				.timekeeping-layout,
+				.timekeeping-layout .main-content,
+				.timekeeping-layout .content,
+				.timekeeping-layout .content-wrapper,
+				.timekeeping-layout .page-wrapper,
+				.main-content{
+						background: transparent !important;
+				}
+
+				/* If any pages use a full-width “panel” behind everything */
+				.container,
+				.container-fluid{
+						background: transparent !important;
+				}
 
     /* ✅ Content starts right of sidebar */
     .main-content{
