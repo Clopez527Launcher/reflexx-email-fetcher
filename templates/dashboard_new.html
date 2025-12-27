@@ -3,21 +3,94 @@
 {% block title %}Dashboard (New){% endblock %}
 
 {% block content %}
-<style>
-  /* =========================================================
-     ✅ DASHBOARD NEW: ONLY page-specific layout + components
-     ❌ NO :root vars
-     ❌ NO background overrides
-     ❌ NO “skin” selectors like div[style*="border:1px solid"]
-     ========================================================= */
 
-  /* === Align Dashboard layout with Analytics === */
+<style>
+  /* =========================
+     Page spacing
+     ========================= */
   .page-wrapper{
     margin-top: 0 !important;
     padding-top: 10px !important;
+    width: 100%;
+    max-width: none;
+    margin: 0;
+    padding-left: 0px;
+    padding-right: 26px;
+    transform: translateX(-14px);
+    box-sizing: border-box;
   }
 
-  /* --- Performance Buckets list --- */
+  /* ✅ Dashboard title */
+  .dash-title{
+    color: #fff;
+    text-align:left;
+    padding-left: 6px;
+    margin-top: 26px;
+    margin-bottom: 16px;
+  }
+
+  /* =========================
+     Use base.html card styling
+     ========================= */
+  .widget-card{
+    padding: 16px;
+    border-radius: 12px;
+    color: #fff;
+    width: 100%;
+    box-sizing: border-box;
+    border: 1px solid rgba(255,255,255,0.10); /* subtle, not neon */
+  }
+
+  /* Keep teal headers */
+  .widget-card h2{
+    margin: 0 0 10px 0;
+    color: #00ffff;
+  }
+
+  /* Strengths/Weakness accent headers */
+  .h-green{ color:#00ffaa !important; }
+  .h-red{ color:#ff5555 !important; }
+
+  /* =========================
+     Main grid layout
+     ========================= */
+  .dash-grid{
+    margin-top: 30px;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) clamp(360px, 28vw, 440px);
+    gap: 12px;
+    align-items: start;
+  }
+
+  .right-rail{
+    grid-column: 2;
+    grid-row: 1 / span 2;
+    width: 100%;
+    justify-self: end;
+  }
+
+  /* Strengths + weaknesses */
+  #ai-insights-wrap{
+    grid-column: 1;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    width: 100%;
+  }
+
+  /* Bottom row */
+  .bottom-grid{
+    margin-top: 12px;
+    width: 100%;
+    box-sizing: border-box;
+    display: grid;
+    grid-template-columns: 2fr 1fr 1fr;
+    gap: 12px;
+  }
+
+  /* =========================
+     LSP Performance lists
+     ========================= */
   .bucket-leaderboard{
     list-style: none;
     margin: 6px 0 0;
@@ -62,7 +135,6 @@
     font-weight: 600;
   }
 
-  /* --- Color coding for score labels --- */
   .score-excellent{ color: #00f6ff; }
   .score-above{     color: #12d87b; }
   .score-average{   color: #ffd966; }
@@ -84,26 +156,17 @@
     display: inline;
   }
 
-  /* ✅ Hide “Showing for YYYY-MM-DD” lines in LSP Performance */
-  #ce-phone-date,
-  #ce-quote-date,
-  #ce-move-date{
-    display: none !important;
+  /* Hide date lines */
+  #ce-phone-date, #ce-quote-date, #ce-move-date,
+  #cs-today-status, #cs-yest-status{
+    display:none !important;
   }
 
-  /* ✅ Hide “Showing call stats for YYYY-MM-DD” lines in Call Stats widgets */
-  #cs-today-status,
-  #cs-yest-status{
-    display: none !important;
-  }
-
-  /* Hide only the text “Comparative DB Window:” but keep the dropdown */
+  /* Hide only text "Comparative DB Window:" keep dropdown */
   .ce-window-wrap{ font-size: 0; }
   .ce-window-wrap select{ font-size: 0.85rem; }
 
-  /* =========================================================
-     ✅ Reflexx KPI Leaderboard (component-only styling)
-     ========================================================= */
+  /* KPI styles */
   .kpi-card{
     display: flex;
     flex-direction: column;
@@ -119,24 +182,9 @@
     margin-bottom: 6px;
   }
 
-  .kpi-title{
-    font-size: 20px;
-    font-weight: 600;
-    color: inherit; /* ✅ don't fight base.html */
-    display: flex;
-    flex-direction: column;
-  }
-
-  .kpi-subtitle{
-    font-size: 11px;
-    font-weight: 400;
-    opacity: 0.7;
-  }
-
   .kpi-filter-select{
-    /* ✅ let base.html card bg show; just style the control */
-    background: rgba(0,0,0,0.25);
-    color: inherit;
+    background: rgba(0,0,0,0.35);
+    color: #fff;
     border: 1px solid rgba(255,255,255,0.15);
     border-radius: 999px;
     padding: 4px 12px;
@@ -145,21 +193,15 @@
     cursor: pointer;
   }
 
-  .kpi-filter-select:focus{
-    box-shadow: 0 0 0 2px rgba(0,255,255,0.18);
-  }
-
   .kpi-list{
     margin-top: 4px;
     padding-top: 4px;
     padding-right: 4px;
     flex: 1;
     overflow-y: auto;
-
     scrollbar-width: thin;
     scrollbar-color: #00ffff33 transparent;
   }
-
   .kpi-list::-webkit-scrollbar{ width: 4px; }
   .kpi-list::-webkit-scrollbar-track{ background: transparent; }
   .kpi-list::-webkit-scrollbar-thumb{
@@ -174,165 +216,52 @@
     border-bottom: 1px dashed rgba(255,255,255,0.12);
     font-size: 13px;
   }
-  .kpi-row:last-child{ border-bottom: none; }
 
-  .kpi-rank{
-    width: 22px;
-    font-weight: 600;
-    color: #00f7ff;
-    text-align: left;
-  }
-
-  .kpi-main{
-    flex: 1;
-    min-width: 0;
-  }
-
-  .kpi-name{
-    font-weight: 600;
-    font-size: 17px;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-
-  .kpi-meta{
-    font-size: 11px;
-    opacity: 0.7;
-  }
-
-  .kpi-score{
-    font-weight: 700;
-    font-size: 18px;
-    margin-left: 8px;
-    white-space: nowrap;
-  }
-
-  .kpi-empty{
-    font-size: 12px;
-    opacity: 0.7;
-    padding-top: 6px;
-  }
-
-  /* =========================================================
-     ✅ Team Index Average card (inner element styling only)
-     ========================================================= */
   .kpi-avg-card{
     margin-top: 16px;
     flex: 1;
     border-radius: 10px;
     border: 1px dashed rgba(0,255,255,0.35);
     background: rgba(0,0,0,0.15);
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    text-align: center;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    text-align:center;
+    padding: 16px;
   }
 
-  .kpi-avg-label{
-    font-size: 13px;
-    letter-spacing: 0.04em;
-    text-transform: uppercase;
-    opacity: 0.75;
-    margin-bottom: 8px;
-  }
-
-  .kpi-avg-value{
-    font-size: 38px;
-    font-weight: 700;
-    line-height: 1;
-  }
-
-  .kpi-avg-sub{
-    margin-top: 6px;
-    font-size: 12px;
-    opacity: 0.65;
-  }
-
-  /* ===== Adjusted Index ===== */
-  .kpi-adj-label{
-    font-size: 13px;
-    letter-spacing: 0.04em;
-    text-transform: uppercase;
-    opacity: 0.75;
-    margin-bottom: 10px;
-  }
-
-  .kpi-adj-value{
-    font-size: 54px;
-    font-weight: 800;
-    line-height: 1;
-  }
-
-  .kpi-adj-sub{
-    margin-top: 8px;
-    font-size: 12px;
-    opacity: 0.65;
-  }
-
+  .kpi-adj-value{ font-size: 54px; font-weight: 800; }
+  .kpi-avg-value{ font-size: 38px; font-weight: 700; }
   .kpi-avg-divider{
     width: 90%;
     margin: 14px auto;
     border-top: 1px dashed rgba(0,255,255,0.25);
   }
+
+  /* Keep selects readable */
+  select{
+    background: rgba(0,0,0,0.55);
+    color: #fff;
+    border: 1px solid rgba(255,255,255,0.18);
+  }
 </style>
 
-<div class="page-wrapper" style="
-  width: 100%;
-  max-width: none;        /* ✅ no cap = no centering feel */
-  margin: 0;              /* ✅ pin to left */
-  padding-top: 40px;
-  padding-left: 0px;      /* ✅ tighten left gap */
-  padding-right: 26px;
-  transform: translateX(-14px);  /* ✅ nudge whole dashboard left */
-  box-sizing: border-box;
-">
+<div class="page-wrapper">
 
-  <h1 style="
-    color:#fff;
-    text-align:left;
-    padding-left: 6px;   /* small nudge to match card edge */
-    margin-top: 26px;
-    margin-bottom: 16px;
-  ">
-    Dashboard
-  </h1>
+  <h1 class="dash-title">Dashboard</h1>
 
-  <!-- ========================= -->
-  <!-- MAIN 2-COLUMN LAYOUT GRID -->
-  <!-- ========================= -->
-  <div style="
-    margin-top:30px;
-    display:grid;
-    /* LEFT stretches, RIGHT stays a fixed nice width */
-    grid-template-columns: minmax(0, 1fr) clamp(360px, 28vw, 440px);
-    gap:12px;
-    align-items:start;
-  ">
+  <div class="dash-grid">
 
-    <!-- ✅ LEFT COLUMN / ROW 1: LSP Performance -->
-    <div style="
-      grid-column:1;
-      padding:16px;
-      background:var(--widget-navy);
-      border:1px solid #00ffff;
-      border-radius:10px;
-      color:#fff;
-      width:100%;
-      box-sizing:border-box;
-      min-height:260px;
-      font-size: 1.05rem;
-      line-height: 1.35;
-    ">
+    <!-- LEFT / ROW 1: LSP Performance -->
+    <div class="widget-card">
       <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
-        <h2 style="margin:0; color:#00ffff;">LSP Performance</h2>
+        <h2 style="margin:0;">LSP Performance</h2>
 
         <div class="ce-window-wrap" style="color:#ccc;">
           Comparative DB Window:
           <select id="ce-window-select"
-                  onchange="changeCeWindow(this.value)"
-                  style="background:#000; color:#fff; border:1px solid #00ffff; border-radius:4px; padding:2px 6px;">
+                  onchange="changeCeWindow(this.value)">
             <option value="l7" selected>Last 7 Days</option>
             <option value="l30">Last 30 Days</option>
             <option value="l60">Last 60 Days</option>
@@ -340,233 +269,136 @@
         </div>
       </div>
 
-      <!-- 3 columns inside one card -->
       <div style="display:flex; gap:20px; flex-wrap:wrap;">
-        <!-- Phone Bucket -->
         <div style="flex:1; min-width:220px;">
           <div style="display:flex; flex-direction:column; gap:4px;">
             <div style="display:flex; flex-direction:column;">
               <span style="font-weight:700; font-size:1.1rem;">Phone Performance</span>
               <span id="ce-phone-date" style="font-size:0.8rem; color:#aaa;">Showing for --</span>
             </div>
-            <ul id="ce-phone-list"
-                class="bucket-leaderboard"
-                style="list-style:none; margin:6px 0 0; padding:0; font-size:1.1rem;">
-            </ul>
+            <ul id="ce-phone-list" class="bucket-leaderboard"></ul>
           </div>
         </div>
 
-        <!-- Quote Bucket -->
         <div style="flex:1; min-width:220px;">
           <div style="display:flex; flex-direction:column; gap:4px;">
             <div style="display:flex; flex-direction:column;">
               <span style="font-weight:700; font-size:1.1rem;">Quote Performance</span>
               <span id="ce-quote-date" style="font-size:0.8rem; color:#aaa;">Showing for --</span>
             </div>
-            <ul id="ce-quote-list"
-                class="bucket-leaderboard"
-                style="list-style:none; margin:6px 0 0; padding:0; font-size:0.9rem;">
-            </ul>
+            <ul id="ce-quote-list" class="bucket-leaderboard"></ul>
           </div>
         </div>
 
-        <!-- Movement Bucket -->
         <div style="flex:1; min-width:220px;">
           <div style="display:flex; flex-direction:column; gap:4px;">
             <div style="display:flex; flex-direction:column;">
               <span style="font-weight:700; font-size:1.1rem;">Movement Performance</span>
               <span id="ce-move-date" style="font-size:0.8rem; color:#aaa;">Showing for --</span>
             </div>
-            <ul id="ce-move-list"
-                class="bucket-leaderboard"
-                style="list-style:none; margin:6px 0 0; padding:0; font-size:0.9rem;">
-            </ul>
+            <ul id="ce-move-list" class="bucket-leaderboard"></ul>
           </div>
         </div>
       </div>
     </div>
 
-    <!-- ✅ RIGHT COLUMN / ROW 1-2: Tall KPI Widget placeholder -->
-    <div style="
-      grid-column:2;
-      grid-row:1 / span 2;
-      width:100%;
-      justify-self:end;
-    ">
-      <div style="
-        padding:16px;
-        background:var(--widget-navy);
-        border:1px solid #00ffff;
-        border-radius:12px;
-        color:#fff;
-        box-sizing:border-box;
-        width:100%;
-        min-height:540px;
-        display:flex;
-        flex-direction:column;
-      ">
-        <div class="card-dark kpi-card">
-												<div class="kpi-header">
-																<div class="kpi-title">
-																				Index Leaderboard
-																</div>
+    <!-- RIGHT rail -->
+    <div class="right-rail">
+      <div class="widget-card" style="min-height:540px; display:flex; flex-direction:column;">
+        <div class="kpi-card">
+          <div class="kpi-header">
+            <div class="kpi-title">Index Leaderboard</div>
 
-												<select id="kpi-period-select" class="kpi-filter-select">
-														<option value="yesterday">Yesterday</option>
-														<option value="7d" selected>Last 7 Days</option>
-														<option value="14d">Last 14 Days</option>
-														<option value="30d">Last 30 Days</option>
-														<option value="60d">Last 60 Days</option>
-												</select>
-										</div>
+            <select id="kpi-period-select" class="kpi-filter-select">
+              <option value="yesterday">Yesterday</option>
+              <option value="7d" selected>Last 7 Days</option>
+              <option value="14d">Last 14 Days</option>
+              <option value="30d">Last 30 Days</option>
+              <option value="60d">Last 60 Days</option>
+            </select>
+          </div>
 
-										<div id="kpi-leaderboard" class="kpi-list">
-												<!-- Rows will be injected here by JS -->
-												<div class="kpi-empty">Loading leaderboard…</div>
-										</div>
-								</div>
-        </p>
+          <div id="kpi-leaderboard" class="kpi-list">
+            <div class="kpi-empty">Loading leaderboard…</div>
+          </div>
+        </div>
 
         <div class="kpi-avg-card">
+          <div class="kpi-adj-label">Adjusted Index</div>
+          <div id="kpi-adj-value" class="kpi-adj-value">--</div>
+          <div class="kpi-adj-sub">· Use for Projections ·</div>
 
-										<!-- ✅ NEW: Adjusted Index (BIG) -->
-										<div class="kpi-adj-label">Adjusted Index</div>
-										<div id="kpi-adj-value" class="kpi-adj-value">--</div>
-										<div class="kpi-adj-sub">· Use for Projections · </div>
+          <div class="kpi-avg-divider"></div>
 
-										<div class="kpi-avg-divider"></div>
-
-										<!-- Existing: Team Index Average (smaller) -->
-										<div class="kpi-avg-label">Team Index Average</div>
-										<div id="kpi-avg-value" class="kpi-avg-value">--</div>
-										<div class="kpi-avg-sub">Based on selected window</div>
-								</div>
+          <div class="kpi-avg-label">Team Index Average</div>
+          <div id="kpi-avg-value" class="kpi-avg-value">--</div>
+          <div class="kpi-avg-sub">Based on selected window</div>
+        </div>
       </div>
     </div>
 
-
-    <!-- ✅ LEFT COLUMN / ROW 2: Strengths + Weaknesses -->
-    <div id="ai-insights-wrap" style="
-      grid-column:1;
-      display:grid;
-      grid-template-columns: 1fr 1fr;
-      gap:12px;
-      width:100%;
-    ">
-
-      <div style="
-        background:var(--widget-navy);
-        border:1px solid #00ffaa;
-        border-radius:12px;
-        padding:16px;
-        color:#fff;
-        min-height:260px;
-      ">
-        <h2 style="margin:0 0 10px 0; color:#00ffaa;">Top Strengths</h2>
+    <!-- LEFT / ROW 2: Strengths + Weaknesses -->
+    <div id="ai-insights-wrap">
+      <div class="widget-card" style="min-height:260px;">
+        <h2 class="h-green">Top Strengths</h2>
         <ul id="ai-strengths-list" style="list-style:none; padding-left:0; margin:0;">
           <li style="color:#777;">Loading strengths...</li>
         </ul>
       </div>
 
-      <div style="
-        background:var(--widget-navy);
-        border:1px solid #ff5555;
-        border-radius:12px;
-        padding:16px;
-        color:#fff;
-        min-height:260px;
-      ">
-        <h2 style="margin:0 0 10px 0; color:#ff5555;">Top Weaknesses</h2>
+      <div class="widget-card" style="min-height:260px;">
+        <h2 class="h-red">Top Weaknesses</h2>
         <ul id="ai-weaknesses-list" style="list-style:none; padding-left:0; margin:0;">
           <li style="color:#777;">Loading weaknesses...</li>
         </ul>
       </div>
-
     </div>
 
-  </div> <!-- end main 2-col grid -->
+  </div> <!-- end main grid -->
 
-  <!-- ✅ BOTTOM ROW: Advisor Pro Time + Call Stats Today + Call Stats Yesterday -->
-  <div style="
-    margin-top:12px;
-    width:100%;
-    box-sizing:border-box;
-    display:grid;
-    grid-template-columns: 2fr 1fr 1fr;  /* Advisor Pro wide, Call Stats split */
-    gap:12px;
-  ">
+  <!-- BOTTOM ROW -->
+  <div class="bottom-grid">
 
-    <!-- Advisor Pro Time (wide) -->
-    <div style="
-      padding:16px;
-      background:var(--widget-navy);
-      border:1px solid #00ffff;
-      border-radius:10px;
-      color:#fff;
-      width:100%;
-      box-sizing:border-box;
-    ">
-      <h2 style="margin-top:0; color:#00ffff; margin-bottom: 10px;">Advisor Pro Time</h2>
+    <!-- Advisor Pro Time -->
+    <div class="widget-card">
+      <h2>Advisor Pro Time</h2>
 
-      <!-- Status + Employee filter -->
       <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; gap:12px;">
-        <div id="ap-status" style="color:#aaa; font-size: 0.9rem;">
+        <div id="ap-status" style="color:#aaa; font-size:0.9rem;">
           Loading Advisor Pro usage...
         </div>
 
         <div style="font-size:0.9rem; color:#ccc;">
           <label for="ap-employee-select" style="margin-right:6px;">Employee:</label>
-          <select id="ap-employee-select" style="background:#000; color:#fff; border:1px solid #00ffff; border-radius:4px; padding:2px 6px;">
+          <select id="ap-employee-select">
             <option value="all">All Employees</option>
           </select>
         </div>
       </div>
 
-      <!-- Chart Canvas -->
       <div style="height:230px; max-height:230px; min-height:230px; overflow:hidden;">
         <canvas id="apChart"></canvas>
       </div>
     </div>
 
     <!-- Call Stats Today -->
-    <div style="
-      padding:16px;
-      background:var(--widget-navy);
-      border:1px solid #00ffff;
-      border-radius:10px;
-      color:#fff;
-      box-sizing:border-box;
-      width:100%;
-      min-height:260px;
-    ">
-
+    <div class="widget-card" style="min-height:260px;">
       <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
-        <h2 style="margin:0; color:#00ffff;">Call Stats Today</h2>
+        <h2 style="margin:0;">Call Stats Today</h2>
 
-        <select id="cs-today-employee"
-                onchange="loadCallStatsToday()"
-                style="
-                  background:#000;
-                  color:#fff;
-                  border:1px solid #00ffff;
-                  border-radius:6px;
-                  padding:4px 8px;
-                  font-size:0.9rem;
-                ">
+        <select id="cs-today-employee" onchange="loadCallStatsToday()">
           <option value="all">All Employees</option>
         </select>
       </div>
 
-      <div id="cs-today-status" style="color:#aaa; font-size: 0.9rem; margin-bottom:8px;">
+      <div id="cs-today-status" style="color:#aaa; font-size:0.9rem; margin-bottom:8px;">
         Loading today’s call stats...
       </div>
 
       <div style="text-align:center; font-size:0.9rem; margin-bottom:2px; margin-top:-2px;">
         <span id="cs-today-rico-toggle"
               class="rico-toggle-btn"
-              onclick="toggleRicoColumn('cs-today-table', 'cs-today-rico-toggle', 1, 'reflexx_hide_rico_today')">
-          ^
-        </span>
+              onclick="toggleRicoColumn('cs-today-table', 'cs-today-rico-toggle', 1, 'reflexx_hide_rico_today')">^</span>
       </div>
 
       <table id="cs-today-table" style="width:100%; margin:-2px auto 0 auto; border-collapse:collapse; font-size:0.95rem;">
@@ -581,71 +413,50 @@
         <tbody>
           <tr>
             <td style="padding:10px 4px;">Inbounds</td>
-            <td id="cs-today-rico-in"   class="cs-today-rico-col" style="text-align:center; padding:10px 4px;">–</td>
-            <td id="cs-today-rc-in"     style="text-align:center; padding:10px 4px;">–</td>
-            <td id="cs-today-total-in"  style="text-align:center; padding:10px 4px;">–</td>
+            <td id="cs-today-rico-in" class="cs-today-rico-col" style="text-align:center; padding:10px 4px;">–</td>
+            <td id="cs-today-rc-in" style="text-align:center; padding:10px 4px;">–</td>
+            <td id="cs-today-total-in" style="text-align:center; padding:10px 4px;">–</td>
           </tr>
           <tr>
             <td style="padding:10px 4px;">Outbounds</td>
-            <td id="cs-today-rico-out"   class="cs-today-rico-col" style="text-align:center; padding:10px 4px;">–</td>
-            <td id="cs-today-rc-out"     style="text-align:center; padding:10px 4px;">–</td>
-            <td id="cs-today-total-out"  style="text-align:center; padding:10px 4px;">–</td>
+            <td id="cs-today-rico-out" class="cs-today-rico-col" style="text-align:center; padding:10px 4px;">–</td>
+            <td id="cs-today-rc-out" style="text-align:center; padding:10px 4px;">–</td>
+            <td id="cs-today-total-out" style="text-align:center; padding:10px 4px;">–</td>
           </tr>
           <tr>
             <td style="padding:10px 4px;">Inbound Time</td>
-            <td id="cs-today-rico-ib"    class="cs-today-rico-col" style="text-align:center; padding:10px 4px;">–</td>
-            <td id="cs-today-rc-ib"      style="text-align:center; padding:10px 4px;">–</td>
-            <td id="cs-today-total-ib"   style="text-align:center; padding:10px 4px;">–</td>
+            <td id="cs-today-rico-ib" class="cs-today-rico-col" style="text-align:center; padding:10px 4px;">–</td>
+            <td id="cs-today-rc-ib" style="text-align:center; padding:10px 4px;">–</td>
+            <td id="cs-today-total-ib" style="text-align:center; padding:10px 4px;">–</td>
           </tr>
           <tr>
             <td style="padding:10px 4px;">Outbound Time</td>
-            <td id="cs-today-rico-ob"    class="cs-today-rico-col" style="text-align:center; padding:10px 4px;">–</td>
-            <td id="cs-today-rc-ob"      style="text-align:center; padding:10px 4px;">–</td>
-            <td id="cs-today-total-ob"   style="text-align:center; padding:10px 4px;">–</td>
+            <td id="cs-today-rico-ob" class="cs-today-rico-col" style="text-align:center; padding:10px 4px;">–</td>
+            <td id="cs-today-rc-ob" style="text-align:center; padding:10px 4px;">–</td>
+            <td id="cs-today-total-ob" style="text-align:center; padding:10px 4px;">–</td>
           </tr>
         </tbody>
       </table>
     </div>
 
     <!-- Call Stats Yesterday -->
-    <div style="
-      padding:16px;
-      background:var(--widget-navy);
-      border:1px solid #00ffff;
-      border-radius:10px;
-      color:#fff;
-      box-sizing:border-box;
-      width:100%;
-      min-height:260px;
-    ">
-
+    <div class="widget-card" style="min-height:260px;">
       <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
-        <h2 style="margin:0; color:#00ffff;">Call Stats Yesterday</h2>
+        <h2 style="margin:0;">Call Stats Yesterday</h2>
 
-        <select id="cs-yest-employee"
-                onchange="loadCallStatsYesterday()"
-                style="
-                  background:#000;
-                  color:#fff;
-                  border:1px solid #00ffff;
-                  border-radius:6px;
-                  padding:4px 8px;
-                  font-size:0.9rem;
-                ">
+        <select id="cs-yest-employee" onchange="loadCallStatsYesterday()">
           <option value="all">All Employees</option>
         </select>
       </div>
 
-      <div id="cs-yest-status" style="color:#aaa; font-size: 0.9rem; margin-bottom:8px;">
+      <div id="cs-yest-status" style="color:#aaa; font-size:0.9rem; margin-bottom:8px;">
         Loading yesterday’s call stats...
       </div>
 
       <div style="text-align:center; font-size:0.9rem; margin-bottom:2px; margin-top:-2px;">
         <span id="cs-yest-rico-toggle"
               class="rico-toggle-btn"
-              onclick="toggleRicoColumn('cs-yest-table', 'cs-yest-rico-toggle', 1, 'reflexx_hide_rico_yest')">
-          ^
-        </span>
+              onclick="toggleRicoColumn('cs-yest-table', 'cs-yest-rico-toggle', 1, 'reflexx_hide_rico_yest')">^</span>
       </div>
 
       <table id="cs-yest-table" style="width:100%; margin:-2px auto 0 auto; border-collapse:collapse; font-size:0.95rem;">
@@ -660,27 +471,27 @@
         <tbody>
           <tr>
             <td style="padding:10px 4px;">Inbounds</td>
-            <td id="cs-yest-rico-in"   class="cs-yest-rico-col" style="text-align:center; padding:10px 4px;">–</td>
-            <td id="cs-yest-rc-in"     style="text-align:center; padding:10px 4px;">–</td>
-            <td id="cs-yest-total-in"  style="text-align:center; padding:10px 4px;">–</td>
+            <td id="cs-yest-rico-in" class="cs-yest-rico-col" style="text-align:center; padding:10px 4px;">–</td>
+            <td id="cs-yest-rc-in" style="text-align:center; padding:10px 4px;">–</td>
+            <td id="cs-yest-total-in" style="text-align:center; padding:10px 4px;">–</td>
           </tr>
           <tr>
             <td style="padding:10px 4px;">Outbounds</td>
-            <td id="cs-yest-rico-out"   class="cs-yest-rico-col" style="text-align:center; padding:10px 4px;">–</td>
-            <td id="cs-yest-rc-out"     style="text-align:center; padding:10px 4px;">–</td>
-            <td id="cs-yest-total-out"  style="text-align:center; padding:10px 4px;">–</td>
+            <td id="cs-yest-rico-out" class="cs-yest-rico-col" style="text-align:center; padding:10px 4px;">–</td>
+            <td id="cs-yest-rc-out" style="text-align:center; padding:10px 4px;">–</td>
+            <td id="cs-yest-total-out" style="text-align:center; padding:10px 4px;">–</td>
           </tr>
           <tr>
             <td style="padding:10px 4px;">Inbound Time</td>
-            <td id="cs-yest-rico-ib"    class="cs-yest-rico-col" style="text-align:center; padding:10px 4px;">–</td>
-            <td id="cs-yest-rc-ib"      style="text-align:center; padding:10px 4px;">–</td>
-            <td id="cs-yest-total-ib"   style="text-align:center; padding:10px 4px;">–</td>
+            <td id="cs-yest-rico-ib" class="cs-yest-rico-col" style="text-align:center; padding:10px 4px;">–</td>
+            <td id="cs-yest-rc-ib" style="text-align:center; padding:10px 4px;">–</td>
+            <td id="cs-yest-total-ib" style="text-align:center; padding:10px 4px;">–</td>
           </tr>
           <tr>
             <td style="padding:10px 4px;">Outbound Time</td>
-            <td id="cs-yest-rico-ob"    class="cs-yest-rico-col" style="text-align:center; padding:10px 4px;">–</td>
-            <td id="cs-yest-rc-ob"      style="text-align:center; padding:10px 4px;">–</td>
-            <td id="cs-yest-total-ob"   style="text-align:center; padding:10px 4px;">–</td>
+            <td id="cs-yest-rico-ob" class="cs-yest-rico-col" style="text-align:center; padding:10px 4px;">–</td>
+            <td id="cs-yest-rc-ob" style="text-align:center; padding:10px 4px;">–</td>
+            <td id="cs-yest-total-ob" style="text-align:center; padding:10px 4px;">–</td>
           </tr>
         </tbody>
       </table>
@@ -688,7 +499,7 @@
 
   </div> <!-- end bottom grid -->
 
-</div> <!-- end .page-wrapper -->
+</div> <!-- end page-wrapper -->
 
 <!-- 🔌 Simple JS for "Call Stats Today" (fixed to today) -->
 <script>
