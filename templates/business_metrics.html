@@ -18,14 +18,15 @@
 
   /* ===== Business Metrics / Uploads styles (no layout hacks) ===== */
 
-  /* 🔹 Use lighter navy background like Dashboard + pull sidebar up */
-  body,
-  .content,
-  .content-wrapper,
-  .page-wrapper {
-    background:#12243b !important;
-    color:#e9f6ff;
-  }
+  /* ✅ Let base.html gradient show through (keep text color) */
+		body,
+		.content,
+		.content-wrapper,
+		.page-wrapper {
+				background: transparent !important;
+				color:#e9f6ff;
+		}
+
 
   .card-dark {
     background:#0e151d; border:1px solid #1f2a36; border-radius:12px;
@@ -136,13 +137,6 @@
     opacity:0.4;
     cursor:default;
   }
-
-
-  /* Grid for the 3 metric cards */
-  .bm-grid {
-    display: grid;
-    grid-template-columns: repeat(3, minmax(260px, 1fr));
-
 
 		/* Grid for the 3 metric cards */
   .bm-grid {

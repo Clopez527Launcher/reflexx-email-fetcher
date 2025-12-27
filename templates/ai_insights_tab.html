@@ -5,14 +5,14 @@
 {% block content %}
 <style>
 
-  /* 🟦 Use the lighter navy background like Dashboard (#12243b) */
-  body,
-  .content,
-  .content-wrapper,
-  .main-content.timekeeping-layout {
-    background: #12243b !important;
-    color: #e9f6ff;
-  }
+  /* ✅ Let base.html gradient show through (keep text color) */
+		body,
+		.content,
+		.content-wrapper,
+		.main-content.timekeeping-layout {
+				background: transparent !important;
+				color: #e9f6ff;
+		}
 
   /* 🟦 Give the whole page a little top padding so ALL content sits lower */
   .main-content.timekeeping-layout {

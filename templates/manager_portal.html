@@ -41,14 +41,15 @@
     box-sizing: border-box;
   }
 
-		/* Page background – lighter navy like new Dashboard */
-  body,
-  .content,
-  .content-wrapper,
-  .dashboard-layout {
-    background: #12243b !important;
-    color: #e9f6ff;
-  }
+		/* ✅ Let base.html gradient show through */
+		body,
+		.content,
+		.content-wrapper,
+		.dashboard-layout {
+				background: transparent !important;
+				color: #e9f6ff;
+		}
+
 
   /* ------- Top bar ------- */
   .top-bar{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:12px}
