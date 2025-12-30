@@ -111,17 +111,17 @@
 		body,
 		.content,
 		.content-wrapper,
-		.page-wrapper {
+		.page-wrapper{
 				background: transparent !important;
-				color: var(--text-main);
+				color: var(--card-tx) !important;
 		}
-
-		/* ✅ Let base.html gradient show through */
-		body,
-		.content,
-		.content-wrapper,
-		.page-wrapper {
-				background: transparent !important;
+		
+		#cs-today-table, #cs-yest-table{
+				color: var(--card-tx) !important;
+		}
+		#cs-today-table td, #cs-yest-table td,
+		#cs-today-table th, #cs-yest-table th{
+				color: var(--card-tx) !important;
 		}
 
 		/* Any nested card-like blocks (strengths/weaknesses containers etc.) */
