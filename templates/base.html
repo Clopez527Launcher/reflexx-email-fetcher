@@ -110,21 +110,38 @@
     }
 
     /* ✅ LOCK banner at top */
-    .top-banner{
+				.top-banner{
 						height: var(--banner-h);
 						position: fixed;
 						top: 0; left: 0; right: 0;
 						z-index: 1000;
 
-						/* ✅ SOLID BLACK ribbon */
 						background: #000 !important;
-
-						/* ✅ remove any “glass” / gradient bleed */
-						backdrop-filter: none !important;
-						-webkit-backdrop-filter: none !important;
-
 						border-bottom: 1px solid rgba(255,255,255,0.10);
+
+						/* ✅ makes absolute children position correctly */
+						display: block;
 				}
+				/* ✅ Always-dead-center logo (never shifts by page/tab) */
+				.top-banner img{
+						position: absolute;
+						left: 50%;
+						top: 50%;
+						transform: translate(-50%, -50%);
+						display: block;
+						height: 28px;     /* adjust if you want */
+						width: auto;
+				}
+
+				/* ✅ Settings icon pinned right */
+				.top-banner a{
+						position: absolute;
+						right: 16px;
+						top: 50%;
+						transform: translateY(-50%);
+				}
+
+
 
     /* ✅ Sidebar fixed under banner */
     .floating-nav{
@@ -259,16 +276,17 @@
     </defs>
   </svg>
 
-  <!-- 🔝 Top Banner -->
-  <div class="top-banner" style="display:flex; align-items:center; justify-content:center;">
-    <img src="{{ url_for('static', filename='Reflexx_Icon.ico') }}" alt="Reflexx Logo" style="display:block;">
+  <div class="top-banner">
+				<!-- ✅ Always-dead-center logo -->
+				<img class="top-logo"
+									src="{{ url_for('static', filename='Reflexx_Icon.ico') }}"
+									alt="Reflexx Logo">
 
-    <a href="{{ url_for('settings') }}" title="Settings"
-       style="position:absolute; right:16px; top:50%; transform:translateY(-50%);
-              color:#ffffff; text-decoration:none; font-size:20px; line-height:20px;">
-      ⚙️
-    </a>
-  </div>
+				<!-- ✅ Settings stays on the right -->
+				<a href="{{ url_for('settings') }}" title="Settings" class="top-settings">
+						⚙️
+				</a>
+		</div>
 
   <!-- 🔗 Sidebar + Main -->
   <div>
