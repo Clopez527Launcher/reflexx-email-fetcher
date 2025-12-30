@@ -180,34 +180,20 @@
     }
 
     /* ✅ Force readable WHITE text inside widgets */
-				.kpi-card,
-				.widget,
-				.widget-card,
-				.panel,
-				.card{
-						color: var(--card-tx) !important;
-				}
-
-				/* ✅ IMPORTANT:
-							Do NOT force *everything* to inherit color.
-							That can wipe out table cell styles and make “data disappear”.
-				*/
-				.kpi-card p, .kpi-card span, .kpi-card small, .kpi-card h1, .kpi-card h2, .kpi-card h3, .kpi-card h4,
-				.widget p, .widget span, .widget small, .widget h1, .widget h2, .widget h3, .widget h4,
-				.widget-card p, .widget-card span, .widget-card small, .widget-card h1, .widget-card h2, .widget-card h3, .widget-card h4,
-				.panel p, .panel span, .panel small, .panel h1, .panel h2, .panel h3, .panel h4,
-				.card p, .card span, .card small, .card h1, .card h2, .card h3, .card h4{
-						color: inherit;
-				}
-
-				/* ✅ Make ALL table text inside widgets always visible */
-				.kpi-card table, .widget table, .widget-card table, .panel table, .card table,
-				.kpi-card td, .widget td, .widget-card td, .panel td, .card td,
-				.kpi-card th, .widget th, .widget-card th, .panel th, .card th{
-						color: var(--card-tx) !important;
-						opacity: 1 !important;
-				}
-
+    .kpi-card,
+    .widget,
+    .widget-card,
+    .panel,
+    .card{
+      color: var(--card-tx) !important;
+    }
+    .kpi-card * ,
+    .widget * ,
+    .widget-card * ,
+    .panel * ,
+    .card *{
+      color: inherit;
+    }
 
     .kpi-card .muted,
     .widget .muted,
