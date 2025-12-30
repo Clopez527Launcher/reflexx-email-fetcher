@@ -259,17 +259,16 @@
     </defs>
   </svg>
 
-  <div class="top-banner">
-				<!-- ✅ Always-dead-center logo -->
-				<img class="top-logo"
-									src="{{ url_for('static', filename='Reflexx_Icon.ico') }}"
-									alt="Reflexx Logo">
+  <!-- 🔝 Top Banner -->
+  <div class="top-banner" style="display:flex; align-items:center; justify-content:center;">
+    <img src="{{ url_for('static', filename='Reflexx_Icon.ico') }}" alt="Reflexx Logo" style="display:block;">
 
-				<!-- ✅ Settings stays on the right -->
-				<a href="{{ url_for('settings') }}" title="Settings" class="top-settings">
-						⚙️
-				</a>
-		</div>
+    <a href="{{ url_for('settings') }}" title="Settings"
+       style="position:absolute; right:16px; top:50%; transform:translateY(-50%);
+              color:#ffffff; text-decoration:none; font-size:20px; line-height:20px;">
+      ⚙️
+    </a>
+  </div>
 
   <!-- 🔗 Sidebar + Main -->
   <div>
