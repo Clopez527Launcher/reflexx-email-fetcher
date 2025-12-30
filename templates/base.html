@@ -42,6 +42,50 @@
       --card-tx: #f1f6ff;                 /* white-ish text */
       --card-sub: rgba(241,246,255,0.70);
     }
+				
+				/* =========================================
+							✅ GLOBAL TABLE SAFETY (prevents “invisible data”)
+							Applies to any table inside a widget/card anywhere
+							========================================= */
+				.kpi-card table,
+				.widget table,
+				.widget-card table,
+				.panel table,
+				.card table{
+						width: 100%;
+						border-collapse: collapse;
+						color: var(--card-tx) !important;
+				}
+
+				.kpi-card th, .kpi-card td,
+				.widget th, .widget td,
+				.widget-card th, .widget-card td,
+				.panel th, .panel td,
+				.card th, .card td{
+						color: var(--card-tx) !important;
+						opacity: 1 !important;
+						visibility: visible !important;
+				}
+
+				/* If any old theme made rows disappear */
+				.kpi-card tr, .widget tr, .widget-card tr, .panel tr, .card tr{
+						opacity: 1 !important;
+						visibility: visible !important;
+				}
+
+				/* Nice subtle separators so you can actually “see” the grid */
+				.kpi-card th, .widget th, .widget-card th, .panel th, .card th{
+						border-bottom: 1px solid rgba(255,255,255,0.08);
+						padding: 6px 6px;
+						text-align: left;
+						font-weight: 700;
+				}
+
+				.kpi-card td, .widget td, .widget-card td, .panel td, .card td{
+						border-bottom: 1px solid rgba(255,255,255,0.06);
+						padding: 6px 6px;
+				}
+
 
     html, body {
       margin: 0;
