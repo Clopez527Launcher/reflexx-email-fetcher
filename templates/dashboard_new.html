@@ -145,12 +145,12 @@
 				display: none !important;
 		}
 		
-		/* ✅ TEMP: SHOW status lines for debugging */
+		/* ✅ Hide "Showing call stats for YYYY-MM-DD" lines in Call Stats widgets */
 		#cs-today-status,
 		#cs-yest-status {
-				display: block !important;
+				display: none !important;
 		}
-
+		
 		/* Hide only the text "Comparative DB Window:" but keep the dropdown */
 		.ce-window-wrap {
 				font-size: 0; /* hide text */
@@ -643,14 +643,6 @@
 </div>
 
 <!-- 🔌 Simple JS for "Call Stats Today" (fixed to today) -->
-<script>
-document.addEventListener("DOMContentLoaded", () => {
-  // ✅ Force-populate the call stats tables on first load
-  if (typeof loadCallStatsToday === "function") loadCallStatsToday();
-  if (typeof loadCallStatsYesterday === "function") loadCallStatsYesterday();
-});
-</script>
-
 <script>
   // When the page loads, first load employees, then today's call stats + CE buckets
   document.addEventListener("DOMContentLoaded", function () {
