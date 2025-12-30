@@ -82,6 +82,20 @@
 				#ai-run-list > *{
 						width: 100%;
 				}
+				/* ✅ Run bars = dark widget color */
+				#ai-run-list > *{
+						background: #0e151d !important;
+						border: 1px solid rgba(255,255,255,0.10) !important;
+						border-radius: 12px !important;
+						box-shadow: 0 10px 22px rgba(0,0,0,0.25) !important;
+				}
+
+				/* ✅ Make sure text stays readable */
+				#ai-run-list > * ,
+				#ai-run-list > * *{
+						color: #e9f6ff !important;
+				}
+
 
 		</style>
 
@@ -93,7 +107,7 @@
     </p>
 
     <!-- Run list (big stacked bars) -->
-    <div id="ai-run-list">
+    <div id="ai-run-list" class="ai-run-list">
       <div style="color:#777;">Loading insight runs...</div>
     </div>
 
