@@ -156,16 +156,19 @@
 				display: none !important;
 		}
 
-  .emp-chart {
-    background:#0b131a;
-    border:1px solid #1f2a36;
-    border-radius:10px;
-    padding:12px;
-    min-height:220px;
-    display:flex;
-    flex-direction:column;
-    gap:8px;
-  }
+  .emp-chart{
+				/* ✅ match the gray widget look */
+				background: var(--card-bg, rgba(255,255,255,0.06));
+				border: 1px solid var(--card-border, rgba(255,255,255,0.10));
+				box-shadow: var(--card-shadow, 0 8px 22px rgba(0,0,0,0.25));
+
+				border-radius: 10px;
+				padding: 12px;
+				min-height: 0;
+				display: flex;
+				flex-direction: column;
+				gap: 8px;
+		}
 
   .emp-chart h4 {
     margin:0;
