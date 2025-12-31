@@ -352,7 +352,6 @@
 		}
 
 
-
 		/* ========================================================================= */
 
 </style>
@@ -559,21 +558,22 @@
       width:100%;
       box-sizing:border-box;
     ">
-      <h2 style="margin-top:0; margin-bottom:10px;">Advisor Pro Time</h2>
+      <!-- ✅ Header row: title LEFT, employee filter RIGHT -->
+						<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+								<h2 style="margin:0;">Advisor Pro Time</h2>
 
-      <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:10px; gap:12px;">
-        <div id="ap-status" style="color:#aaa; font-size:0.9rem;">
-          Loading Advisor Pro usage...
-        </div>
+								<div style="font-size:0.9rem; display:flex; align-items:center; gap:8px;">
+										<label for="ap-employee-select" style="margin:0;">Employee:</label>
+										<select id="ap-employee-select">
+												<option value="all">All Employees</option>
+										</select>
+								</div>
+						</div>
 
-        <div style="font-size:0.9rem; margin-top:-6px;">
-          <label for="ap-employee-select" style="margin-right:6px;">Employee:</label>
-          <!-- ✅ REMOVED: inline style that forces black -->
-          <select id="ap-employee-select">
-            <option value="all">All Employees</option>
-          </select>
-        </div>
-      </div>
+						<!-- ✅ Subheader/status row (sits under title like your screenshot text) -->
+						<div id="ap-status" style="color:#aaa; font-size:0.9rem; margin-bottom:10px;">
+								Loading Advisor Pro usage...
+						</div>
 
       <div style="height:230px; max-height:230px; min-height:230px; overflow:hidden;">
         <canvas id="apChart"></canvas>
