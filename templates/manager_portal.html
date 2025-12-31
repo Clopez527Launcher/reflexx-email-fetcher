@@ -1168,11 +1168,9 @@
 						}
 
 						li.innerHTML = `
-								<span>
-										<span class="lb-rank">${idx + 1}.</span>
-										<span class="lb-name">${row.user_name}</span>
-								</span>
+								<span class="lb-name">${row.user_name || row.name || ""}</span>
 						`;
+
 						ul.appendChild(li);
 				});
 		}
