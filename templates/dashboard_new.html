@@ -122,8 +122,9 @@
 		#cs-today-table, #cs-yest-table{
 				color: var(--card-tx) !important;
 		}
-		#cs-today-table td, #cs-yest-table td,
-		#cs-today-table th, #cs-yest-table th{
+		/* ✅ Keep Call Stats data text consistent */
+		/* (DO NOT force TH color, because we want colored headers) */
+		#cs-today-table td, #cs-yest-table td{
 				color: var(--card-tx) !important;
 		}
 
@@ -759,8 +760,8 @@
 								<thead>
 										<tr>
 												<th></th>
-												<th>Ricochet</th>
-												<th>RingCentral</th>
+												<th>Rico</th>
+												<th>Ring Central</th>
 												<th>Total</th>
 										</tr>
 								</thead>
