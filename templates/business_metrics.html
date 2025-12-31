@@ -199,10 +199,33 @@
   .bm-span-all {
     grid-column: 1 / -1;
   }
+		
+		/* ✅ One big Business Metric Trends widget */
+		.bm-big-card{
+				padding: 16px 18px;
+				border-radius: 14px;
+		}
+
+		.bm-big-inner{
+				margin-top: 14px;   /* space between header row and charts */
+		}
+
+		/* charts inside the big card should NOT look like separate cards */
+		.bm-grid .bm-chart{
+				background: transparent !important;
+				border: none !important;
+				box-shadow: none !important;
+				padding: 0 !important;
+		}
+
+		/* tighten chart titles inside big card */
+		.bm-grid .bm-card-title{
+				margin: 0 0 6px;
+		}
 
 </style>
 
-</style>
+
 
 <!-- ✅ SAME WRAPPER AS DASHBOARD_NEW -->
 <div class="page-wrapper" style="
@@ -232,12 +255,8 @@
     <!-- ========================= -->
     <!-- HEADER ROW: TITLE + UPLOAD CONTROLS -->
     <!-- ========================= -->
-				<!-- ✅ Business Metric Trends Widget -->
-				<div class="card-dark" style="
-						padding: 16px 18px;
-						margin-top: 10px;
-						border-radius: 14px;
-				">
+				<!-- ✅ Business Metric Trends Widget (ONE big widget) -->
+				<div class="card-dark bm-big-card">
 
 						<div style="
 								display:flex;
@@ -307,30 +326,34 @@
     <ul id="uploadHistory" style="display:none;"></ul>
 
     <!-- ========================= -->
-    <!-- BUSINESS METRIC TRENDS -->
-    <!-- ========================= -->
-    <div class="bm-grid">
+				<!-- BUSINESS METRIC TRENDS (inside the big widget) -->
+				<!-- ========================= -->
+				<div class="bm-big-inner">
+						<div class="bm-grid">
 
-      <!-- Net Retention -->
-      <div class="card-dark">
-        <h4 class="bm-card-title">Net Retention</h4>
-        <div class="bm-legend"><span class="bm-swatch"></span> Net Retention</div>
-        <div class="bm-canvas-wrap"><canvas id="bm-net"></canvas></div>
-      </div>
+								<!-- Net Retention -->
+								<div class="bm-chart">
+										<h4 class="bm-card-title">Net Retention</h4>
+										<div class="bm-legend"><span class="bm-swatch"></span> Net Retention</div>
+										<div class="bm-canvas-wrap"><canvas id="bm-net"></canvas></div>
+								</div>
 
-      <!-- W&A Premium -->
-      <div class="card-dark">
-        <h4 class="bm-card-title">W&A Premium</h4>
-        <div class="bm-legend"><span class="bm-swatch"></span> W&A Premium</div>
-        <div class="bm-canvas-wrap"><canvas id="bm-wa"></canvas></div>
-      </div>
+								<!-- W&A Premium -->
+								<div class="bm-chart">
+										<h4 class="bm-card-title">W&amp;A Premium</h4>
+										<div class="bm-legend"><span class="bm-swatch"></span> W&amp;A Premium</div>
+										<div class="bm-canvas-wrap"><canvas id="bm-wa"></canvas></div>
+								</div>
 
-      <!-- 12MM Loss Ratio -->
-      <div class="card-dark">
-        <h4 class="bm-card-title">12MM Loss Ratio</h4>
-        <div class="bm-legend"><span class="bm-swatch"></span> 12MM Loss Ratio</div>
-        <div class="bm-canvas-wrap"><canvas id="bm-loss"></canvas></div>
-      </div>
+								<!-- 12MM Loss Ratio -->
+								<div class="bm-chart">
+										<h4 class="bm-card-title">12MM Loss Ratio</h4>
+										<div class="bm-legend"><span class="bm-swatch"></span> 12MM Loss Ratio</div>
+										<div class="bm-canvas-wrap"><canvas id="bm-loss"></canvas></div>
+								</div>
+
+						</div>
+				</div>
 
       <!-- Quotes Uploads -->
       <div class="card-dark bm-span-all" id="quotes-widget">
