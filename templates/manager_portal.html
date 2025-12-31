@@ -251,17 +251,44 @@
 
 
 <style>
-  .bucket-leaderboard {
-    list-style: none;
-    margin: 0;
-    padding: 0;
-    /* give space so the scrollbar isn't on top of the % */
-    padding-right: 12px;
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-    max-height: 95px;
-    overflow-y: auto;
+    .bucket-leaderboard {
+						list-style: none;
+						margin: 0;
+						padding: 0;
+
+						/* keep scrollbar off the % */
+						padding-right: 12px;
+
+						/* ✅ make the list fill the card */
+						flex: 1;
+						min-height: 0;
+
+						display: flex;
+						flex-direction: column;
+
+						/* ✅ more breathing room */
+						gap: 10px;
+
+						/* ✅ REMOVE the tiny cap */
+						max-height: none;
+
+						overflow-y: auto;
+
+						/* Firefox thin bar */
+						scrollbar-width: thin;
+						scrollbar-color: #00ffff33 transparent;
+				}
+
+				/* ✅ Make the rows bigger */
+				.bucket-leaderboard li {
+						font-size: 1.25rem;      /* was 1rem */
+						line-height: 1.35;
+						padding: 6px 0;          /* gives it “filled” look */
+						display: flex;
+						justify-content: space-between;
+						align-items: center;
+				}
+
 
     /* Firefox thin bar */
     scrollbar-width: thin;
