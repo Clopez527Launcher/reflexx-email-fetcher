@@ -251,28 +251,32 @@
 
 
 <style>
-    .bucket-leaderboard {
-						list-style: none;
-						margin: 0;
-						padding: 0;
+  .bucket-leaderboard{
+    list-style: none;
+    margin: 0;
+    padding: 0;
 
-						/* keep scrollbar off the % */
-						padding-right: 12px;
+    /* ✅ take up the remaining space inside the card */
+    flex: 1;
+    min-height: 0;
 
-						/* ✅ make the list fill the card */
-						flex: 1;
-						min-height: 0;
+    display: flex;
+    flex-direction: column;
 
-						display: flex;
-						flex-direction: column;
+    /* ✅ center the list vertically + horizontally */
+    justify-content: center;
+    align-items: center;
 
-						/* ✅ more breathing room */
-						gap: 10px;
+    gap: 18px;
 
-						/* ✅ REMOVE the tiny cap */
-						max-height: none;
+    /* ✅ cap so it never stretches the card */
+    max-height: 170px;
+    overflow-y: auto;
 
-						overflow-y: auto;
+    scrollbar-width: thin;
+    scrollbar-color: #00ffff33 transparent;
+  }
+
 
 						/* Firefox thin bar */
 						scrollbar-width: thin;
@@ -295,12 +299,22 @@
     scrollbar-color: #00ffff33 transparent;
   }
 
-  .bucket-leaderboard li {
-    font-size: 1rem;
-    line-height: 1.25;
+  .bucket-leaderboard li{
+    width: 100%;
     display: flex;
-    justify-content: space-between;
+    justify-content: center;   /* ✅ centers the name line */
+    text-align: center;
+
+    font-size: 1.35rem;        /* ✅ bigger */
+    line-height: 1.3;
+    padding: 2px 0;
   }
+
+  /* ✅ if the name is inside .lb-name, center that too */
+  .bucket-leaderboard .lb-name{
+    text-align: center;
+  }
+
 
   /* Chrome / Edge / Safari scrollbar styling */
   .bucket-leaderboard::-webkit-scrollbar {
@@ -431,6 +445,15 @@
 				flex-direction: column;
 				justify-content: flex-start;
 				box-sizing: border-box;
+				
+  /* ✅ Force Phone / Quoting / Movement to EXACTLY match Call Stats height */
+  #phoneWidget,
+  #quotingWidget,
+  #movementWidget{
+    height: 285px;          /* same as callStatsWidget */
+    box-sizing: border-box;
+  }
+
 
 				/* 👇 add this to push the title + table down */
 				padding-top: 18px;
