@@ -125,29 +125,6 @@
 
 						border-bottom: 1px solid rgba(255,255,255,0.10);
 				}
-				
-				/* ✅ Always-dead-center logo (never shifts) */
-				.top-banner img{
-						position: absolute;
-						left: 50%;
-						top: 50%;
-						transform: translate(-50%, -50%);
-						display: block;
-						height: 28px;
-						width: auto;
-				}
-
-				/* ✅ Settings icon pinned right */
-				.top-banner .top-settings{
-						position: absolute;
-						right: 16px;
-						top: 50%;
-						transform: translateY(-50%);
-						color: #fff;
-						text-decoration: none;
-						font-size: 20px;
-						line-height: 20px;
-				}
 
     /* ✅ Sidebar fixed under banner */
     .floating-nav{
@@ -283,10 +260,12 @@
   </svg>
 
   <!-- 🔝 Top Banner -->
-  <div class="top-banner">
+  <div class="top-banner" style="display:flex; align-items:center; justify-content:center;">
     <img src="{{ url_for('static', filename='Reflexx_Icon.ico') }}" alt="Reflexx Logo" style="display:block;">
 
-    <a href="{{ url_for('settings') }}" title="Settings" class="top-settings">
+    <a href="{{ url_for('settings') }}" title="Settings"
+       style="position:absolute; right:16px; top:50%; transform:translateY(-50%);
+              color:#ffffff; text-decoration:none; font-size:20px; line-height:20px;">
       ⚙️
     </a>
   </div>
