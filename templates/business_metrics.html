@@ -360,6 +360,27 @@
 				<!-- (Business metrics upload history kept for JS, but hidden in UI) -->
 				<ul id="uploadHistory" style="display:none;"></ul>
 
+      <!-- Quotes Uploads -->
+      <div class="card-dark bm-span-all" id="quotes-widget">
+        <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap; justify-content:space-between; width:100%;">
+          <h4 class="bm-card-title">Total Serious Quotes Detail</h4>
+          <div>
+            <input id="quotes-file" type="file" style="display:none;" />
+            <button id="quotes-upload-btn" class="glow-btn">Upload</button>
+          </div>
+        </div>
+
+        <div id="quotes-list" class="muted" style="margin-top:10px;">
+          <div style="font-size:14px; margin-bottom:6px;">Recent uploads</div>
+          <ul id="quotes-ul" style="margin:0; padding-left:16px; max-height:180px; overflow:auto;"></ul>
+
+          <div id="quotes-pager" style="display:flex; gap:6px; align-items:center; justify-content:flex-end; margin-top:8px;">
+            <button id="quotes-prev" class="q-mini-btn" disabled>&lt;</button>
+            <span id="quotes-page" class="muted">Page 1 of 1</span>
+            <button id="quotes-next" class="q-mini-btn" disabled>&gt;</button>
+          </div>
+        </div>
+      </div>
 						
 						<!-- New Business Details Upload (widget) -->
       <div class="card-dark bm-span-all" id="nb-widget">
