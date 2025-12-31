@@ -354,6 +354,84 @@
 				box-shadow: none !important; /* in case the "border" is actually an inset shadow */
 		}
 
+		/* =========================================================
+					✅ Call Stats widgets cleanup (Today + Yesterday)
+					- tighter layout, bigger readable numbers
+					- colored headers (Rico blue, RC orange)
+					- center-align headers + data under them
+					========================================================= */
+
+		#cs-today-table,
+		#cs-yest-table{
+				width: 100% !important;
+				border-collapse: collapse;
+				table-layout: fixed;          /* ✅ keeps columns aligned + stable */
+				font-size: 1.02rem;           /* ✅ slightly bigger overall */
+				margin: 2px auto 0 auto !important;  /* ✅ remove the negative margin weirdness */
+		}
+
+		#cs-today-table th,
+		#cs-yest-table th{
+				font-weight: 800;
+				padding: 10px 6px;            /* ✅ more breathing room */
+				text-align: center;           /* ✅ center headers */
+				white-space: nowrap;
+		}
+
+		#cs-today-table td,
+		#cs-yest-table td{
+				padding: 8px 6px;             /* ✅ taller rows so table fills card */
+				line-height: 1.1;
+		}
+
+		/* ✅ First column = metric labels (left aligned) */
+		#cs-today-table th:first-child,
+		#cs-yest-table th:first-child,
+		#cs-today-table td:first-child,
+		#cs-yest-table td:first-child{
+				text-align: left !important;
+				width: 44%;
+				padding-left: 2px;
+		}
+
+		/* ✅ Data columns = centered under header */
+		#cs-today-table th:nth-child(2),
+		#cs-today-table th:nth-child(3),
+		#cs-today-table th:nth-child(4),
+		#cs-yest-table th:nth-child(2),
+		#cs-yest-table th:nth-child(3),
+		#cs-yest-table th:nth-child(4),
+		#cs-today-table td:nth-child(2),
+		#cs-today-table td:nth-child(3),
+		#cs-today-table td:nth-child(4),
+		#cs-yest-table td:nth-child(2),
+		#cs-yest-table td:nth-child(3),
+		#cs-yest-table td:nth-child(4){
+				text-align: center !important;
+				width: 18.666%;
+		}
+
+		/* ✅ Header colors */
+		#cs-today-table th:nth-child(2),
+		#cs-yest-table th:nth-child(2){
+				color: #00f6ff;   /* Ricochet */
+		}
+
+		#cs-today-table th:nth-child(3),
+		#cs-yest-table th:nth-child(3){
+				color: #ff9f40;   /* RingCentral */
+		}
+
+		#cs-today-table th:nth-child(4),
+		#cs-yest-table th:nth-child(4){
+				color: #e9f6ff;   /* Total */
+		}
+
+		/* ✅ Make the numbers feel “bolder” */
+		#cs-today-table td:nth-child(n+2),
+		#cs-yest-table td:nth-child(n+2){
+				font-weight: 700;
+		}
 
 		/* ========================================================================= */
 
@@ -611,7 +689,7 @@
               onclick="toggleRicoColumn('cs-today-table', 'cs-today-rico-toggle', 1, 'reflexx_hide_rico_today')">^</span>
       </div>
 
-      <table id="cs-today-table" style="width:100%; margin:-2px auto 0 auto; border-collapse:collapse; font-size:0.95rem;">
+      <table id="cs-today-table">
 								<thead>
 										<tr>
 												<th></th>
@@ -677,7 +755,7 @@
               onclick="toggleRicoColumn('cs-yest-table', 'cs-yest-rico-toggle', 1, 'reflexx_hide_rico_yest')">^</span>
       </div>
 
-      <table id="cs-yest-table" style="width:100%; margin:-2px auto 0 auto; border-collapse:collapse; font-size:0.95rem;">
+      <table id="cs-yest-table">
 								<thead>
 										<tr>
 												<th></th>
