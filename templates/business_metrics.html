@@ -199,10 +199,51 @@
   .bm-span-all {
     grid-column: 1 / -1;
   }
+		
+		  /* ===============================
+							✅ ONE BIG WIDGET (header + 3 charts)
+							=============================== */
+
+				/* Big wrapper card */
+				#bm-trends-widget{
+						border-radius: 14px;
+						padding: 16px 18px;
+				}
+
+				/* Header row inside the big widget */
+				.bm-trends-head{
+						display:flex;
+						align-items:center;
+						justify-content:space-between;
+						gap:16px;
+						flex-wrap:wrap;
+						margin-bottom: 14px;
+				}
+
+				/* 3 charts row inside the big widget */
+				.bm-metrics-row{
+						display:grid;
+						grid-template-columns: repeat(3, minmax(260px, 1fr));
+						gap: 16px;
+						padding-top: 14px;
+						border-top: 1px solid rgba(255,255,255,0.08);
+				}
+
+				@media (max-width: 1100px) {
+						.bm-metrics-row { grid-template-columns: repeat(2, minmax(260px, 1fr)); }
+				}
+				@media (max-width: 720px) {
+						.bm-metrics-row { grid-template-columns: 1fr; }
+				}
+
+				/* Each chart section (NOT a card anymore) */
+				.bm-metric{
+						padding: 6px 6px 0 6px;
+				}
+
 
 </style>
 
-</style>
 
 <!-- ✅ SAME WRAPPER AS DASHBOARD_NEW -->
 <div class="page-wrapper" style="
@@ -232,19 +273,11 @@
     <!-- ========================= -->
     <!-- HEADER ROW: TITLE + UPLOAD CONTROLS -->
     <!-- ========================= -->
-				<!-- ✅ Business Metric Trends Widget -->
-				<div class="card-dark" style="
-						padding: 16px 18px;
-						margin-top: 10px;
-						border-radius: 14px;
-				">
+				<!-- ✅ ONE BIG Business Metric Trends Widget (Header + 3 Charts) -->
+				<div class="card-dark" id="bm-trends-widget" style="margin-top: 10px;">
 
-						<div style="
-								display:flex;
-								align-items:center;
-								justify-content:space-between;
-								gap:16px;
-						">
+						<!-- HEADER (title + upload controls) -->
+						<div class="bm-trends-head">
 								<h2 class="bm-h2" style="margin:0;">Business Metric Trends</h2>
 
 								<form id="metricsForm" enctype="multipart/form-data" style="margin:0;">
@@ -299,12 +332,34 @@
 										<div id="bmStatus" class="muted" style="margin-top:10px; font-size:13px;"></div>
 								</form>
 						</div>
+
+						<!-- CHARTS (now inside the same big widget) -->
+						<div class="bm-metrics-row">
+
+								<div class="bm-metric">
+										<h4 class="bm-card-title">Net Retention</h4>
+										<div class="bm-legend"><span class="bm-swatch"></span> Net Retention</div>
+										<div class="bm-canvas-wrap"><canvas id="bm-net"></canvas></div>
+								</div>
+
+								<div class="bm-metric">
+										<h4 class="bm-card-title">W&amp;A Premium</h4>
+										<div class="bm-legend"><span class="bm-swatch"></span> W&amp;A Premium</div>
+										<div class="bm-canvas-wrap"><canvas id="bm-wa"></canvas></div>
+								</div>
+
+								<div class="bm-metric">
+										<h4 class="bm-card-title">12MM Loss Ratio</h4>
+										<div class="bm-legend"><span class="bm-swatch"></span> 12MM Loss Ratio</div>
+										<div class="bm-canvas-wrap"><canvas id="bm-loss"></canvas></div>
+								</div>
+
+						</div>
 				</div>
 
+				<!-- (Business metrics upload history kept for JS, but hidden in UI) -->
+				<ul id="uploadHistory" style="display:none;"></ul>
 
-
-    <!-- (Business metrics upload history kept for JS, but hidden in UI) -->
-    <ul id="uploadHistory" style="display:none;"></ul>
 
     <!-- ========================= -->
     <!-- BUSINESS METRIC TRENDS -->
@@ -332,7 +387,29 @@
         <div class="bm-canvas-wrap"><canvas id="bm-loss"></canvas></div>
       </div>
 
-      <!-- New Business Details Upload (widget) -->
+      <!-- Quotes Uploads -->
+      <div class="card-dark bm-span-all" id="quotes-widget">
+        <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap; justify-content:space-between; width:100%;">
+          <h4 class="bm-card-title">Total Serious Quotes Detail</h4>
+          <div>
+            <input id="quotes-file" type="file" style="display:none;" />
+            <button id="quotes-upload-btn" class="glow-btn">Upload</button>
+          </div>
+        </div>
+
+        <div id="quotes-list" class="muted" style="margin-top:10px;">
+          <div style="font-size:14px; margin-bottom:6px;">Recent uploads</div>
+          <ul id="quotes-ul" style="margin:0; padding-left:16px; max-height:180px; overflow:auto;"></ul>
+
+          <div id="quotes-pager" style="display:flex; gap:6px; align-items:center; justify-content:flex-end; margin-top:8px;">
+            <button id="quotes-prev" class="q-mini-btn" disabled>&lt;</button>
+            <span id="quotes-page" class="muted">Page 1 of 1</span>
+            <button id="quotes-next" class="q-mini-btn" disabled>&gt;</button>
+          </div>
+        </div>
+      </div>
+						
+						<!-- New Business Details Upload (widget) -->
       <div class="card-dark bm-span-all" id="nb-widget">
         <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
           <h4 class="bm-card-title" style="margin-right:auto;">New Business Details</h4>
@@ -363,28 +440,6 @@
             <button id="nb-prev" class="q-mini-btn" disabled>&lt;</button>
             <span id="nb-page" class="muted">Page 1 of 1</span>
             <button id="nb-next" class="q-mini-btn" disabled>&gt;</button>
-          </div>
-        </div>
-      </div>
-
-      <!-- Quotes Uploads -->
-      <div class="card-dark bm-span-all" id="quotes-widget">
-        <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap; justify-content:space-between; width:100%;">
-          <h4 class="bm-card-title">Total Serious Quotes Detail</h4>
-          <div>
-            <input id="quotes-file" type="file" style="display:none;" />
-            <button id="quotes-upload-btn" class="glow-btn">Upload</button>
-          </div>
-        </div>
-
-        <div id="quotes-list" class="muted" style="margin-top:10px;">
-          <div style="font-size:14px; margin-bottom:6px;">Recent uploads</div>
-          <ul id="quotes-ul" style="margin:0; padding-left:16px; max-height:180px; overflow:auto;"></ul>
-
-          <div id="quotes-pager" style="display:flex; gap:6px; align-items:center; justify-content:flex-end; margin-top:8px;">
-            <button id="quotes-prev" class="q-mini-btn" disabled>&lt;</button>
-            <span id="quotes-page" class="muted">Page 1 of 1</span>
-            <button id="quotes-next" class="q-mini-btn" disabled>&gt;</button>
           </div>
         </div>
       </div>
