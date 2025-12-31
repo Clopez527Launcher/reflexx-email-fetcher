@@ -13,20 +13,18 @@
   /* --- Performance Buckets layout & spacing --- */
 
   .bucket-leaderboard {
-    list-style: none;
-    margin: 6px 0 0;
-    padding: 0 12px 0 0;  /* ✅ top right bottom left */
-    max-height: 110px;
-    overflow-y: auto;
-				padding-right: 12px;      /* ✅ space between scrollbar and score text */
+				list-style: none;
+				margin: 6px 0 0;
+				padding: 0;
+				max-height: 110px;
+				overflow-y: auto;
 				box-sizing: border-box;
-				scrollbar-gutter: stable; /* ✅ keeps layout steady (Chrome/Edge) */
+				scrollbar-gutter: stable;
 
+				scrollbar-width: thin;
+				scrollbar-color: #00ffff33 transparent;
+		}
 
-    /* thin, subtle scrollbars */
-    scrollbar-width: thin;
-    scrollbar-color: #00ffff33 transparent;
-  }
 
   .bucket-leaderboard::-webkit-scrollbar {
     width: 4px;
@@ -40,12 +38,13 @@
   }
 
   .bucket-item {
-    display: flex;
-    align-items: center;
-    gap: 8px;             /* 💡 space between pieces */
-    padding: 1px 0;
-    font-size: 1.0rem;
-  }
+				display: flex;
+				align-items: center;
+				gap: 8px;
+				padding: 1px 12px 1px 0;   /* ✅ add RIGHT padding so scrollbar never touches score */
+				font-size: 1.0rem;
+				box-sizing: border-box;
+		}
 
   .lb-rank {
     width: 1.6rem;
