@@ -12,22 +12,32 @@
 
   /* --- Performance Buckets layout & spacing --- */
 		
-		/* ✅ Quote Performance shortcut link */
+		/* ✅ Quote Performance shortcut link (centered + light gray) */
 		.quote-upload-link{
-				display: inline-block;
-				margin-top: 8px;
+				display: block;                 /* ✅ lets us center with text-align */
+				width: 100%;
+				margin-top: 10px;
+				text-align: center;             /* ✅ centered under the column */
 				font-size: 12px;
 				font-weight: 700;
-				color: #00f6ff;
+				color: rgba(233,246,255,0.65);  /* ✅ light gray */
 				text-decoration: none;
-				opacity: 0.9;
+				opacity: 0.95;
 		}
 
 		.quote-upload-link:hover{
+				color: rgba(233,246,255,0.90);
 				text-decoration: underline;
-				opacity: 1;
 		}
 
+		/* tiny icon spacing */
+		.quote-upload-link .qicon{
+				margin-right: 6px;
+				font-size: 13px;
+				position: relative;
+				top: -1px;
+				opacity: 0.9;
+		}
 
   .bucket-leaderboard {
 				list-style: none;
@@ -533,8 +543,9 @@
             </div>
             <ul id="ce-quote-list" class="bucket-leaderboard"
                 style="list-style:none; margin:6px 0 0; padding:0; font-size:0.9rem;"></ul>
-																<a class="quote-upload-link" href="/uploads">Upload Quote Detail</a>
-
+																<a class="quote-upload-link" href="/uploads">
+																		<span class="qicon">⤒</span> Upload Quote Detail
+																</a>
           </div>
         </div>
 
