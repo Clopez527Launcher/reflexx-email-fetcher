@@ -1647,12 +1647,8 @@ def advisor_pro_series():
 
 # ---------- /api/buckets ----------
 @app.route("/api/buckets", methods=["GET"])
+@login_required
 def buckets():
-    """
-    Returns the leaderboard for phone / quoting / movement
-    over a date range.
-    Frontend calls: /api/buckets?bucket=phone&start=YYYY-MM-DD&end=YYYY-MM-DD
-    """
     bucket = request.args.get("bucket")
     start_str = request.args.get("start")
     end_str   = request.args.get("end")
@@ -1660,60 +1656,47 @@ def buckets():
     if not (bucket and start_str and end_str):
         return jsonify([])
 
+    # Map bucket -> score column
+    col_map = {
+        "phone":   "phone_activity_score",
+        "quoting": "quote_activity_score",
+        "movement":"movement_activity_score",
+    }
+    col = col_map.get(bucket)
+    if not col:
+        return jsonify([])
+
+    # ✅ session-scoped manager (matches your other endpoints)
+    mgr_id = session.get("manager_id")
+    if not mgr_id:
+        return jsonify({"error": "unauthorized"}), 401
+
     conn = get_db_connection()
     cur = conn.cursor(dictionary=True)
 
-    # we are using fact_daily_scores like you showed
-    if bucket == "phone":
-        sql = """
-            SELECT
-                f.user_id,
-                u.user_name,
-                AVG(f.phone_activity_score) AS avg_score
-            FROM fact_daily_scores AS f
-            LEFT JOIN users AS u ON u.id = f.user_id
-            WHERE f.date BETWEEN %s AND %s
-            GROUP BY f.user_id, u.user_name
-            ORDER BY avg_score DESC
-            LIMIT 10
-        """
-    elif bucket == "quoting":
-        sql = """
-            SELECT
-                f.user_id,
-                u.user_name,
-                AVG(f.quote_activity_score) AS avg_score
-            FROM fact_daily_scores AS f
-            LEFT JOIN users AS u ON u.id = f.user_id
-            WHERE f.date BETWEEN %s AND %s
-            GROUP BY f.user_id, u.user_name
-            ORDER BY avg_score DESC
-            LIMIT 10
-        """
-    elif bucket == "movement":
-        sql = """
-            SELECT
-                f.user_id,
-                u.user_name,
-                AVG(f.movement_activity_score) AS avg_score
-            FROM fact_daily_scores AS f
-            LEFT JOIN users AS u ON u.id = f.user_id
-            WHERE f.date BETWEEN %s AND %s
-            GROUP BY f.user_id, u.user_name
-            ORDER BY avg_score DESC
-            LIMIT 10
-        """
-    else:
-        cur.close()
-        conn.close()
-        return jsonify([])
+    sql = f"""
+        SELECT
+            f.user_id,
+            u.nickname AS user_name,
+            AVG(f.{col}) AS avg_score
+        FROM fact_daily_scores f
+        JOIN users u ON u.id = f.user_id
+        WHERE f.date BETWEEN %s AND %s
+          AND u.manager_id = %s
+          AND u.role = 'user'
+          AND COALESCE(u.is_active, 1) = 1
+        GROUP BY f.user_id, u.nickname
+        ORDER BY avg_score DESC
+        LIMIT 10
+    """
 
-    cur.execute(sql, (start_str, end_str))
+    cur.execute(sql, (start_str, end_str, mgr_id))
     rows = cur.fetchall()
+
     cur.close()
     conn.close()
-
     return jsonify(rows)
+
 
 # ---------- Ask Reflexx AI ---------
 @app.route("/api/ask_reflexx_ai", methods=["POST"])
