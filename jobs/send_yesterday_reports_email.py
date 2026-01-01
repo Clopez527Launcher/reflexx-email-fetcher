@@ -16,7 +16,7 @@ import postmark
 from generate_daily_report import main as generate_report_main, MYSQL_CONFIG
 
 
-POSTMARK_SERVER_TOKEN = os.getenv("POSTMARK_SERVER_TOKEN")
+POSTMARK_SERVER_TOKEN = os.getenv("POSTMARK_SERVER_TOKEN") or os.getenv("POSTMARK_API_TOKEN")
 POSTMARK_FROM_EMAIL   = os.getenv("POSTMARK_FROM_EMAIL") or os.getenv("FROM_EMAIL")
 
 def get_enabled_managers(conn):
