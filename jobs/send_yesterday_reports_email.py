@@ -110,8 +110,8 @@ def main():
 
         subject = f"Reflexx — Yesterday Summary ({report_date_str})"
         body = (
-            f"Attached is your Reflexx Yesterday Summary for {report_date_str}.\n\n"
-            f"— Reflexx"
+            f"Attached is your Reflexx Summary for Yesterday {report_date_str}.\n\n"
+            f"Thank you for your partnership!"
         )
 
         print(f"[Email] Sending to {to_email} manager_id={manager_id} date={report_date_str}")

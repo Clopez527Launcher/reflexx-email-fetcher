@@ -3056,6 +3056,54 @@ def api_manager_weekly_summary_toggle():
         try: conn.close()
         except: pass
     
+@app.route("/api/manager/daily-summary-toggle", methods=["GET", "POST"])
+def daily_summary_toggle():
+    if "manager_id" not in session:
+        return jsonify({"ok": False, "error": "not_logged_in"}), 401
+
+    manager_id = int(session["manager_id"])
+
+    conn = get_db_connection()
+    cur = conn.cursor(dictionary=True)
+
+    if request.method == "GET":
+        cur.execute("""
+            SELECT manager_summary_daily_enabled
+            FROM users
+            WHERE id = %s
+              AND role = 'manager'
+              AND is_active = 1
+            LIMIT 1
+        """, (manager_id,))
+        row = cur.fetchone()
+        cur.close()
+        conn.close()
+
+        enabled = 0
+        if row and row.get("manager_summary_daily_enabled") is not None:
+            enabled = int(row["manager_summary_daily_enabled"])
+
+        return jsonify({"ok": True, "enabled": enabled})
+
+    # POST
+    data = request.get_json(silent=True) or {}
+    enabled = 1 if data.get("enabled") else 0
+
+    cur.execute("""
+        UPDATE users
+        SET manager_summary_daily_enabled = %s
+        WHERE id = %s
+          AND role = 'manager'
+          AND is_active = 1
+        LIMIT 1
+    """, (enabled, manager_id))
+
+    conn.commit()
+    cur.close()
+    conn.close()
+
+    return jsonify({"ok": True, "enabled": enabled})
+
 
 # ✅ User Model for Flask-Login
 class User(UserMixin):
