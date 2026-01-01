@@ -1436,6 +1436,7 @@ def ce_buckets():
             FROM fact_daily fd
             JOIN users u ON u.id = fd.user_id
             WHERE u.manager_id = %s
+              AND COALESCE(u.is_active, 1) = 1
               AND fd.date < %s
               AND (
                     fd.phone_ce_raw    IS NOT NULL
@@ -1474,6 +1475,7 @@ def ce_buckets():
             FROM fact_daily fd
             JOIN users u ON u.id = fd.user_id
             WHERE u.manager_id = %s
+              AND COALESCE(u.is_active, 1) = 1
               AND fd.date = %s
             ORDER BY COALESCE(u.nickname, u.email)
         """, (mgr_id_int, latest_date))
