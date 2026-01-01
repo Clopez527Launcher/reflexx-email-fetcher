@@ -1846,6 +1846,21 @@ def bucket_phone_detail():
             """,
             (user_id, start, end)
         )
+        
+        # ✅ 3a) block inactive users (ex: Zach)
+        cur.execute("""
+            SELECT 1
+            FROM users
+            WHERE id = %s
+              AND COALESCE(is_active, 1) = 1
+            LIMIT 1
+        """, (user_id,))
+        ok = cur.fetchone()
+        if not ok:
+            cur.close()
+            conn.close()
+            return jsonify(empty_payload(user_name or "Inactive"))
+
         sums = cur.fetchone()
         cur.close()
         conn.close()
