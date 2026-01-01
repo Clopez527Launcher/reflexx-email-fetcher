@@ -43,22 +43,24 @@ def get_yesterday_report(conn, manager_id: int, report_date_str: str):
     return cur.fetchone()
 
 def send_postmark_email_with_pdf(to_email: str, subject: str, body_text: str, filename: str, pdf_bytes: bytes):
-    # ✅ Postmark Python expects attachments as list[dict]
-    attachment = {
-        "Name": filename,
-        "Content": pdf_bytes,
-        "ContentType": "application/pdf"
-    }
+    from postmark import PostmarkClient
+    import base64
 
-    pm = postmark.PMMail(
-        api_key=POSTMARK_SERVER_TOKEN,
-        sender=POSTMARK_FROM_EMAIL,
-        to=to_email,
-        subject=subject,
-        text_body=body_text,
-        attachments=[attachment],
+    client = PostmarkClient(server_token=POSTMARK_SERVER_TOKEN)
+
+    client.emails.send(
+        From=POSTMARK_FROM_EMAIL,
+        To=to_email,
+        Subject=subject,
+        TextBody=body_text,
+        Attachments=[
+            {
+                "Name": filename,
+                "Content": base64.b64encode(pdf_bytes).decode("utf-8"),
+                "ContentType": "application/pdf"
+            }
+        ]
     )
-    pm.send()
 
 def main():
     if not POSTMARK_SERVER_TOKEN:
