@@ -1983,6 +1983,20 @@ def bucket_quoting_detail():
             conn.close()
             return jsonify(empty_payload(user_name or "Inactive"))
 
+        # ✅ block inactive users (ex: Zach)
+        cur.execute("""
+            SELECT 1
+            FROM users
+            WHERE id = %s
+              AND COALESCE(is_active, 1) = 1
+            LIMIT 1
+        """, (user_id,))
+        ok = cur.fetchone()
+        if not ok:
+            cur.close()
+            conn.close()
+            return jsonify(empty_payload(user_name or "Inactive"))
+
         # sum quoting metrics
         cur.execute(
             """
@@ -1997,8 +2011,10 @@ def bucket_quoting_detail():
             (user_id, start, end)
         )
         sums = cur.fetchone()
+
         cur.close()
         conn.close()
+
 
         if not sums:
             return jsonify(empty_payload(user_name or f"User #{user_id}"))

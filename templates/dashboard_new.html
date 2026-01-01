@@ -1380,7 +1380,7 @@ async function loadApSeries() {
       let label = emp === "all"
         ? "All Employees"
         : sel.options[sel.selectedIndex].text;
-      statusEl.textContent = `Advisor Pro activity for last 7 days — ${label}`;
+      statusEl.textContent = `Advisor Pro activity for last 10 days — ${label}`;
     }
   } catch (err) {
     console.error("[AdvisorPro] Load error:", err);
