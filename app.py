@@ -192,7 +192,7 @@ from sqlalchemy import text  # make sure this is near the top of app.py
 from flask import request, jsonify
 from datetime import datetime
 
-@app.get("/api/buckets")
+@app.get("/api/buckets_old")
 def get_buckets():
     bucket = request.args.get("bucket")
     start_raw = request.args.get("start")
