@@ -45,7 +45,7 @@
     align-items: center;
 				
 				/* ✅ move the game left so it centers under the top "R" */
-    transform: translateX(var(--brick-shift, 0px));
+
 
   }
 
@@ -88,7 +88,7 @@
   const ROW_COLORS = ["#ff4d4d","#ff9f40","#ffd966","#12d87b","#00f6ff"];
 
   // Speeds (px/sec)
-  let BALL_START_SPEED = 360;
+  let BALL_START_SPEED = 260;
   let PADDLE_SPEED = 760;
 
   const ballRadius = 8;
@@ -129,6 +129,7 @@
   // ----- Center under R -----
   function applyBrickShift() {
     requestAnimationFrame(() => {
+						shell.style.marginLeft = "0px";
       const shellRect = shell.getBoundingClientRect();
       const shellCenterX = shellRect.left + (shellRect.width / 2);
       const screenCenterX = window.innerWidth / 2;
