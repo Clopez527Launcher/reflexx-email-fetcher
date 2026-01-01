@@ -1,10 +1,16 @@
+# jobs/generate_yesterday_reports.py
+
 import os
+import sys
+import traceback
 from datetime import datetime, timedelta
+
 from pytz import timezone
 import mysql.connector
 
-# ✅ import your generator
+# ✅ import your generator + DB config
 from generate_daily_report import main as generate_report_main, MYSQL_CONFIG
+
 
 def get_enabled_managers(conn):
     cur = conn.cursor(dictionary=True)
@@ -17,11 +23,11 @@ def get_enabled_managers(conn):
     """)
     return cur.fetchall()
 
+
 def upsert_report(conn, manager_id: int, report_date_str: str, filename: str, pdf_bytes: bytes):
     cur = conn.cursor()
 
     # ✅ If there's already a report for that manager+date, overwrite it
-    # We'll do it by: delete then insert (simple + reliable)
     cur.execute("""
         DELETE FROM reports
         WHERE manager_id = %s
@@ -35,35 +41,58 @@ def upsert_report(conn, manager_id: int, report_date_str: str, filename: str, pd
 
     conn.commit()
 
+
 def main():
     pac = timezone("US/Pacific")
     report_date = (datetime.now(pac).date() - timedelta(days=1))
     report_date_str = report_date.strftime("%Y-%m-%d")
 
+    print("[Generate] Starting job", flush=True)
+    print("[Generate] report_date_str =", report_date_str, flush=True)
+
     conn = mysql.connector.connect(**MYSQL_CONFIG)
 
-    managers = get_enabled_managers(conn)
-    if not managers:
-        print("No managers have manager_summary_daily_enabled=1")
-        conn.close()
-        return
+    try:
+        managers = get_enabled_managers(conn)
+        if not managers:
+            print("[Generate] No managers have manager_summary_daily_enabled=1", flush=True)
+            return
 
+        for m in managers:
+            manager_id = int(m["id"])
+            print(f"[Generate] manager_id={manager_id} report_date={report_date_str}", flush=True)
 
-    for m in managers:
-        manager_id = int(m["id"])
-        print(f"[Generate] manager_id={manager_id} report_date={report_date_str}")
+            try:
+                filename, pdf_bytes = generate_report_main(manager_id)
+            except Exception:
+                print(f"[Generate] FAILED manager_id={manager_id}", flush=True)
+                traceback.print_exc()
+                sys.stdout.flush()
+                continue
 
+            try:
+                upsert_report(conn, manager_id, report_date_str, filename, pdf_bytes)
+                print(f"[Generate] Saved report manager_id={manager_id} date={report_date_str}", flush=True)
+            except Exception:
+                print(f"[Generate] DB SAVE FAILED manager_id={manager_id} date={report_date_str}", flush=True)
+                traceback.print_exc()
+                sys.stdout.flush()
+                continue
+
+    finally:
         try:
-            filename, pdf_bytes = generate_report_main(manager_id)
-        except Exception as e:
-            print(f"[Generate] FAILED manager_id={manager_id} err={e}")
-            continue
+            conn.close()
+        except Exception:
+            pass
 
+    print("[Generate] Done.", flush=True)
 
-        upsert_report(conn, manager_id, report_date_str, filename, pdf_bytes)
-
-    conn.close()
-    print("Done.")
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except Exception:
+        print("[Generate] FATAL ERROR", flush=True)
+        traceback.print_exc()
+        sys.stdout.flush()
+        raise
