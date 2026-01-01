@@ -2,38 +2,12 @@ import os
 from datetime import datetime, timedelta
 from pytz import timezone
 import mysql.connector
-from email.message import EmailMessage
-import smtplib
+import postmark
 
 from generate_daily_report import MYSQL_CONFIG
 
-# -----------------------------
-# ✅ SMTP CONFIG (set as Railway vars)
-# -----------------------------
-SMTP_HOST = os.getenv("SMTP_HOST")
-SMTP_PORT = int(os.getenv("SMTP_PORT", "587"))
-SMTP_USER = os.getenv("SMTP_USER")
-SMTP_PASS = os.getenv("SMTP_PASS")
-FROM_EMAIL = os.getenv("FROM_EMAIL", SMTP_USER)
-
-def send_email_with_pdf(to_email: str, subject: str, body: str, filename: str, pdf_bytes: bytes):
-    msg = EmailMessage()
-    msg["From"] = FROM_EMAIL
-    msg["To"] = to_email
-    msg["Subject"] = subject
-    msg.set_content(body)
-
-    msg.add_attachment(
-        pdf_bytes,
-        maintype="application",
-        subtype="pdf",
-        filename=filename
-    )
-
-    with smtplib.SMTP(SMTP_HOST, SMTP_PORT) as s:
-        s.starttls()
-        s.login(SMTP_USER, SMTP_PASS)
-        s.send_message(msg)
+POSTMARK_SERVER_TOKEN = os.getenv("POSTMARK_SERVER_TOKEN")
+POSTMARK_FROM_EMAIL   = os.getenv("POSTMARK_FROM_EMAIL") or os.getenv("FROM_EMAIL")
 
 def get_enabled_managers(conn):
     cur = conn.cursor(dictionary=True)
@@ -58,10 +32,30 @@ def get_yesterday_report(conn, manager_id: int, report_date_str: str):
     """, (manager_id, report_date_str))
     return cur.fetchone()
 
+def send_postmark_email_with_pdf(to_email: str, subject: str, body_text: str, filename: str, pdf_bytes: bytes):
+    # ✅ Postmark Python expects attachments as list[dict]
+    attachment = {
+        "Name": filename,
+        "Content": pdf_bytes,
+        "ContentType": "application/pdf"
+    }
+
+    pm = postmark.PMMail(
+        api_key=POSTMARK_SERVER_TOKEN,
+        sender=POSTMARK_FROM_EMAIL,
+        to=to_email,
+        subject=subject,
+        text_body=body_text,
+        attachments=[attachment],
+    )
+    pm.send()
+
 def main():
-    # ✅ sanity check
-    if not all([SMTP_HOST, SMTP_USER, SMTP_PASS, FROM_EMAIL]):
-        print("Missing SMTP env vars: SMTP_HOST/SMTP_USER/SMTP_PASS/FROM_EMAIL")
+    if not POSTMARK_SERVER_TOKEN:
+        print("Missing env var: POSTMARK_SERVER_TOKEN")
+        return
+    if not POSTMARK_FROM_EMAIL:
+        print("Missing env var: POSTMARK_FROM_EMAIL (or FROM_EMAIL)")
         return
 
     pac = timezone("US/Pacific")
@@ -71,9 +65,17 @@ def main():
     conn = mysql.connector.connect(**MYSQL_CONFIG)
 
     managers = get_enabled_managers(conn)
+    if not managers:
+        print("No managers have manager_summary_daily_enabled=1")
+        conn.close()
+        return
+
     for m in managers:
         manager_id = int(m["id"])
         to_email = (m["email"] or "").strip()
+        if not to_email:
+            print(f"[Email] manager_id={manager_id} has no email, skipping")
+            continue
 
         row = get_yesterday_report(conn, manager_id, report_date_str)
         if not row:
@@ -90,7 +92,7 @@ def main():
         )
 
         print(f"[Email] Sending to {to_email} manager_id={manager_id} date={report_date_str}")
-        send_email_with_pdf(to_email, subject, body, filename, pdf_bytes)
+        send_postmark_email_with_pdf(to_email, subject, body, filename, pdf_bytes)
 
     conn.close()
     print("Done.")

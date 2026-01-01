@@ -45,13 +45,20 @@ def main():
     managers = get_enabled_managers(conn)
     if not managers:
         print("No managers have manager_summary_daily_enabled=1")
+        conn.close()
         return
+
 
     for m in managers:
         manager_id = int(m["id"])
         print(f"[Generate] manager_id={manager_id} report_date={report_date_str}")
 
-        filename, pdf_bytes = generate_report_main(manager_id)
+        try:
+            filename, pdf_bytes = generate_report_main(manager_id)
+        except Exception as e:
+            print(f"[Generate] FAILED manager_id={manager_id} err={e}")
+            continue
+
 
         upsert_report(conn, manager_id, report_date_str, filename, pdf_bytes)
 
