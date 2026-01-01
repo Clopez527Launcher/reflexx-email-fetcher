@@ -2734,6 +2734,7 @@ def get_manager_employees():
             FROM users
             WHERE manager_id = %s
               AND role = 'user'
+              AND COALESCE(is_active, 1) = 1
             ORDER BY email
             """,
             (mgr_id,),

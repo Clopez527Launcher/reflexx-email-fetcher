@@ -1,0 +1,5 @@
+mysql -h autorack.proxy.rlwy.net -P 55185 -u root -p --protocol=TCP railway --batch --raw --column-names -e "SELECT f.date,f.user_id,f.user_name,f.inbounds,f.outbounds,f.ib_time_minutes,f.ob_time_minutes,f.advisor_pro_minutes,f.mouse_distance,f.keystrokes,f.mouse_clicks,f.idle_time_seconds,f.quoted_items,f.quotes_unique,COALESCE(s.vc_item_count,0) AS vc_item_count,COALESCE(s.total_policies,0) AS total_policies,COALESCE(e.daily_elite_calls,0) AS daily_elite_calls FROM fact_daily f LEFT JOIN (SELECT issue_date,sub_producer_name,SUM(item_count) AS vc_item_count,COUNT(*) AS total_policies FROM nb_detail_reports WHERE issue_date BETWEEN '2025-10-13' AND '2025-12-30' GROUP BY issue_date,sub_producer_name) s ON s.issue_date=f.date AND s.sub_producer_name=f.user_name LEFT JOIN elite_calls_fact_daily e ON e.day=f.date AND e.user_id=f.user_id AND e.manager_id=4 WHERE f.date BETWEEN '2025-10-13' AND '2025-12-30' ORDER BY f.date,f.user_id;" | powershell -NoProfile -Command "$input | ForEach-Object { $_ -replace \"`t\", \",\" }" > fact_daily_export_with_elite_calls.csv
+
+
+
+Pass: vbNVbSKVuUvYRJzhewpufAXbxcatfKIc
