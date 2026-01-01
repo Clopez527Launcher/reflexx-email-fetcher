@@ -3058,51 +3058,63 @@ def api_manager_weekly_summary_toggle():
     
 @app.route("/api/manager/daily-summary-toggle", methods=["GET", "POST"])
 def daily_summary_toggle():
-    if "manager_id" not in session:
+    # ✅ must be logged in
+    if "user_id" not in session:
         return jsonify({"ok": False, "error": "not_logged_in"}), 401
 
-    manager_id = int(session["manager_id"])
+    manager_user_id = int(session["user_id"])
 
-    conn = get_db_connection()
-    cur = conn.cursor(dictionary=True)
+    try:
+        conn = mysql.connector.connect(**MYSQL_CONFIG)
+        cur = conn.cursor(dictionary=True)
 
-    if request.method == "GET":
+        # -------------------
+        # GET (load checkbox)
+        # -------------------
+        if request.method == "GET":
+            cur.execute("""
+                SELECT manager_summary_daily_enabled
+                FROM users
+                WHERE id = %s
+                  AND role = 'manager'
+                  AND is_active = 1
+                LIMIT 1
+            """, (manager_user_id,))
+            row = cur.fetchone()
+
+            enabled = 0
+            if row and row.get("manager_summary_daily_enabled") is not None:
+                enabled = int(row["manager_summary_daily_enabled"])
+
+            cur.close()
+            conn.close()
+            return jsonify({"ok": True, "enabled": enabled})
+
+        # -------------------
+        # POST (save checkbox)
+        # -------------------
+        data = request.get_json(silent=True) or {}
+        enabled = 1 if data.get("enabled") else 0
+
         cur.execute("""
-            SELECT manager_summary_daily_enabled
-            FROM users
+            UPDATE users
+            SET manager_summary_daily_enabled = %s
             WHERE id = %s
               AND role = 'manager'
               AND is_active = 1
             LIMIT 1
-        """, (manager_id,))
-        row = cur.fetchone()
+        """, (enabled, manager_user_id))
+
+        conn.commit()
         cur.close()
         conn.close()
 
-        enabled = 0
-        if row and row.get("manager_summary_daily_enabled") is not None:
-            enabled = int(row["manager_summary_daily_enabled"])
-
         return jsonify({"ok": True, "enabled": enabled})
 
-    # POST
-    data = request.get_json(silent=True) or {}
-    enabled = 1 if data.get("enabled") else 0
-
-    cur.execute("""
-        UPDATE users
-        SET manager_summary_daily_enabled = %s
-        WHERE id = %s
-          AND role = 'manager'
-          AND is_active = 1
-        LIMIT 1
-    """, (enabled, manager_id))
-
-    conn.commit()
-    cur.close()
-    conn.close()
-
-    return jsonify({"ok": True, "enabled": enabled})
+    except Exception as e:
+        print("[daily-summary-toggle] ERROR:", str(e), flush=True)
+        traceback.print_exc()
+        return jsonify({"ok": False, "error": str(e)}), 500
 
 
 # ✅ User Model for Flask-Login
