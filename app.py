@@ -186,6 +186,144 @@ MYSQL_CONFIG = {
 
 app.config['MYSQL_CONFIG'] = MYSQL_CONFIG
 
+#Agency code and profile icon setup
+from flask import request, jsonify, session, redirect, render_template
+from werkzeug.security import check_password_hash, generate_password_hash
+
+@app.route("/api/me", methods=["GET"])
+def api_me_get():
+    user_id = session.get("user_id")
+    if not user_id:
+        return jsonify({"ok": False, "error": "unauthorized"}), 401
+
+    conn = get_db_connection()
+    cur = conn.cursor()
+
+    cur.execute("""
+        SELECT id, email, nickname, role, manager_id, agency_code
+        FROM users
+        WHERE id = %s
+        LIMIT 1
+    """, (user_id,))
+
+    row = cur.fetchone()
+
+    # dict-safe mapping
+    if row and isinstance(row, dict):
+        out = row
+    else:
+        cols = [d[0] for d in cur.description]
+        out = dict(zip(cols, row)) if row else None
+
+    cur.close()
+    conn.close()
+
+    if not out:
+        return jsonify({"ok": False, "error": "not_found"}), 404
+
+    return jsonify({"ok": True, "user": out})
+
+@app.route("/api/me", methods=["POST"])
+def api_me_update():
+    user_id = session.get("user_id")
+    if not user_id:
+        return jsonify({"ok": False, "error": "unauthorized"}), 401
+
+    data = request.get_json(silent=True) or {}
+
+    new_email = (data.get("email") or "").strip()
+    new_agency_code = (data.get("agency_code") or "").strip()
+
+    current_password = data.get("current_password") or ""
+    new_password = data.get("new_password") or ""
+
+    # basic validation
+    if new_email and ("@" not in new_email or "." not in new_email):
+        return jsonify({"ok": False, "error": "bad_email"}), 400
+
+    if new_password and len(new_password) < 6:
+        return jsonify({"ok": False, "error": "password_too_short"}), 400
+
+    conn = get_db_connection()
+    cur = conn.cursor()
+
+    # load current user record
+    cur.execute("SELECT email, password_hash FROM users WHERE id = %s LIMIT 1", (user_id,))
+    row = cur.fetchone()
+
+    if not row:
+        cur.close()
+        conn.close()
+        return jsonify({"ok": False, "error": "not_found"}), 404
+
+    if isinstance(row, dict):
+        stored_hash = row.get("password_hash") or ""
+    else:
+        stored_hash = row[1] or ""
+
+    # If changing password, require current password
+    if new_password:
+        if not current_password:
+            cur.close()
+            conn.close()
+            return jsonify({"ok": False, "error": "missing_current_password"}), 400
+
+        # Support BOTH: werkzeug-hash OR legacy plaintext
+        ok = False
+        try:
+            ok = check_password_hash(stored_hash, current_password)
+        except Exception:
+            ok = False
+
+        if not ok:
+            # legacy plaintext fallback
+            if stored_hash == current_password:
+                ok = True
+
+        if not ok:
+            cur.close()
+            conn.close()
+            return jsonify({"ok": False, "error": "bad_current_password"}), 403
+
+    # build dynamic update
+    fields = []
+    params = []
+
+    if new_email:
+        fields.append("email = %s")
+        params.append(new_email)
+
+    # allow blank agency_code (set NULL)
+    if "agency_code" in data:
+        if new_agency_code == "":
+            fields.append("agency_code = NULL")
+        else:
+            fields.append("agency_code = %s")
+            params.append(new_agency_code)
+
+    if new_password:
+        # store as real hash going forward
+        hashed = generate_password_hash(new_password)
+        fields.append("password_hash = %s")
+        params.append(hashed)
+
+    if not fields:
+        cur.close()
+        conn.close()
+        return jsonify({"ok": True, "updated": False})
+
+    params.append(user_id)
+
+    cur.execute(f"UPDATE users SET {', '.join(fields)} WHERE id = %s LIMIT 1", tuple(params))
+    conn.commit()
+
+    cur.close()
+    conn.close()
+
+    return jsonify({"ok": True, "updated": True})
+
+
+
 
 from sqlalchemy import text  # make sure this is near the top of app.py
 
