@@ -10,6 +10,7 @@ if ROOT_DIR not in sys.path:
 
 from pytz import timezone
 import mysql.connector
+import postmark
 
 # ✅ import your generator + DB config
 from generate_daily_report import main as generate_report_main, MYSQL_CONFIG
@@ -104,7 +105,7 @@ def main():
         send_postmark_email_with_pdf(to_email, subject, body, filename, pdf_bytes)
 
     conn.close()
-    print("Done.")
+    print("Done.", flush=True)
 
 if __name__ == "__main__":
     main()
