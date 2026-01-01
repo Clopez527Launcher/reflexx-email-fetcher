@@ -1075,6 +1075,15 @@ def settings():
 
     return render_template("settings.html")
     
+# Profile Page    
+@app.route("/profile")
+def profile():
+    user_id = session.get("user_id")
+    if not user_id:
+        return redirect("/login")
+    return render_template("profile.html")
+
+    
 # ✅ Session Check Route (Step 2)
 @app.route('/check-session')
 def check_session():
