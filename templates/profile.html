@@ -7,64 +7,71 @@
   <h1 style="color:#fff; margin:18px 0 6px;">My Info</h1>
   <p style="color:rgba(255,255,255,0.7); margin:0 0 18px;">Update your account details.</p>
 
-  <div class="settings-widget">
-    <div class="widget-header">
-      <div>
-        <h3 class="widget-title blue-title">Account</h3>
-        <p class="widget-subtitle">Email, password, and agency code.</p>
-      </div>
-    </div>
+  <!-- ✅ CENTERED CARD (header stays left) -->
+  <div style="display:flex; justify-content:center;">
 
-    <div style="display:grid; gap:14px; margin-top:12px; max-width:520px;">
-
-      <div>
-        <div style="color:#cfefff; font-weight:800; margin-bottom:6px;">Email</div>
-        <input id="meEmail" type="text"
-               style="width:100%; padding:10px 12px; border-radius:10px;
-                      background:rgba(0,0,0,0.25); border:1px solid rgba(255,255,255,0.12); color:#fff;">
-      </div>
-
-      <div>
-        <div style="color:#cfefff; font-weight:800; margin-bottom:6px;">Agency Code</div>
-        <input id="meAgency" type="text"
-               placeholder="ex: RC-042"
-               style="width:100%; padding:10px 12px; border-radius:10px;
-                      background:rgba(0,0,0,0.25); border:1px solid rgba(255,255,255,0.12); color:#fff;">
-      </div>
-
-      <hr style="border:none; border-top:1px solid rgba(255,255,255,0.08); margin:6px 0;">
-
-      <div>
-        <div style="color:#cfefff; font-weight:800; margin-bottom:6px;">New Password</div>
-        <input id="meNewPw" type="password"
-               style="width:100%; padding:10px 12px; border-radius:10px;
-                      background:rgba(0,0,0,0.25); border:1px solid rgba(255,255,255,0.12); color:#fff;">
-        <div style="color:rgba(255,255,255,0.55); margin-top:6px; font-size:12px;">
-          Leave blank to keep your current password.
+    <div class="settings-widget" style="width:min(720px, 92vw);">
+      <div class="widget-header">
+        <div>
+          <h3 class="widget-title blue-title">Account</h3>
+          <p class="widget-subtitle">Email, password, and agency code.</p>
         </div>
       </div>
 
-      <button id="meSaveBtn"
-              style="margin-top:6px; width:fit-content; padding:10px 14px; border-radius:10px;
-                     background:#00e6e6; color:#001018; font-weight:900; border:none; cursor:pointer;">
-        Save Changes
-      </button>
+      <!-- ✅ Center the form inside the card too -->
+      <div style="display:grid; gap:14px; margin-top:12px; max-width:520px; margin-left:auto; margin-right:auto;">
 
-      <div id="meToast" style="display:none; margin-top:8px; padding:10px 12px; border-radius:10px;
-           background: rgba(0,230,230,0.12); border: 1px solid rgba(0,230,230,0.35);
-           color:#bffcff; font-weight:900; width:fit-content;">
-        Saved ✅
+        <div>
+          <div style="color:#cfefff; font-weight:800; margin-bottom:6px;">Email</div>
+          <input id="meEmail" type="text"
+                 style="width:100%; padding:10px 12px; border-radius:10px;
+                        background:rgba(0,0,0,0.25); border:1px solid rgba(255,255,255,0.12); color:#fff;">
+        </div>
+
+        <div>
+          <div style="color:#cfefff; font-weight:800; margin-bottom:6px;">Agency Code</div>
+          <input id="meAgency" type="text"
+                 placeholder="ex: RC-042"
+                 style="width:100%; padding:10px 12px; border-radius:10px;
+                        background:rgba(0,0,0,0.25); border:1px solid rgba(255,255,255,0.12); color:#fff;">
+        </div>
+
+        <hr style="border:none; border-top:1px solid rgba(255,255,255,0.08); margin:6px 0;">
+
+        <div>
+          <div style="color:#cfefff; font-weight:800; margin-bottom:6px;">New Password</div>
+          <input id="meNewPw" type="password"
+                 style="width:100%; padding:10px 12px; border-radius:10px;
+                        background:rgba(0,0,0,0.25); border:1px solid rgba(255,255,255,0.12); color:#fff;">
+          <div style="color:rgba(255,255,255,0.55); margin-top:6px; font-size:12px;">
+            Leave blank to keep your current password.
+          </div>
+        </div>
+
+        <!-- ✅ Center button -->
+        <button id="meSaveBtn"
+                style="margin-top:6px; width:fit-content; margin-left:auto; margin-right:auto;
+                       padding:10px 14px; border-radius:10px;
+                       background:#00e6e6; color:#001018; font-weight:900; border:none; cursor:pointer;">
+          Save Changes
+        </button>
+
+        <div id="meToast" style="display:none; margin-top:8px; padding:10px 12px; border-radius:10px;
+             background: rgba(0,230,230,0.12); border: 1px solid rgba(0,230,230,0.35);
+             color:#bffcff; font-weight:900; width:fit-content; margin-left:auto; margin-right:auto;">
+          Saved ✅
+        </div>
+
+        <div id="meErr" style="display:none; margin-top:8px; padding:10px 12px; border-radius:10px;
+             background: rgba(255,0,0,0.10); border: 1px solid rgba(255,0,0,0.25);
+             color:#ffd0d0; font-weight:900; width:fit-content; margin-left:auto; margin-right:auto;">
+          Error ❌
+        </div>
+
       </div>
-
-      <div id="meErr" style="display:none; margin-top:8px; padding:10px 12px; border-radius:10px;
-           background: rgba(255,0,0,0.10); border: 1px solid rgba(255,0,0,0.25);
-           color:#ffd0d0; font-weight:900; width:fit-content;">
-        Error ❌
-      </div>
-
     </div>
-  </div>
 
+  </div>
 </div>
 {% endblock %}
 
@@ -107,9 +114,7 @@ async function saveMe(){
     return;
   }
 
-  // clear pw fields after save
   document.getElementById("meNewPw").value = "";
-
 
   toast.style.display = "block";
   setTimeout(() => toast.style.display = "none", 1200);
