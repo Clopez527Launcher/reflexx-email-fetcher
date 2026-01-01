@@ -51,10 +51,9 @@
 
   /* Canvas fills wrapper */
   #brickCanvas{
-    width: 100%;
-    height: 100%;
-    display: block;
-  }
+				display:block;
+		}
+
 
   /* If screen is small, let it shrink */
   @media (max-width: 900px){
@@ -82,111 +81,62 @@
 <script>
 (() => {
   const canvas = document.getElementById("brickCanvas");
-  const ctx = canvas.getContext("2d", { alpha: false });
+  const ctx = canvas.getContext("2d", { alpha: false, desynchronized: true });
   const shell = canvas.closest(".brick-shell");
 
-  // ----------------------------
-  // ✅ Colors (row gradient)
-  // ----------------------------
-  const ROW_COLORS = [
-    "#ff4d4d", // red
-    "#ff9f40", // orange
-    "#ffd966", // yellow
-    "#12d87b", // green
-    "#00f6ff"  // neon blue
-  ];
+  // Row colors
+  const ROW_COLORS = ["#ff4d4d","#ff9f40","#ffd966","#12d87b","#00f6ff"];
 
-  // ----------------------------
-  // ✅ Tunables
-  // ----------------------------
-  const BALL_START_SPEED = 360; // px/sec (delta-time based)
-  const PADDLE_SPEED     = 760; // px/sec
+  // Speeds (px/sec)
+  let BALL_START_SPEED = 360;
+  let PADDLE_SPEED = 760;
 
   const ballRadius = 8;
-
   const paddleHeight = 12;
   const paddleWidth  = 110;
-  let paddleX = 0;
 
   let brickRowCount = 5;
   let brickColumnCount = 8;
-
   let brickWidth = 0;
   const brickHeight = 22;
   const brickPadding = 10;
   const brickOffsetTop = 40;
   let brickOffsetLeft = 0;
 
+  let cw = 0, ch = 0;        // canvas size in CSS px
+  let x=0, y=0, vx=0, vy=0;  // ball
+  let paddleX = 0;
+  let rightPressed=false, leftPressed=false;
+
   let bricks = [];
   let score = 0;
   let levelBricksBroken = 0;
   let gameOver = false;
 
-  // ----------------------------
-  // ✅ Stable canvas size (CSS px)
-  // ----------------------------
-  let cw = 0, ch = 0; // canvas width/height in CSS pixels
-
-  function applyBrickShift() {
-    requestAnimationFrame(() => {
-      const shellRect = shell.getBoundingClientRect();
-      const shellCenterX = shellRect.left + (shellRect.width / 2);
-      const screenCenterX = window.innerWidth / 2;
-      const shift = screenCenterX - shellCenterX;
-      shell.style.setProperty("--brick-shift", `${shift}px`);
-    });
-  }
-
-  function resizeCanvas() {
-    const dpr = window.devicePixelRatio || 1;
-    const rect = shell.getBoundingClientRect();
-
-    cw = Math.floor(rect.width);
-    ch = Math.floor(rect.height);
-
-    canvas.width  = Math.floor(cw * dpr);
-    canvas.height = Math.floor(ch * dpr);
-
-    // Draw in CSS pixel coords
-    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-
-    computeBrickLayout();
-  }
-
-  // ----------------------------
-  // ✅ Input (no scroll)
-  // ----------------------------
-  let rightPressed = false;
-  let leftPressed  = false;
-
+  // ----- Input -----
   document.addEventListener("keydown", (e) => {
     if (e.key === "ArrowLeft" || e.key === "ArrowRight") e.preventDefault();
     if (e.key === "ArrowRight") rightPressed = true;
     if (e.key === "ArrowLeft") leftPressed = true;
-  }, { passive: false });
+  }, { passive:false });
 
   document.addEventListener("keyup", (e) => {
     if (e.key === "ArrowLeft" || e.key === "ArrowRight") e.preventDefault();
     if (e.key === "ArrowRight") rightPressed = false;
     if (e.key === "ArrowLeft") leftPressed = false;
-  }, { passive: false });
+  }, { passive:false });
 
-  // ----------------------------
-  // ✅ Game state
-  // ----------------------------
-  let x, y, vx, vy;
-
-  function resetBall() {
-    x = cw / 2;
-    y = ch - 50;
-    vx = BALL_START_SPEED;      // px/sec
-    vy = -BALL_START_SPEED;     // px/sec
+  // ----- Center under R -----
+  function applyBrickShift() {
+    requestAnimationFrame(() => {
+      const shellRect = shell.getBoundingClientRect();
+      const shellCenterX = shellRect.left + (shellRect.width / 2);
+      const screenCenterX = window.innerWidth / 2;
+      shell.style.setProperty("--brick-shift", `${(screenCenterX - shellCenterX)}px`);
+    });
   }
 
-  function resetPaddle() {
-    paddleX = (cw - paddleWidth) / 2;
-  }
-
+  // ----- Layout -----
   function computeBrickLayout() {
     const totalPadding = (brickColumnCount - 1) * brickPadding;
     const usable = cw - 2 * 40;
@@ -197,17 +147,46 @@
   function rebuildBricks() {
     computeBrickLayout();
     bricks = [];
-    for (let c = 0; c < brickColumnCount; c++) {
+    for (let c=0;c<brickColumnCount;c++){
       bricks[c] = [];
-      for (let r = 0; r < brickRowCount; r++) {
-        bricks[c][r] = { x: 0, y: 0, status: 1 };
+      for (let r=0;r<brickRowCount;r++){
+        bricks[c][r] = { x:0, y:0, status:1 };
       }
     }
   }
 
+  function resizeCanvas() {
+    const dpr = window.devicePixelRatio || 1;
+    const rect = shell.getBoundingClientRect();
+
+    cw = Math.floor(rect.width);
+    ch = Math.floor(rect.height);
+
+    canvas.style.width = cw + "px";
+    canvas.style.height = ch + "px";
+
+    canvas.width  = Math.floor(cw * dpr);
+    canvas.height = Math.floor(ch * dpr);
+
+    ctx.setTransform(dpr,0,0,dpr,0,0);
+    computeBrickLayout();
+  }
+
+  // ----- Reset -----
+  function resetBall() {
+    x = cw/2;
+    y = ch - 50;
+    vx = BALL_START_SPEED;
+    vy = -BALL_START_SPEED;
+  }
+  function resetPaddle() {
+    paddleX = (cw - paddleWidth)/2;
+  }
+
+  // ----- Collision -----
   function collisionDetection() {
-    for (let c = 0; c < brickColumnCount; c++) {
-      for (let r = 0; r < brickRowCount; r++) {
+    for (let c=0;c<brickColumnCount;c++){
+      for (let r=0;r<brickRowCount;r++){
         const b = bricks[c][r];
         if (b.status !== 1) continue;
 
@@ -220,11 +199,9 @@
           if (levelBricksBroken === brickRowCount * brickColumnCount) {
             brickRowCount++;
             levelBricksBroken = 0;
-
             rebuildBricks();
             resetBall();
             resetPaddle();
-
             vx *= 1.12;
             vy *= 1.12;
           }
@@ -233,28 +210,12 @@
     }
   }
 
-  // ----------------------------
-  // ✅ Draw
-  // ----------------------------
-  function drawBall() {
-    ctx.beginPath();
-    ctx.arc(x, y, ballRadius, 0, Math.PI * 2);
-    ctx.fillStyle = "#00f6ff";
-    ctx.fill();
-    ctx.closePath();
-  }
-
-  function drawPaddle() {
-    ctx.beginPath();
-    ctx.rect(paddleX, ch - paddleHeight, paddleWidth, paddleHeight);
-    ctx.fillStyle = "#00f6ff";
-    ctx.fill();
-    ctx.closePath();
-  }
+  // ----- Draw (pixel-snapped) -----
+  const snap = (n) => (n | 0); // fast floor
 
   function drawBricks() {
-    for (let c = 0; c < brickColumnCount; c++) {
-      for (let r = 0; r < brickRowCount; r++) {
+    for (let c=0;c<brickColumnCount;c++){
+      for (let r=0;r<brickRowCount;r++){
         if (bricks[c][r].status !== 1) continue;
 
         const brickX = c * (brickWidth + brickPadding) + brickOffsetLeft;
@@ -263,15 +224,22 @@
         bricks[c][r].x = brickX;
         bricks[c][r].y = brickY;
 
-        const color = ROW_COLORS[r % ROW_COLORS.length];
-
-        ctx.beginPath();
-        ctx.rect(brickX, brickY, brickWidth, brickHeight);
-        ctx.fillStyle = color;
-        ctx.fill();
-        ctx.closePath();
+        ctx.fillStyle = ROW_COLORS[r % ROW_COLORS.length];
+        ctx.fillRect(snap(brickX), snap(brickY), brickWidth, brickHeight);
       }
     }
+  }
+
+  function drawBall() {
+    ctx.beginPath();
+    ctx.arc(snap(x), snap(y), ballRadius, 0, Math.PI*2);
+    ctx.fillStyle = "#00f6ff";
+    ctx.fill();
+  }
+
+  function drawPaddle() {
+    ctx.fillStyle = "#00f6ff";
+    ctx.fillRect(snap(paddleX), snap(ch - paddleHeight), paddleWidth, paddleHeight);
   }
 
   function drawScore() {
@@ -280,77 +248,82 @@
     ctx.fillText("Score: " + score, 14, 26);
   }
 
-  // ----------------------------
-  // ✅ Main loop (delta time)
-  // ----------------------------
+  // ----- Fixed timestep loop -----
+  const STEP = 1/120; // 120Hz simulation
+  let acc = 0;
   let lastT = performance.now();
 
-  function loop(t) {
-    if (gameOver) return;
+  function update(dt) {
+    // paddle
+    if (rightPressed && paddleX < cw - paddleWidth) paddleX += PADDLE_SPEED * dt;
+    else if (leftPressed && paddleX > 0) paddleX -= PADDLE_SPEED * dt;
 
-    const dt = Math.min(0.033, (t - lastT) / 1000); // cap to avoid huge jumps
-    lastT = t;
+    // ball move
+    x += vx * dt;
+    y += vy * dt;
 
-    // clear
-    ctx.clearRect(0, 0, cw, ch);
+    // walls
+    if (x > cw - ballRadius) { x = cw - ballRadius; vx = -vx; }
+    if (x < ballRadius)      { x = ballRadius;      vx = -vx; }
+    if (y < ballRadius)      { y = ballRadius;      vy = -vy; }
 
-    // draw
-    drawBricks();
-    drawBall();
-    drawPaddle();
-    drawScore();
-
-    // collisions (bricks)
-    collisionDetection();
-
-    // walls (use predicted position)
-    const nx = x + vx * dt;
-    const ny = y + vy * dt;
-
-    if (nx > cw - ballRadius || nx < ballRadius) vx = -vx;
-    if (ny < ballRadius) vy = -vy;
-
-    // bottom / paddle
-    if (ny > ch - ballRadius) {
+    // paddle / bottom
+    if (y > ch - ballRadius) {
       if (x > paddleX && x < paddleX + paddleWidth) {
+        y = ch - ballRadius;
         vy = -Math.abs(vy);
       } else {
         gameOver = true;
         alert("😵 Game Over. Try again!");
         setTimeout(() => document.location.reload(), 100);
-        return;
       }
     }
 
-    // paddle movement
-    if (rightPressed && paddleX < cw - paddleWidth) paddleX += PADDLE_SPEED * dt;
-    else if (leftPressed && paddleX > 0) paddleX -= PADDLE_SPEED * dt;
+    collisionDetection();
+  }
 
-    // apply velocity
-    x += vx * dt;
-    y += vy * dt;
+  function render() {
+    ctx.clearRect(0,0,cw,ch);
+    drawBricks();
+    drawBall();
+    drawPaddle();
+    drawScore();
+  }
 
+  function loop(t) {
+    if (gameOver) return;
+
+    let frame = (t - lastT) / 1000;
+    lastT = t;
+
+    // avoid huge jumps (tab switch)
+    frame = Math.min(frame, 0.05);
+
+    acc += frame;
+    while (acc >= STEP) {
+      update(STEP);
+      acc -= STEP;
+    }
+
+    render();
     requestAnimationFrame(loop);
   }
 
-  // ----------------------------
-  // ✅ Init
-  // ----------------------------
-  function init() {
+  function init(){
     applyBrickShift();
     resizeCanvas();
+    rebuildBricks();
     resetBall();
     resetPaddle();
-    rebuildBricks();
     lastT = performance.now();
     requestAnimationFrame(loop);
   }
 
   window.addEventListener("resize", () => {
     resizeCanvas();
+    rebuildBricks();
     resetBall();
     resetPaddle();
-    rebuildBricks();
     applyBrickShift();
   });
 
