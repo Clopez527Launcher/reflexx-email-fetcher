@@ -1785,7 +1785,8 @@ def bucket_phone_detail():
                 """
                 SELECT id, nickname
                 FROM users
-                WHERE nickname = %s OR email = %s
+                WHERE (nickname = %s OR email = %s)
+                  AND COALESCE(is_active, 1) = 1
                 LIMIT 1
                 """,
                 (user_name, user_name)
@@ -1807,6 +1808,21 @@ def bucket_phone_detail():
             cur.close()
             conn.close()
             return jsonify(empty_payload(user_name or "Unknown"))
+            
+        # ✅ 2.5) block inactive users even if frontend sends user_id
+        cur.execute("""
+            SELECT 1
+            FROM users
+            WHERE id = %s
+              AND COALESCE(is_active, 1) = 1
+            LIMIT 1
+        """, (user_id,))
+        ok = cur.fetchone()
+        if not ok:
+            cur.close()
+            conn.close()
+            return jsonify(empty_payload(user_name or "Inactive"))
+    
 
         # 3) aggregate from fact_daily_scores
         cur.execute(
@@ -1913,7 +1929,8 @@ def bucket_quoting_detail():
                 """
                 SELECT id, nickname
                 FROM users
-                WHERE nickname = %s OR email = %s
+                WHERE (nickname = %s OR email = %s)
+                  AND COALESCE(is_active, 1) = 1
                 LIMIT 1
                 """,
                 (user_name, user_name)
@@ -1928,6 +1945,20 @@ def bucket_quoting_detail():
             cur.close()
             conn.close()
             return jsonify(empty_payload(user_name or "Unknown"))
+
+        # ✅ block inactive users even if frontend sends user_id
+        cur.execute("""
+            SELECT 1
+            FROM users
+            WHERE id = %s
+              AND COALESCE(is_active, 1) = 1
+            LIMIT 1
+        """, (user_id,))
+        ok = cur.fetchone()
+        if not ok:
+            cur.close()
+            conn.close()
+            return jsonify(empty_payload(user_name or "Inactive"))
 
         # sum quoting metrics
         cur.execute(
@@ -2014,7 +2045,8 @@ def bucket_movement_detail():
                 """
                 SELECT id, nickname
                 FROM users
-                WHERE nickname = %s OR email = %s
+                WHERE (nickname = %s OR email = %s)
+                  AND COALESCE(is_active, 1) = 1
                 LIMIT 1
                 """,
                 (user_name, user_name)
@@ -2028,6 +2060,21 @@ def bucket_movement_detail():
             cur.close()
             conn.close()
             return jsonify(empty_payload(user_name or "Unknown"))
+            
+        # ✅ block inactive users even if frontend sends user_id
+        cur.execute("""
+            SELECT 1
+            FROM users
+            WHERE id = %s
+              AND COALESCE(is_active, 1) = 1
+            LIMIT 1
+        """, (user_id,))
+        ok = cur.fetchone()
+        if not ok:
+            cur.close()
+            conn.close()
+            return jsonify(empty_payload(user_name or "Inactive"))
+
 
         # sum movement-ish stuff
         cur.execute(
