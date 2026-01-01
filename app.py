@@ -232,6 +232,7 @@ def get_buckets():
         FROM fact_daily_scores f
         JOIN users u ON f.user_id = u.id
         WHERE f.date BETWEEN %s AND %s
+          AND COALESCE(u.is_active, 1) = 1
         GROUP BY u.nickname
         ORDER BY avg_score DESC
         LIMIT 10;
