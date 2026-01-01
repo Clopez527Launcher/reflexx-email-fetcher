@@ -340,32 +340,40 @@ def api_reflexx_kpi():
     if period == "yesterday":
         query = """
             SELECT
-                user_id,
-                user_name,
-                daily_elite_calls AS elite_calls,
-                daily_talk_seconds AS talk_seconds
-            FROM elite_calls_fact_daily
+                e.user_id,
+                u.nickname AS user_name,
+                e.daily_elite_calls AS elite_calls,
+                e.daily_talk_seconds AS talk_seconds
+            FROM elite_calls_fact_daily e
+            JOIN users u ON u.id = e.user_id
             WHERE
-                day = %s
-                AND manager_id = %s
-            ORDER BY daily_elite_calls DESC;
+                e.day = %s
+                AND e.manager_id = %s
+                AND u.manager_id = %s
+                AND u.role = 'user'
+                AND COALESCE(u.is_active, 1) = 1
+            ORDER BY e.daily_elite_calls DESC;
         """
     else:
         query = f"""
             SELECT 
-                user_id,
-                user_name,
-                {ratio_col} AS ratio,
-                {calls_col} AS elite_calls,
-                {talk_col} AS talk_seconds
-            FROM elite_calls_fact_daily
+                e.user_id,
+                u.nickname AS user_name,
+                e.{ratio_col} AS ratio,
+                e.{calls_col} AS elite_calls,
+                e.{talk_col} AS talk_seconds
+            FROM elite_calls_fact_daily e
+            JOIN users u ON u.id = e.user_id
             WHERE
-                day = %s
-                AND manager_id = %s
-            ORDER BY {ratio_col} DESC;
+                e.day = %s
+                AND e.manager_id = %s
+                AND u.manager_id = %s
+                AND u.role = 'user'
+                AND COALESCE(u.is_active, 1) = 1
+            ORDER BY e.{ratio_col} DESC;
         """
 
-    cursor.execute(query, (anchor_day, manager_id))
+    cursor.execute(query, (anchor_day, manager_id, manager_id))
     rows = cursor.fetchall()
 
     # 5) Build leaderboard + compute team average index (ratio * 100)
