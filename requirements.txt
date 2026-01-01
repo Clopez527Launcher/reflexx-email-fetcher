@@ -22,4 +22,4 @@ numpy
 postmarker
 pytz
 mysql-connector-python
-postmark
+python-postmark
