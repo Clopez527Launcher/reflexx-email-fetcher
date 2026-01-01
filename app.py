@@ -1075,8 +1075,6 @@ def settings():
 
     return render_template("settings.html")
     
-    
-    
 # ✅ Session Check Route (Step 2)
 @app.route('/check-session')
 def check_session():
@@ -2954,6 +2952,7 @@ def api_manager_get_users_email_reminders():
                email_login_reminder_enabled
         FROM users
         WHERE manager_id = %s
+          AND is_active = 1
         ORDER BY display_name ASC
     """, (manager_id,))
 
@@ -2994,9 +2993,10 @@ def api_manager_set_user_email_reminder():
 
     # ✅ only allow updating users that belong to THIS manager
     cur.execute(
-        "SELECT id FROM users WHERE id = %s AND manager_id = %s",
+        "SELECT id FROM users WHERE id = %s AND manager_id = %s AND is_active = 1",
         (target_user_id, manager_id)
     )
+
     owned = cur.fetchone()
     if not owned:
         cur.close()
@@ -3004,8 +3004,8 @@ def api_manager_set_user_email_reminder():
         return jsonify({"error": "forbidden"}), 403
 
     cur.execute(
-        "UPDATE users SET email_login_reminder_enabled = %s WHERE id = %s",
-        (enabled, target_user_id)
+        "UPDATE users SET email_login_reminder_enabled = %s WHERE id = %s AND manager_id = %s AND is_active = 1",
+        (enabled, target_user_id, manager_id)
     )
     conn.commit()
 
