@@ -1601,7 +1601,7 @@ def team_series():
 @app.route("/api/analytics/advisor-pro-series", methods=["GET"])
 def advisor_pro_series():
     """
-    Returns 7-day Advisor Pro totals.
+    Returns 10-day Advisor Pro totals.
     Default: team totals for the manager.
     If employee_id is provided: totals for that user only.
     """
@@ -1629,7 +1629,7 @@ def advisor_pro_series():
         JOIN users u ON u.id = f.user_id
         WHERE u.manager_id = %s
           {where_user}
-          AND f.date >= CURDATE() - INTERVAL 7 DAY
+          AND f.date >= CURDATE() - INTERVAL 10 DAY
           AND f.date < CURDATE()
         GROUP BY f.date
         ORDER BY f.date ASC
