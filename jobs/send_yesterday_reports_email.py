@@ -1,10 +1,19 @@
 import os
+import sys
+import traceback
 from datetime import datetime, timedelta
+
+# ✅ Ensure project root is importable when running from /app/jobs
+ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+if ROOT_DIR not in sys.path:
+    sys.path.insert(0, ROOT_DIR)
+
 from pytz import timezone
 import mysql.connector
-import postmark
 
-from generate_daily_report import MYSQL_CONFIG
+# ✅ import your generator + DB config
+from generate_daily_report import main as generate_report_main, MYSQL_CONFIG
+
 
 POSTMARK_SERVER_TOKEN = os.getenv("POSTMARK_SERVER_TOKEN")
 POSTMARK_FROM_EMAIL   = os.getenv("POSTMARK_FROM_EMAIL") or os.getenv("FROM_EMAIL")

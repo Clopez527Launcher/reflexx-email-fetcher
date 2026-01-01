@@ -1,9 +1,12 @@
-# jobs/generate_yesterday_reports.py
-
 import os
 import sys
 import traceback
 from datetime import datetime, timedelta
+
+# ✅ Ensure project root is importable when running from /app/jobs
+ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+if ROOT_DIR not in sys.path:
+    sys.path.insert(0, ROOT_DIR)
 
 from pytz import timezone
 import mysql.connector
