@@ -35,13 +35,6 @@
       <hr style="border:none; border-top:1px solid rgba(255,255,255,0.08); margin:6px 0;">
 
       <div>
-        <div style="color:#cfefff; font-weight:800; margin-bottom:6px;">Current Password (required to change password)</div>
-        <input id="meCurrentPw" type="password"
-               style="width:100%; padding:10px 12px; border-radius:10px;
-                      background:rgba(0,0,0,0.25); border:1px solid rgba(255,255,255,0.12); color:#fff;">
-      </div>
-
-      <div>
         <div style="color:#cfefff; font-weight:800; margin-bottom:6px;">New Password</div>
         <input id="meNewPw" type="password"
                style="width:100%; padding:10px 12px; border-radius:10px;
@@ -89,15 +82,9 @@ async function loadMe(){
 async function saveMe(){
   const email = document.getElementById("meEmail").value.trim();
   const agency_code = document.getElementById("meAgency").value.trim();
-  const current_password = document.getElementById("meCurrentPw").value;
   const new_password = document.getElementById("meNewPw").value;
 
-  const payload = {
-    email,
-    agency_code,
-    current_password,
-    new_password
-  };
+  const payload = { email, agency_code, new_password };
 
   const r = await fetch("/api/me", {
     method: "POST",
@@ -121,8 +108,8 @@ async function saveMe(){
   }
 
   // clear pw fields after save
-  document.getElementById("meCurrentPw").value = "";
   document.getElementById("meNewPw").value = "";
+
 
   toast.style.display = "block";
   setTimeout(() => toast.style.display = "none", 1200);

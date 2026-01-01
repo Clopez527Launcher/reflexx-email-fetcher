@@ -261,30 +261,6 @@ def api_me_update():
     else:
         stored_hash = row[1] or ""
 
-    # If changing password, require current password
-    if new_password:
-        if not current_password:
-            cur.close()
-            conn.close()
-            return jsonify({"ok": False, "error": "missing_current_password"}), 400
-
-        # Support BOTH: werkzeug-hash OR legacy plaintext
-        ok = False
-        try:
-            ok = check_password_hash(stored_hash, current_password)
-        except Exception:
-            ok = False
-
-        if not ok:
-            # legacy plaintext fallback
-            if stored_hash == current_password:
-                ok = True
-
-        if not ok:
-            cur.close()
-            conn.close()
-            return jsonify({"ok": False, "error": "bad_current_password"}), 403
-
     # build dynamic update
     fields = []
     params = []
@@ -302,10 +278,9 @@ def api_me_update():
             params.append(new_agency_code)
 
     if new_password:
-        # store as real hash going forward
-        hashed = generate_password_hash(new_password)
+        # ✅ store plain text (matches current login behavior)
         fields.append("password_hash = %s")
-        params.append(hashed)
+        params.append(new_password)
 
     if not fields:
         cur.close()
