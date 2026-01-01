@@ -44,21 +44,34 @@ def get_yesterday_report(conn, manager_id: int, report_date_str: str):
 
 def send_postmark_email_with_pdf(to_email: str, subject: str, body_text: str, filename: str, pdf_bytes: bytes):
     import base64
-    from postmark.core import PMMail
+    import requests
 
-    mail = PMMail(
-        api_key=POSTMARK_SERVER_TOKEN,
-        sender=POSTMARK_FROM_EMAIL,
-        to=to_email,
-        subject=subject,
-        text_body=body_text,
-        attachments=[{
-            "Name": filename,
-            "Content": base64.b64encode(pdf_bytes).decode("utf-8"),
-            "ContentType": "application/pdf"
-        }]
-    )
-    mail.send()
+    b64 = base64.b64encode(pdf_bytes).decode("utf-8")
+
+    payload = {
+        "From": POSTMARK_FROM_EMAIL,
+        "To": to_email,
+        "Subject": subject,
+        "TextBody": body_text,
+        "Attachments": [
+            {
+                "Name": filename if filename.lower().endswith(".pdf") else (filename + ".pdf"),
+                "Content": b64,
+                "ContentType": "application/pdf"
+            }
+        ]
+    }
+
+    headers = {
+        "X-Postmark-Server-Token": POSTMARK_SERVER_TOKEN,
+        "Accept": "application/json",
+        "Content-Type": "application/json"
+    }
+
+    r = requests.post("https://api.postmarkapp.com/email", json=payload, headers=headers, timeout=30)
+
+    if r.status_code >= 300:
+        raise Exception(f"Postmark send failed: {r.status_code} {r.text}")
 
 def main():
     if not POSTMARK_SERVER_TOKEN:
