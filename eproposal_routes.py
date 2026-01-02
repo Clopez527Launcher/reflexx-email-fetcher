@@ -64,16 +64,19 @@ def upload_eproposal_history():
 
     rows = []
     for r in reader:
+        agency_num = (r.get("Agency Number") or "").strip() or None
+
         rows.append((
-            (r.get("Agency Number") or "").strip() or None,
+            agency_num,
             (r.get("Last Name") or "").strip() or None,
             (r.get("First Name") or "").strip() or None,
             (r.get("Type") or "").strip() or None,
-            (r.get("Sender") or "").strip() or None,
+            ((r.get("Sender") or "").strip().lower() or None),
             parse_dt(r.get("Customer Viewed", "")),
             parse_dt(r.get("Created Date", "")),
             (r.get("Quotes") or "").strip() or None,
-            (r.get("E-Mail Address") or "").strip() or None
+            (r.get("E-Mail Address") or "").strip() or None,
+            norm_agency_code(agency_num)
         ))
 
     if not rows:
@@ -104,9 +107,9 @@ def upload_eproposal_history():
             INSERT INTO eproposal_history
               (upload_id, agency_number, last_name, first_name, record_type,
                sender_allstate_user_id, customer_viewed_at, created_at, quotes, email_address,
-               uploaded_by_user_id, manager_id)
+               agency_code, uploaded_by_user_id, manager_id)
             VALUES
-              (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
+              (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
         """, [
             (upload_id, *row, user_id, manager_id)
             for row in rows
@@ -128,6 +131,18 @@ def upload_eproposal_history():
             conn.close()
         except Exception:
             pass
+
+def norm_agency_code(s):
+    # CSV gives "0D6225" -> we want "a0d6225" (matches users.agency_code style)
+    if not s:
+        return None
+    s = str(s).strip()
+    if not s:
+        return None
+    s = s.lower()
+    if not s.startswith("a"):
+        s = "a" + s
+    return s
 
 
 @eproposal_bp.route("/api/eproposal/list")
