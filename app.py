@@ -31,10 +31,6 @@ from flask_login import current_user
 from scorecard_api import scorecard_api
 from ai_routes import ai_bp
 
-from eproposal_routes import eproposal_bp
-app.register_blueprint(eproposal_bp)
-
-
 # Quotes parsing helpers
 from quotes_utils import parse_quotes_excel, insert_into_quotes_raw_rows, _connect_from_env
 
@@ -150,6 +146,10 @@ QUOTES_DIR = os.path.join(BASE_DIR, "uploads", "quotes")
 os.makedirs(QUOTES_DIR, exist_ok=True)
 
 ALLOWED_QUOTE_EXTS = {".xlsx", ".xls", ".csv"}
+
+#Imports for eproposals
+from eproposal_routes import eproposal_bp
+app.register_blueprint(eproposal_bp)
 
 
 @login_manager.unauthorized_handler
