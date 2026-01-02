@@ -3301,6 +3301,177 @@ def login():
     # Redirect as before
     return redirect(url_for("dashboard_new"))
 
+# -------------------------------
+# Password Reset (NO HASH PASSWORD)
+# -------------------------------
+import os, secrets, hashlib, smtplib
+from email.message import EmailMessage
+from datetime import datetime, timedelta
+from flask import render_template, request, url_for
+
+def _sha256(s: str) -> str:
+    return hashlib.sha256(s.encode("utf-8")).hexdigest()
+
+def send_password_reset_email(to_email: str, reset_link: str):
+    """
+    Uses SMTP env vars:
+      SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS, SMTP_FROM
+    If not set, prints link to server logs (easy for testing).
+    """
+    host = os.getenv("SMTP_HOST")
+    port = int(os.getenv("SMTP_PORT", "587"))
+    user = os.getenv("SMTP_USER")
+    pw   = os.getenv("SMTP_PASS")
+    frm  = os.getenv("SMTP_FROM", user)
+
+    # ✅ If SMTP isn't configured, print the link so you can click it
+    if not host or not user or not pw or not frm:
+        print("\n=== PASSWORD RESET LINK (SMTP NOT SET) ===")
+        print(reset_link)
+        print("=========================================\n")
+        return
+
+    msg = EmailMessage()
+    msg["Subject"] = "Reflexx Password Reset"
+    msg["From"] = frm
+    msg["To"] = to_email
+    msg.set_content(
+        "You requested a password reset.\n\n"
+        f"Reset your password here:\n{reset_link}\n\n"
+        "If you didn't request this, ignore this email."
+    )
+
+    with smtplib.SMTP(host, port) as server:
+        server.starttls()
+        server.login(user, pw)
+        server.send_message(msg)
+
+
+@app.route("/forgot-password", methods=["GET", "POST"])
+def forgot_password():
+    message = None
+
+    if request.method == "POST":
+        email = (request.form.get("email") or "").strip().lower()
+
+        # ✅ Always show same message (don’t reveal if email exists)
+        message = "If that email exists, we sent a reset link."
+
+        conn = get_db_connection()
+        try:
+            cur = conn.cursor(dictionary=True)
+        except Exception:
+            cur = conn.cursor()
+
+        cur.execute("SELECT id FROM users WHERE LOWER(email)=%s LIMIT 1", (email,))
+        row = cur.fetchone()
+
+        if row:
+            user_id = row["id"] if isinstance(row, dict) else row[0]
+
+            raw_token  = secrets.token_urlsafe(32)
+            token_hash = _sha256(raw_token)
+            expires_at = datetime.utcnow() + timedelta(minutes=30)
+
+            c2 = conn.cursor()
+            c2.execute(
+                "INSERT INTO password_reset_tokens (user_id, token_hash, expires_at) VALUES (%s, %s, %s)",
+                (user_id, token_hash, expires_at.strftime("%Y-%m-%d %H:%M:%S"))
+            )
+            conn.commit()
+            c2.close()
+
+            reset_link = url_for("reset_password", token=raw_token, _external=True)
+            send_password_reset_email(email, reset_link)
+
+        try:
+            cur.close()
+            conn.close()
+        except Exception:
+            pass
+
+    return render_template("forgot_password.html", message=message)
+
+
+@app.route("/reset-password/<token>", methods=["GET", "POST"])
+def reset_password(token):
+    message = None
+    token_hash = _sha256(token)
+
+    conn = get_db_connection()
+    try:
+        cur = conn.cursor(dictionary=True)
+    except Exception:
+        cur = conn.cursor()
+
+    cur.execute("""
+        SELECT id, user_id, expires_at, used_at
+        FROM password_reset_tokens
+        WHERE token_hash=%s
+        LIMIT 1
+    """, (token_hash,))
+    row = cur.fetchone()
+
+    if not row:
+        message = "This reset link is invalid."
+        return render_template("reset_password.html", message=message)
+
+    prt_id  = row["id"] if isinstance(row, dict) else row[0]
+    user_id = row["user_id"] if isinstance(row, dict) else row[1]
+    exp_raw = row["expires_at"] if isinstance(row, dict) else row[2]
+    used_at = row["used_at"] if isinstance(row, dict) else row[3]
+
+    # expires_at might be datetime or string
+    try:
+        expires_at = exp_raw if isinstance(exp_raw, datetime) else datetime.strptime(str(exp_raw), "%Y-%m-%d %H:%M:%S")
+    except Exception:
+        expires_at = datetime.utcnow() - timedelta(days=1)
+
+    if used_at is not None:
+        message = "This reset link has already been used."
+        return render_template("reset_password.html", message=message)
+
+    if datetime.utcnow() > expires_at:
+        message = "This reset link expired. Please request a new one."
+        return render_template("reset_password.html", message=message)
+
+    if request.method == "POST":
+        pw = request.form.get("password") or ""
+        cf = request.form.get("confirm") or ""
+
+        if pw != cf:
+            message = "Passwords do not match."
+            return render_template("reset_password.html", message=message)
+
+        if len(pw) < 8:
+            message = "Password must be at least 8 characters."
+            return render_template("reset_password.html", message=message)
+
+        # ✅ NO HASH: store password as-is (matches your current setup)
+        c2 = conn.cursor()
+        c2.execute("UPDATE users SET password_hash=%s WHERE id=%s", (pw, user_id))
+        c2.execute("UPDATE password_reset_tokens SET used_at=UTC_TIMESTAMP() WHERE id=%s", (prt_id,))
+        conn.commit()
+        c2.close()
+
+        try:
+            cur.close()
+            conn.close()
+        except Exception:
+            pass
+
+        message = "Password updated! You can log in now."
+        return render_template("reset_password.html", message=message)
+
+    try:
+        cur.close()
+        conn.close()
+    except Exception:
+        pass
+
+    return render_template("reset_password.html", message=message)
+
+
 # ✅ User Logout Route
 @app.route("/logout")
 @login_required

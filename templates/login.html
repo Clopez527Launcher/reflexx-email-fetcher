@@ -1,64 +1,99 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login | Reflexx</title>
-    <style>
-        body {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            flex-direction: column;
-            text-align: center;
-            font-family: Arial, sans-serif;
-            background-color: black;
-            color: white;
-        }
-        .login-container {
-            background-color: rgba(255, 255, 255, 0.1);
-            padding: 20px;
-            border-radius: 10px;
-            width: 300px;
-            box-shadow: 0px 0px 10px rgba(255, 255, 255, 0.2);
-        }
-        h1 {
-            margin-bottom: 20px;
-        }
-        input {
-            width: 90%;
-            padding: 8px;
-            margin: 10px 0;
-            border-radius: 5px;
-            border: none;
-            outline: none;
-        }
-        button {
-            padding: 10px 15px;
-            font-size: 16px;
-            background-color: #28a745;
-            color: white;
-            border: none;
-            cursor: pointer;
-            width: 100%;
-            border-radius: 5px;
-        }
-        button:hover {
-            background-color: #218838;
-        }
-    </style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Login | Reflexx</title>
+  <style>
+    body {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      flex-direction: column;
+      text-align: center;
+      font-family: Arial, sans-serif;
+      background-color: black;
+      color: white;
+    }
+    .login-container {
+      background-color: rgba(255, 255, 255, 0.1);
+      padding: 20px;
+      border-radius: 10px;
+      width: 300px;
+      box-shadow: 0px 0px 10px rgba(255, 255, 255, 0.2);
+    }
+    h1 {
+      margin-bottom: 20px;
+    }
+    label {
+      display: block;
+      text-align: left;
+      margin: 6px 0 4px 0;
+      font-size: 14px;
+      color: #d7d7d7;
+    }
+    input {
+      width: 90%;
+      padding: 8px;
+      margin: 0 0 10px 0;
+      border-radius: 5px;
+      border: none;
+      outline: none;
+    }
+    button {
+      padding: 10px 15px;
+      font-size: 16px;
+      background-color: #28a745;
+      color: white;
+      border: none;
+      cursor: pointer;
+      width: 100%;
+      border-radius: 5px;
+    }
+    button:hover {
+      background-color: #218838;
+    }
+    .forgot-wrap {
+      margin-top: 12px;
+    }
+    .forgot-link {
+      color: #cfcfcf;
+      text-decoration: none;
+      font-size: 14px;
+    }
+    .forgot-link:hover {
+      text-decoration: underline;
+    }
+    .hint {
+      margin-top: 10px;
+      font-size: 12px;
+      color: #9a9a9a;
+      line-height: 1.35;
+    }
+  </style>
 </head>
 <body>
-    <div class="login-container">
-        <h1>🔑 User Login</h1>
-        <form method="POST">
-            <label>Email:</label><br>
-            <input type="email" name="email" required><br>
-            <label>Password:</label><br>
-            <input type="password" name="password" required><br>
-            <button type="submit">Login</button>
-        </form>
-    </div>
+  <div class="login-container">
+    <h1>🔑 User Login</h1>
+
+    <form method="POST">
+      <label>Email:</label>
+      <input type="email" name="email" required />
+
+      <label>Password:</label>
+      <input type="password" name="password" required />
+
+      <button type="submit">Login</button>
+
+      <div class="forgot-wrap">
+        <a class="forgot-link" href="/forgot-password">Forgot password?</a>
+      </div>
+
+      <div class="hint">
+        If you reset your password, check your email (or server logs if SMTP isn’t set).
+      </div>
+    </form>
+  </div>
 </body>
 </html>
