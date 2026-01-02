@@ -382,28 +382,6 @@
         </div>
       </div>
 						
-						<!-- E-Proposal History Uploads -->
-						<div class="card-dark bm-span-all" id="eproposal-widget">
-								<div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap; justify-content:space-between; width:100%;">
-										<h4 class="bm-card-title">E-Proposal History</h4>
-										<div>
-												<input id="eproposal-file" type="file" accept=".csv" style="display:none;" />
-												<button id="eproposal-upload-btn" class="glow-btn">Upload</button>
-										</div>
-								</div>
-
-								<div class="muted" style="margin-top:10px;">
-										<div style="font-size:14px; margin-bottom:6px;">Recent uploads</div>
-										<ul id="eproposal-ul" style="margin:0; padding-left:16px; max-height:180px; overflow:auto;"></ul>
-
-										<div style="display:flex; gap:6px; align-items:center; justify-content:flex-end; margin-top:8px;">
-												<button id="eproposal-prev" class="q-mini-btn" disabled>&lt;</button>
-												<span id="eproposal-page" class="muted">Page 1 of 1</span>
-												<button id="eproposal-next" class="q-mini-btn" disabled>&gt;</button>
-										</div>
-								</div>
-						</div>
-
 						<!-- New Business Details Upload (widget) -->
       <div class="card-dark bm-span-all" id="nb-widget">
         <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
@@ -693,7 +671,6 @@
   // ===== Quotes widget logic =====
   let QUOTES_PAGE = 1;
 		let NB_PAGE = 1;
-		let EPROPOSAL_PAGE = 1;
 
   async function refreshQuotes(page = QUOTES_PAGE) {
     QUOTES_PAGE = page;
@@ -751,64 +728,6 @@
       console.error(e);
     }
   }
-		
-		async function refreshEproposal(page = EPROPOSAL_PAGE) {
-				EPROPOSAL_PAGE = page;
-
-				try {
-						const r = await fetch(`/api/eproposal/list?page=${page}`, { credentials: "same-origin" });
-						const j = await r.json();
-
-						const ul = document.getElementById("eproposal-ul");
-						if (!ul) return;
-						ul.innerHTML = "";
-
-						const fmtPT = new Intl.DateTimeFormat("en-US", {
-								timeZone: "America/Los_Angeles",
-								year: "numeric", month: "short", day: "2-digit",
-								hour: "2-digit", minute: "2-digit"
-						});
-
-						(j.items || []).forEach(it => {
-								const whenDate = it.uploaded_at ? new Date(it.uploaded_at) : null;
-								const when = (whenDate && !isNaN(whenDate)) ? fmtPT.format(whenDate) : "—";
-								const kb = Math.round((Number(it.file_size) || 0) / 1024);
-
-								const li = document.createElement("li");
-								li.style.margin = "4px 0";
-
-								const a = document.createElement("a");
-								a.href = `/eproposal/download/${it.id}`;
-								a.textContent = `${it.original_name} — ${when} (${kb} KB)`;
-								a.target = "_blank";
-								a.style.color = "#a8c7ff"; // match Quotes
-
-								li.appendChild(a);
-								ul.appendChild(li);
-						});
-
-						if (!j.items || j.items.length === 0) {
-								ul.innerHTML = "<li>No E-Proposal uploads yet.</li>";
-						}
-
-						const prevBtn = document.getElementById("eproposal-prev");
-						const nextBtn = document.getElementById("eproposal-next");
-						const pageLbl = document.getElementById("eproposal-page");
-
-						if (pageLbl) pageLbl.textContent = `Page ${j.page} of ${j.total_pages}`;
-						if (prevBtn) {
-								prevBtn.disabled = (j.page <= 1);
-								prevBtn.onclick = () => refreshEproposal(j.page - 1);
-						}
-						if (nextBtn) {
-								nextBtn.disabled = (j.page >= j.total_pages);
-								nextBtn.onclick = () => refreshEproposal(j.page + 1);
-						}
-				} catch (e) {
-						console.error(e);
-				}
-		}
-
 		
 		async function refreshNbUploads(page = NB_PAGE) {
     NB_PAGE = page;
@@ -894,50 +813,13 @@
       }
     });
   })();
-		
-		(function setupEproposalWidget(){
-				const btn  = document.getElementById("eproposal-upload-btn");
-				const file = document.getElementById("eproposal-file");
-				if (!btn || !file) return;
-
-				btn.addEventListener("click", () => file.click());
-
-				file.addEventListener("change", async () => {
-						if (!file.files || !file.files[0]) return;
-
-						const fd = new FormData();
-						fd.append("file", file.files[0]);
-
-						try {
-								const r = await fetch("/api/eproposal/upload", {
-										method: "POST",
-										body: fd,
-										credentials: "same-origin"
-								});
-
-								const j = await r.json();
-
-								if (j.success) {
-										file.value = "";
-										await refreshEproposal(1);
-								} else {
-										alert(j.error || "Upload failed");
-								}
-						} catch (e) {
-								console.error(e);
-								alert("Upload failed");
-						}
-				});
-		})();
-
 
   // ✅ DOM ready: just load data for this page
   window.addEventListener("DOMContentLoaded", () => {
-				loadTrends();
-				refreshQuotes(1);
-				refreshNbUploads(1);
-				refreshEproposal(1);
-		});
+    loadTrends();
+    refreshQuotes(1);
+    refreshNbUploads(1);  // 👈 load NB uploads on page load
+  });
 
 </script>
 
