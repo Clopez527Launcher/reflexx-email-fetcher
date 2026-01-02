@@ -3304,8 +3304,7 @@ def login():
 # -------------------------------
 # Password Reset (NO HASH PASSWORD)
 # -------------------------------
-import os, secrets, hashlib, smtplib
-from email.message import EmailMessage
+import os, secrets, hashlib, json, urllib.request
 from datetime import datetime, timedelta
 from flask import render_template, request, url_for
 
@@ -3314,51 +3313,54 @@ def _sha256(s: str) -> str:
 
 def send_password_reset_email(to_email: str, reset_link: str):
     """
-    Uses SMTP env vars:
-      SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS, SMTP_FROM
+    Uses Postmark API env vars (the ones you already have):
+      POSTMARK_API_TOKEN
+      POSTMARK_FROM_EMAIL
     """
-    host = os.getenv("SMTP_HOST")
-    port = int(os.getenv("SMTP_PORT", "587"))
-    user = os.getenv("SMTP_USER")
-    pw   = os.getenv("SMTP_PASS")
-    frm  = os.getenv("SMTP_FROM", user)
+    token = os.getenv("POSTMARK_API_TOKEN")
+    frm   = os.getenv("POSTMARK_FROM_EMAIL")
 
     missing = []
-    if not host: missing.append("SMTP_HOST")
-    if not user: missing.append("SMTP_USER")
-    if not pw:   missing.append("SMTP_PASS")
-    if not frm:  missing.append("SMTP_FROM")
+    if not token: missing.append("POSTMARK_API_TOKEN")
+    if not frm:   missing.append("POSTMARK_FROM_EMAIL")
 
-    # ✅ If anything is missing, print exactly what
     if missing:
-        print("\n=== SMTP NOT SET / MISSING VARS ===")
+        print("\n=== POSTMARK NOT SET / MISSING VARS ===")
         print("Missing:", ", ".join(missing))
-        print("Host:", host)
-        print("Port:", port)
-        print("User present?:", bool(user))
-        print("Pass present?:", bool(pw))
-        print("From:", frm)
         print("=== PASSWORD RESET LINK (FALLBACK) ===")
         print(reset_link)
-        print("=====================================\n")
+        print("======================================\n")
         return
 
-    msg = EmailMessage()
-    msg["Subject"] = "Reflexx Password Reset"
-    msg["From"] = frm
-    msg["To"] = to_email
-    msg.set_content(
-        "You requested a password reset.\n\n"
-        f"Reset your password here:\n{reset_link}\n\n"
-        "If you didn't request this, ignore this email."
+    payload = {
+        "From": frm,
+        "To": to_email,
+        "Subject": "Reflexx Password Reset",
+        "TextBody": (
+            "You requested a password reset.\n\n"
+            f"Reset your password here:\n{reset_link}\n\n"
+            "If you didn't request this, ignore this email."
+        )
+    }
+
+    req = urllib.request.Request(
+        "https://api.postmarkapp.com/email",
+        data=json.dumps(payload).encode("utf-8"),
+        headers={
+            "Accept": "application/json",
+            "Content-Type": "application/json",
+            "X-Postmark-Server-Token": token
+        },
+        method="POST"
     )
 
-    with smtplib.SMTP(host, port) as server:
-        server.starttls()
-        server.login(user, pw)
-        server.send_message(msg)
-
-    print("[SMTP] Password reset email sent to:", to_email)
+    try:
+        with urllib.request.urlopen(req, timeout=15) as resp:
+            body = resp.read().decode("utf-8", errors="ignore")
+            print("[Postmark] Password reset email sent to:", to_email, "| status:", resp.status, "| resp:", body[:200])
+    except Exception as e:
+        print("[Postmark] ERROR sending reset email:", str(e))
+        print("Reset link (fallback):", reset_link)
 
 
 @app.route("/forgot-password", methods=["GET", "POST"])
