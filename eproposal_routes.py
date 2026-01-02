@@ -11,6 +11,20 @@ from datetime import datetime
 
 eproposal_bp = Blueprint("eproposal", __name__)
 
+def first_val(row):
+    # Works if row is a tuple/list OR a dict-like row
+    if row is None:
+        return None
+    try:
+        return row[0]  # tuple/list style
+    except Exception:
+        # dict style (mysqlclient / some wrappers)
+        try:
+            return next(iter(row.values()))
+        except Exception:
+            return None
+
+
 # ✅ Lazy DB getter (prevents circular import on boot)
 def db():
     from app import get_db_connection
@@ -135,7 +149,8 @@ def list_eproposal_uploads():
             (manager_id,)
         )
         row = cur.fetchone()
-        total = int(row[0]) if row and row[0] is not None else 0
+        n = first_val(row)
+        total = int(n) if n is not None else 0
         total_pages = max(1, (total + per_page - 1) // per_page)
 
         cur.execute("""
@@ -150,13 +165,22 @@ def list_eproposal_uploads():
 
         items = []
         for r in rows:
-            # r = (id, original_name, file_size, uploaded_at)
+            # Works for tuple rows OR dict rows
+            if isinstance(r, dict):
+                _id = r.get("id")
+                original_name = r.get("original_name")
+                file_size = r.get("file_size")
+                uploaded_at = r.get("uploaded_at")
+            else:
+                _id, original_name, file_size, uploaded_at = r
+
             items.append({
-                "id": r[0],
-                "original_name": r[1],
-                "file_size": r[2],
-                "uploaded_at": r[3].isoformat() if r[3] else None
+                "id": _id,
+                "original_name": original_name,
+                "file_size": file_size,
+                "uploaded_at": uploaded_at.isoformat() if uploaded_at else None
             })
+
 
         return jsonify({"page": page, "total_pages": total_pages, "items": items})
 
