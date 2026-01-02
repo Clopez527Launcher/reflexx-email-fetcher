@@ -3316,7 +3316,6 @@ def send_password_reset_email(to_email: str, reset_link: str):
     """
     Uses SMTP env vars:
       SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS, SMTP_FROM
-    If not set, prints link to server logs (easy for testing).
     """
     host = os.getenv("SMTP_HOST")
     port = int(os.getenv("SMTP_PORT", "587"))
@@ -3324,11 +3323,24 @@ def send_password_reset_email(to_email: str, reset_link: str):
     pw   = os.getenv("SMTP_PASS")
     frm  = os.getenv("SMTP_FROM", user)
 
-    # ✅ If SMTP isn't configured, print the link so you can click it
-    if not host or not user or not pw or not frm:
-        print("\n=== PASSWORD RESET LINK (SMTP NOT SET) ===")
+    missing = []
+    if not host: missing.append("SMTP_HOST")
+    if not user: missing.append("SMTP_USER")
+    if not pw:   missing.append("SMTP_PASS")
+    if not frm:  missing.append("SMTP_FROM")
+
+    # ✅ If anything is missing, print exactly what
+    if missing:
+        print("\n=== SMTP NOT SET / MISSING VARS ===")
+        print("Missing:", ", ".join(missing))
+        print("Host:", host)
+        print("Port:", port)
+        print("User present?:", bool(user))
+        print("Pass present?:", bool(pw))
+        print("From:", frm)
+        print("=== PASSWORD RESET LINK (FALLBACK) ===")
         print(reset_link)
-        print("=========================================\n")
+        print("=====================================\n")
         return
 
     msg = EmailMessage()
@@ -3345,6 +3357,8 @@ def send_password_reset_email(to_email: str, reset_link: str):
         server.starttls()
         server.login(user, pw)
         server.send_message(msg)
+
+    print("[SMTP] Password reset email sent to:", to_email)
 
 
 @app.route("/forgot-password", methods=["GET", "POST"])
@@ -3381,7 +3395,7 @@ def forgot_password():
             conn.commit()
             c2.close()
 
-            reset_link = url_for("reset_password", token=raw_token, _external=True)
+            reset_link = url_for("reset_password", token=raw_token, _external=True, _scheme="https")
             send_password_reset_email(email, reset_link)
 
         try:
