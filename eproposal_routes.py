@@ -104,7 +104,7 @@ def upload_eproposal_history():
 
         # 2) Bulk insert the history rows
         cur.executemany("""
-            INSERT INTO eproposal_history
+            INSERT IGNORE INTO eproposal_history
               (upload_id, agency_number, last_name, first_name, record_type,
                sender_allstate_user_id, customer_viewed_at, created_at, quotes, email_address,
                agency_code, uploaded_by_user_id, manager_id)
