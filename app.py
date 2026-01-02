@@ -3317,8 +3317,9 @@ def send_password_reset_email(to_email: str, reset_link: str):
       POSTMARK_API_TOKEN
       POSTMARK_FROM_EMAIL
     """
-    token = os.getenv("POSTMARK_API_TOKEN")
-    frm   = os.getenv("POSTMARK_FROM_EMAIL")
+    token = os.getenv("postmark_api_token")
+    frm   = os.getenv("postmark_from_email")
+
 
     missing = []
     if not token: missing.append("POSTMARK_API_TOKEN")
