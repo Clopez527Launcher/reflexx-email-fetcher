@@ -127,14 +127,15 @@ def list_eproposal_uploads():
     offset = (page - 1) * per_page
 
     conn = db()
-    cur = conn.cursor(dictionary=True)
+    cur = conn.cursor()
 
     try:
         cur.execute(
-            "SELECT COUNT(*) AS n FROM eproposal_uploads WHERE manager_id=%s",
+            "SELECT COUNT(*) FROM eproposal_uploads WHERE manager_id=%s",
             (manager_id,)
         )
-        total = (cur.fetchone() or {}).get("n", 0) or 0
+        row = cur.fetchone()
+        total = int(row[0]) if row and row[0] is not None else 0
         total_pages = max(1, (total + per_page - 1) // per_page)
 
         cur.execute("""
@@ -145,7 +146,18 @@ def list_eproposal_uploads():
             LIMIT %s OFFSET %s
         """, (manager_id, per_page, offset))
 
-        items = cur.fetchall() or []
+        rows = cur.fetchall() or []
+
+        items = []
+        for r in rows:
+            # r = (id, original_name, file_size, uploaded_at)
+            items.append({
+                "id": r[0],
+                "original_name": r[1],
+                "file_size": r[2],
+                "uploaded_at": r[3].isoformat() if r[3] else None
+            })
+
         return jsonify({"page": page, "total_pages": total_pages, "items": items})
 
     finally:
@@ -166,7 +178,7 @@ def download_eproposal(upload_id):
         return "Not logged in", 401
 
     conn = db()
-    cur = conn.cursor(dictionary=True)
+    cur = conn.cursor()
 
     try:
         cur.execute("""
@@ -176,14 +188,19 @@ def download_eproposal(upload_id):
         """, (upload_id, manager_id))
 
         row = cur.fetchone()
-        if not row or not row.get("file_blob"):
+        # row = (original_name, content_type, file_blob)
+        if not row or not row[2]:
             return "Not found", 404
 
+        original_name = row[0] or "eproposal.csv"
+        content_type  = row[1] or "text/csv"
+        file_blob     = row[2]
+
         return send_file(
-            io.BytesIO(row["file_blob"]),
-            mimetype=(row.get("content_type") or "text/csv"),
+            io.BytesIO(file_blob),
+            mimetype=content_type,
             as_attachment=True,
-            download_name=(row.get("original_name") or "eproposal.csv")
+            download_name=original_name
         )
 
     finally:
