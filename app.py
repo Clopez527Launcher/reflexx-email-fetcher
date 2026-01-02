@@ -31,7 +31,7 @@ from flask_login import current_user
 from scorecard_api import scorecard_api
 from ai_routes import ai_bp
 
-from routes.eproposal_routes import eproposal_bp
+from eproposal_routes import eproposal_bp
 app.register_blueprint(eproposal_bp)
 
 
