@@ -3017,6 +3017,81 @@ def dict_cursor(conn):
         import pymysql
         return conn.cursor(pymysql.cursors.DictCursor)  # PyMySQL
 
+from flask import request, jsonify
+from datetime import datetime
+import mysql.connector  # or your existing mysql import
+
+# ----------------------------------------------------
+# ✅ Staff Daily Summary Email Toggles (per rep)
+# ----------------------------------------------------
+
+@app.get("/api/manager/staff-daily-summary-list")
+def staff_daily_summary_list():
+    manager_id = session.get("manager_id")
+    if not manager_id:
+        return jsonify({"ok": False, "error": "not_logged_in"}), 401
+
+    conn = get_db_connection()   # ✅ use your existing function
+    cur = conn.cursor(dictionary=True)
+
+    cur.execute("""
+        SELECT
+          id AS user_id,
+          nickname,
+          email,
+          COALESCE(staff_daily_summary_enabled, 0) AS enabled
+        FROM users
+        WHERE manager_id = %s
+          AND role = 'user'
+          AND is_active = 1
+        ORDER BY nickname ASC
+    """, (manager_id,))
+
+    rows = cur.fetchall()
+    cur.close()
+    conn.close()
+
+    return jsonify({"ok": True, "rows": rows})
+
+
+@app.post("/api/manager/staff-daily-summary-toggle")
+def staff_daily_summary_toggle():
+    manager_id = session.get("manager_id")
+    if not manager_id:
+        return jsonify({"ok": False, "error": "not_logged_in"}), 401
+
+    data = request.get_json(silent=True) or {}
+    user_id = data.get("user_id")
+    enabled = data.get("enabled")
+
+    if user_id is None or enabled is None:
+        return jsonify({"ok": False, "error": "missing_fields"}), 400
+
+    enabled_val = 1 if bool(enabled) else 0
+
+    conn = get_db_connection()
+    cur = conn.cursor()
+
+    cur.execute("""
+        UPDATE users
+        SET staff_daily_summary_enabled = %s
+        WHERE id = %s
+          AND manager_id = %s
+          AND role = 'user'
+    """, (enabled_val, user_id, manager_id))
+
+    conn.commit()
+    updated = cur.rowcount
+
+    cur.close()
+    conn.close()
+
+    if updated == 0:
+        return jsonify({"ok": False, "error": "not_found_or_not_allowed"}), 404
+
+    return jsonify({"ok": True, "enabled": enabled_val, "user_id": user_id})
+
+
 @app.route("/api/user/email-reminder", methods=["GET"])
 def api_get_email_reminder():
     user_id = session.get("user_id")
