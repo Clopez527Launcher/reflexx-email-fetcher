@@ -74,13 +74,13 @@ def build_employee_coaching(nickname: str, call_stats: dict, eprops: int, bucket
     # 2) E-PROPOSALS
     # -------------------------
     if eprops >= 8:
-        eprop_msg = f"You sent **{eprops} e-proposals** — great follow-through."
+        eprop_msg = f"You sent **{eprops} E-Proposal(s)** — great follow-through."
         eprop_level = "great"
     elif eprops >= 5:
-        eprop_msg = f"You sent **{eprops} e-proposals** — good. Let’s push for 8+."
+        eprop_msg = f"You sent **{eprops} E-Proposals** — good. Let’s push for 8+."
         eprop_level = "ok"
     else:
-        eprop_msg = f"You sent **{eprops} e-proposals** — not enough. Let’s target 5–7 minimum."
+        eprop_msg = f"You sent **{eprops} E-Proposals** — not enough. Let’s target 5–7 minimum."
         eprop_level = "bad"
 
     # -------------------------
@@ -394,7 +394,7 @@ def employee_build_email_html(nickname: str, call_stats: dict, eprops: int, buck
           Total sent: <b>{eprops}</b>
         </div>
 
-        <h3 style="margin:16px 0 8px 0;">3) Performance (Grades + Z-Scores)</h3>
+        <h3 style="margin:16px 0 8px 0;">3) Performance Grades & Z-Scores (Last 7 days)</h3>
         <table style="width:100%; border-collapse:collapse;">
           <tr style="color:#bffcff;">
             <th style="text-align:left; padding:8px; border-bottom:1px solid rgba(255,255,255,0.08);">Bucket</th>
