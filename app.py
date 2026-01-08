@@ -3031,8 +3031,8 @@ def staff_daily_summary_list():
     if not manager_id:
         return jsonify({"ok": False, "error": "not_logged_in"}), 401
 
-    conn = get_db_connection()   # ✅ use your existing function
-    cur = conn.cursor(dictionary=True)
+    conn = get_db_connection()   # ✅ keep your existing helper
+    cur = conn.cursor()
 
     cur.execute("""
         SELECT
@@ -3047,11 +3047,14 @@ def staff_daily_summary_list():
         ORDER BY nickname ASC
     """, (manager_id,))
 
-    rows = cur.fetchall()
+    rows = cur.fetchall()  # list of tuples
+    cols = [d[0] for d in cur.description]  # column names
+
     cur.close()
     conn.close()
 
-    return jsonify({"ok": True, "rows": rows})
+    out = [dict(zip(cols, r)) for r in rows]
+    return jsonify({"ok": True, "rows": out})
 
 
 @app.post("/api/manager/staff-daily-summary-toggle")
