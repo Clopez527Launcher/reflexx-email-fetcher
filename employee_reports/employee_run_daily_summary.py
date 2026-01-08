@@ -1,4 +1,12 @@
 import argparse
+import os
+import sys
+
+# ✅ Ensure project root is on sys.path (works in Railway + local)
+THIS_DIR = os.path.dirname(os.path.abspath(__file__))
+PROJECT_ROOT = os.path.dirname(THIS_DIR)
+if PROJECT_ROOT not in sys.path:
+    sys.path.insert(0, PROJECT_ROOT)
 
 from employee_reports.employee_daily_summary import employee_send_daily_summaries
 
