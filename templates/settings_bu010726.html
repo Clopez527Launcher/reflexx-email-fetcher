@@ -226,26 +226,7 @@
     </div>
   </div>
 
-		<!-- ✅ SECTION 3: Daily Staff Summary Emails -->
-  <div class="settings-widget" style="margin-bottom:18px;">
-    <div class="widget-header">
-      <div>
-        <h3 class="widget-title blue-title">Daily Staff Summary Emails</h3>
-        <p class="widget-subtitle">
-          Send each rep a morning summary of what they did yesterday (calls, e-proposals, z-scores, AI coaching).
-        </p>
-      </div>
-    </div>
-
-    <div id="staffDailyList" class="loading">Loading users...</div>
-    <div id="staffDailyToast" style="display:none; margin-top:12px; padding:10px 12px; border-radius:10px;
-        background: rgba(0,230,230,0.12); border: 1px solid rgba(0,230,230,0.35);
-        color:#bffcff; font-weight:800; width:fit-content;">
-      Saved ✅
-    </div>
-  </div>
-
-		<!-- ✅ SECTION 4: Daily Login Reminder Emails -->
+		<!-- ✅ SECTION 3: Daily Login Reminder Emails -->
   <div class="settings-widget">
     <div class="widget-header">
       <div>
@@ -265,87 +246,6 @@
 </div>
 
 <script>
-async function loadStaffDailySummaryUsers() {
-  const box = document.getElementById("staffDailyList");
-  if (!box) return;
-
-  const res = await fetch("/api/manager/staff-daily-summary-list", { credentials: "include" });
-
-  let data = {};
-  try { data = await res.json(); } catch (e) {}
-
-  if (!res.ok || !data.ok || !Array.isArray(data.rows)) {
-    box.innerHTML = "<div class='loading'>Failed to load users ❌</div>";
-    return;
-  }
-
-  if (data.rows.length === 0) {
-    box.innerHTML = "<div class='loading'>No reps found for your manager_id.</div>";
-    return;
-  }
-
-  const rowsHtml = data.rows.map(u => {
-    const id = u.user_id;
-    const email = u.email || "";
-    const name = u.nickname || email || ("User " + id);
-    const checked = (u.enabled == 1) ? "checked" : "";
-
-    return `
-      <div class="user-row">
-        <div class="user-left">
-          <div class="user-name">${name}</div>
-          <div class="user-email">${email}</div>
-        </div>
-
-        <label class="toggle-wrap">
-          <input
-            type="checkbox"
-            class="staffDailyToggle"
-            data-user-id="${id}"
-            ${checked}
-          />
-          <span>Enabled</span>
-        </label>
-      </div>
-    `;
-  }).join("");
-
-  box.innerHTML = rowsHtml;
-
-  document.querySelectorAll(".staffDailyToggle").forEach(cb => {
-    cb.addEventListener("change", async (e) => {
-      const enabled = e.target.checked;
-      const userId = Number(e.target.dataset.userId);
-
-      if (!userId || Number.isNaN(userId)) {
-        alert("Bad userId coming from checkbox: " + e.target.dataset.userId);
-        e.target.checked = !enabled;
-        return;
-      }
-
-      const r = await fetch("/api/manager/staff-daily-summary-toggle", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({ user_id: userId, enabled: enabled })
-      });
-
-      let out = {};
-      try { out = await r.json(); } catch (err) {}
-
-      if (!r.ok || !out.ok) {
-        e.target.checked = !enabled;
-        alert("Save failed (" + r.status + "): " + JSON.stringify(out));
-        return;
-      }
-
-      const toast = document.getElementById("staffDailyToast");
-      toast.style.display = "block";
-      setTimeout(() => toast.style.display = "none", 1200);
-    });
-  });
-}
-
 async function loadUsers() {
   const usersList = document.getElementById("usersList");
 
@@ -503,7 +403,6 @@ document.addEventListener("DOMContentLoaded", async () => {
   await loadUsers();
   await loadWeeklySummaryToggle();
   await loadDailySummaryToggle();
-  await loadStaffDailySummaryUsers();
 });
 </script>
 {% endblock %}
