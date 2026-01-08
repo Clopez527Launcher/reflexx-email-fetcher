@@ -274,7 +274,7 @@ async function loadStaffDailySummaryUsers() {
   let data = {};
   try { data = await res.json(); } catch (e) {}
 
-  if (!res.ok || !data.ok || !Array.isArray(data.rows)) {
+  if (!res.ok || !data.ok || !Array.isArray(data.users)) {
     box.innerHTML = "<div class='loading'>Failed to load users ❌</div>";
     return;
   }
@@ -284,11 +284,11 @@ async function loadStaffDailySummaryUsers() {
     return;
   }
 
-  const rowsHtml = data.rows.map(u => {
-    const id = u.user_id;
-    const email = u.email || "";
-    const name = u.nickname || email || ("User " + id);
-    const checked = (u.enabled == 1) ? "checked" : "";
+  const rowsHtml = data.users.map(u => {
+    const id = Number(u.id);
+				const email = u.email || "";
+				const name = u.nickname || email || ("User " + id);
+				const checked = (u.staff_daily_summary_enabled == 1) ? "checked" : "";
 
     return `
       <div class="user-row">

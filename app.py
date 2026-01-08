@@ -3031,15 +3031,15 @@ def staff_daily_summary_list():
     if not manager_id:
         return jsonify({"ok": False, "error": "not_logged_in"}), 401
 
-    conn = get_db_connection()   # ✅ keep your existing helper
+    conn = get_db_connection()
     cur = conn.cursor()
 
     cur.execute("""
         SELECT
-          id AS user_id,
-          nickname,
+          id,
           email,
-          COALESCE(staff_daily_summary_enabled, 0) AS enabled
+          nickname,
+          COALESCE(staff_daily_summary_enabled, 0) AS staff_daily_summary_enabled
         FROM users
         WHERE manager_id = %s
           AND role = 'user'
@@ -3047,14 +3047,16 @@ def staff_daily_summary_list():
         ORDER BY nickname ASC
     """, (manager_id,))
 
-    rows = cur.fetchall()  # list of tuples
-    cols = [d[0] for d in cur.description]  # column names
+    rows = cur.fetchall()
+    cols = [d[0] for d in cur.description]
 
     cur.close()
     conn.close()
 
-    out = [dict(zip(cols, r)) for r in rows]
-    return jsonify({"ok": True, "rows": out})
+    users = [dict(zip(cols, r)) for r in rows]
+
+    # ✅ return with the same structure you use elsewhere
+    return jsonify({"ok": True, "users": users})
 
 
 @app.post("/api/manager/staff-daily-summary-toggle")
