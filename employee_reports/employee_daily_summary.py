@@ -14,6 +14,160 @@ def employee_yesterday_str() -> str:
     y = (datetime.now(PACIFIC) - timedelta(days=1)).date()
     return y.strftime("%Y-%m-%d")
 
+def hms_to_minutes(hms: str) -> float:
+    """'HH:MM:SS' -> total minutes (float)"""
+    try:
+        parts = (hms or "00:00:00").split(":")
+        if len(parts) != 3:
+            return 0.0
+        h, m, s = [int(x) for x in parts]
+        return (h * 60) + m + (s / 60.0)
+    except:
+        return 0.0
+
+
+def build_employee_coaching(nickname: str, call_stats: dict, eprops: int, buckets: dict) -> dict:
+    """
+    Returns:
+      { well: str, improve: str, action: str }
+    """
+    outbounds = int(call_stats.get("outbounds") or 0)
+    ob_minutes = hms_to_minutes(call_stats.get("ob_time") or "00:00:00")
+
+    phone_grade = (buckets.get("phone_grade") or "Average").strip()
+    quote_grade = (buckets.get("quote_grade") or "Average").strip()
+    movement_grade = (buckets.get("movement_grade") or "Average").strip()
+
+    # -------------------------
+    # 1) CALLS: outbound volume
+    # -------------------------
+    if outbounds >= 100:
+        outbounds_msg = f"You made **{outbounds} outbounds** — that’s solid volume."
+        outbounds_level = "great"
+    elif outbounds >= 50:
+        outbounds_msg = f"You made **{outbounds} outbounds** — decent, keep pushing."
+        outbounds_level = "ok"
+    elif outbounds >= 40:
+        outbounds_msg = f"You made **{outbounds} outbounds** — borderline. Let’s aim higher."
+        outbounds_level = "low"
+    else:
+        outbounds_msg = f"You made **{outbounds} outbounds** — too low. We need more attempts."
+        outbounds_level = "bad"
+
+    # -------------------------
+    # 1) CALLS: outbound talk time
+    # -------------------------
+    if ob_minutes >= 90:
+        obtalk_msg = f"Your outbound talk time was **{call_stats.get('ob_time','00:00:00')}** — great (right in the 1:30+ range)."
+        obtalk_level = "great"
+    elif ob_minutes >= 45:
+        obtalk_msg = f"Your outbound talk time was **{call_stats.get('ob_time','00:00:00')}** — okay, but we want to build this toward 1:30–2:00."
+        obtalk_level = "ok"
+    elif ob_minutes >= 30:
+        obtalk_msg = f"Your outbound talk time was **{call_stats.get('ob_time','00:00:00')}** — a bit light."
+        obtalk_level = "low"
+    else:
+        obtalk_msg = f"Your outbound talk time was **{call_stats.get('ob_time','00:00:00')}** — too low. We need more real conversations."
+        obtalk_level = "bad"
+
+    # -------------------------
+    # 2) E-PROPOSALS
+    # -------------------------
+    if eprops >= 8:
+        eprop_msg = f"You sent **{eprops} e-proposals** — great follow-through."
+        eprop_level = "great"
+    elif eprops >= 5:
+        eprop_msg = f"You sent **{eprops} e-proposals** — good. Let’s push for 8+."
+        eprop_level = "ok"
+    else:
+        eprop_msg = f"You sent **{eprops} e-proposals** — not enough. Let’s target 5–7 minimum."
+        eprop_level = "bad"
+
+    # -------------------------
+    # 3) GRADES (focus Phone + Quote, avoid Movement unless Poor)
+    # -------------------------
+    def grade_msg(bucket_name: str, grade: str) -> str:
+        if grade == "Excellent":
+            return f"{bucket_name} was **Excellent** — keep doing what you’re doing."
+        if grade == "Above Average":
+            return f"{bucket_name} was **Above Average** — strong pace."
+        if grade == "Average":
+            return f"{bucket_name} was **Average** — okay baseline, room to level up."
+        if grade == "Below Average":
+            return f"{bucket_name} was **Below Average** — we should tighten this up."
+        return f"{bucket_name} was **Poor** — let’s fix this quickly."
+
+    phone_msg = grade_msg("Phone", phone_grade)
+    quote_msg = grade_msg("Quote", quote_grade)
+
+    movement_msg = ""
+    if movement_grade == "Poor":
+        movement_msg = "Movement was **Poor** — you may need some training navigating a few applications to reduce friction and speed up workflows."
+
+    # -------------------------
+    # Build "What you did well"
+    # -------------------------
+    well_parts = []
+    # praise the best levers that were actually good
+    if outbounds_level in ("ok", "great"):
+        well_parts.append(outbounds_msg)
+    if obtalk_level in ("ok", "great"):
+        well_parts.append(obtalk_msg)
+    if eprop_level in ("ok", "great"):
+        well_parts.append(eprop_msg)
+    if phone_grade in ("Above Average", "Excellent"):
+        well_parts.append(phone_msg)
+    if quote_grade in ("Above Average", "Excellent"):
+        well_parts.append(quote_msg)
+
+    if not well_parts:
+        well_parts.append("You showed up — now let’s tighten the plan and get momentum back.")
+
+    # -------------------------
+    # Build "What to improve"
+    # -------------------------
+    improve_parts = []
+    if outbounds_level in ("bad", "low"):
+        improve_parts.append(outbounds_msg)
+    if obtalk_level in ("bad", "low"):
+        improve_parts.append(obtalk_msg)
+    if eprop_level == "bad":
+        improve_parts.append(eprop_msg)
+
+    # Focus recommendations around Phone/Quote grades
+    if phone_grade in ("Below Average", "Poor"):
+        improve_parts.append("Phone activity needs attention — set a tight call block and protect it.")
+    if quote_grade in ("Below Average", "Poor"):
+        improve_parts.append("Quote activity needs attention — break quoting into smaller sessions so it doesn’t stack up.")
+
+    if movement_msg:
+        improve_parts.append(movement_msg)
+
+    if not improve_parts:
+        improve_parts.append("Main focus: keep consistency — replicate what worked and slightly raise targets.")
+
+    # -------------------------
+    # Build "One action for today"
+    # (your A/B strategy idea)
+    # -------------------------
+    action = (
+        "Try an experiment: for the next **2–3 days**, make most of your calls **before noon**. "
+        "Then for the next **2–3 days**, shift calls to **after noon**. Compare talk time + e-proposals and keep the better schedule."
+    )
+
+    # If they’re really low, make it more urgent + specific
+    if outbounds_level == "bad" or obtalk_level == "bad":
+        action = (
+            "Do one protected call block today: **60 minutes, no distractions**. "
+            "Goal: raise outbound talk time. After that block, immediately send e-proposals while the conversations are fresh."
+        )
+
+    return {
+        "well": " ".join(well_parts),
+        "improve": " ".join(improve_parts),
+        "action": action
+    }
+
 
 def employee_get_enabled_users():
     """
@@ -204,7 +358,8 @@ def employee_fetch_bucket_zscores_yesterday(user_id: int):
 
 def employee_build_email_html(nickname: str, call_stats: dict, eprops: int, buckets: dict) -> str:
     yday = employee_yesterday_str()
-
+    coaching = build_employee_coaching(nickname, call_stats, eprops, buckets)
+    
     def zfmt(x):
         try:
             x = float(x)
@@ -244,7 +399,7 @@ def employee_build_email_html(nickname: str, call_stats: dict, eprops: int, buck
           <tr style="color:#bffcff;">
             <th style="text-align:left; padding:8px; border-bottom:1px solid rgba(255,255,255,0.08);">Bucket</th>
             <th style="text-align:right; padding:8px; border-bottom:1px solid rgba(255,255,255,0.08);">Grade</th>
-            <th style="text-align:right; padding:8px; border-bottom:1px solid rgba(255,255,255,0.08);">Z</th>
+            <th style="text-align:right; padding:8px; border-bottom:1px solid rgba(255,255,255,0.08);">Z-Score</th>
           </tr>
           <tr>
             <td style="padding:8px; border-bottom:1px solid rgba(255,255,255,0.08);">Phone</td>
@@ -263,11 +418,13 @@ def employee_build_email_html(nickname: str, call_stats: dict, eprops: int, buck
           </tr>
         </table>
 
+        coaching = build_employee_coaching(nickname, call_stats, eprops, buckets)
+        
         <h3 style="margin:16px 0 8px 0;">4) Coaching</h3>
         <div style="color:rgba(233,246,255,0.85); line-height:1.4;">
-          <b>What you did well:</b> (AI summary will go here)<br/>
-          <b>What to improve:</b> (AI summary will go here)<br/>
-          <b>One action for today:</b> (AI summary will go here)
+          <b>What you did well:</b> {coaching["well"]}<br/><br/>
+          <b>What to improve:</b> {coaching["improve"]}<br/><br/>
+          <b>One action for today:</b> {coaching["action"]}
         </div>
 
         <div style="margin-top:18px; color:rgba(233,246,255,0.55); font-size:12px;">
