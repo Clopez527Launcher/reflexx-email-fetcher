@@ -99,29 +99,36 @@ def employee_fetch_call_stats_yesterday(user_id: int):
     }
 
 
-def employee_fetch_eproposals_yesterday(user_id: int):
+def employee_fetch_eproposals_yesterday(user_id: int) -> int:
     """
-    TODO: Replace SQL with your real query.
-    Return int.
+    Pull yesterday's e-proposal count from v_eproposal_daily_pt.
+    Returns int: eproposal_count (defaults to 0).
     """
+    yday = (datetime.now(PACIFIC) - timedelta(days=1)).date()
+
     conn = get_db_connection()
     cur = conn.cursor()
 
-    # ------------------------------
-    # TODO REPLACE THIS QUERY
-    # ------------------------------
-    cur.execute("SELECT 0")
+    cur.execute("""
+        SELECT COALESCE(eproposal_count, 0) AS cnt
+        FROM v_eproposal_daily_pt
+        WHERE user_id = %s
+          AND pt_date = %s
+        LIMIT 1
+    """, (user_id, yday))
 
     row = cur.fetchone()
     cur.close()
     conn.close()
 
+    # dict mode
     if isinstance(row, dict):
-        # try common keys
-        return int(row.get("count") or row.get("cnt") or list(row.values())[0] or 0)
+        return int(row.get("cnt") or 0)
 
+    # tuple mode
+    if not row:
+        return 0
     return int(row[0] or 0)
-
 
 def employee_fetch_bucket_zscores_yesterday(user_id: int):
     """
