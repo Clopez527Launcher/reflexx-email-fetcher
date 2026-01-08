@@ -50,17 +50,21 @@ def employee_get_enabled_users():
 
 def employee_fetch_call_stats_yesterday(user_id: int):
     """
-    TODO: Replace SQL with your real query.
-    Return dict:
+    Pull yesterday's call stats from call_stats_union.
+    Returns dict:
       { inbounds, outbounds, ib_time, ob_time }
     """
+    def sec_to_hms(sec):
+        sec = int(sec or 0)
+        h = sec // 3600
+        m = (sec % 3600) // 60
+        s = sec % 60
+        return f"{h:02d}:{m:02d}:{s:02d}"
+
+    yday = (datetime.now(PACIFIC) - timedelta(days=1)).date()
+
     conn = get_db_connection()
     cur = conn.cursor()
-
-    # ------------------------------
-    # ✅ REAL QUERY (call_stats_union)
-    # ------------------------------
-    yday = (datetime.now(PACIFIC) - timedelta(days=1)).date()
 
     cur.execute("""
         SELECT
@@ -72,6 +76,27 @@ def employee_fetch_call_stats_yesterday(user_id: int):
         WHERE reflexx_user_id = %s
           AND day = %s
     """, (user_id, yday))
+
+    row = cur.fetchone()
+    cur.close()
+    conn.close()
+
+    # dict mode
+    if isinstance(row, dict):
+        return {
+            "inbounds": row.get("inbounds", 0),
+            "outbounds": row.get("outbounds", 0),
+            "ib_time": sec_to_hms(row.get("inbound_talk_sec", 0)),
+            "ob_time": sec_to_hms(row.get("outbound_talk_sec", 0)),
+        }
+
+    # tuple mode
+    return {
+        "inbounds": row[0] if row else 0,
+        "outbounds": row[1] if row else 0,
+        "ib_time": sec_to_hms(row[2] if row else 0),
+        "ob_time": sec_to_hms(row[3] if row else 0),
+    }
 
 
 def employee_fetch_eproposals_yesterday(user_id: int):
@@ -91,28 +116,11 @@ def employee_fetch_eproposals_yesterday(user_id: int):
     cur.close()
     conn.close()
 
-def sec_to_hms(sec):
-    sec = int(sec or 0)
-    h = sec // 3600
-    m = (sec % 3600) // 60
-    s = sec % 60
-    return f"{h:02d}:{m:02d}:{s:02d}"
+    if isinstance(row, dict):
+        # try common keys
+        return int(row.get("count") or row.get("cnt") or list(row.values())[0] or 0)
 
-if isinstance(row, dict):
-    return {
-        "inbounds": row.get("inbounds", 0),
-        "outbounds": row.get("outbounds", 0),
-        "ib_time": sec_to_hms(row.get("inbound_talk_sec", 0)),
-        "ob_time": sec_to_hms(row.get("outbound_talk_sec", 0)),
-    }
-
-# tuple mode fallback
-return {
-    "inbounds": row[0],
-    "outbounds": row[1],
-    "ib_time": sec_to_hms(row[2]),
-    "ob_time": sec_to_hms(row[3]),
-}
+    return int(row[0] or 0)
 
 
 def employee_fetch_bucket_zscores_yesterday(user_id: int):
