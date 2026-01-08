@@ -269,26 +269,46 @@ async function loadStaffDailySummaryUsers() {
   const box = document.getElementById("staffDailyList");
   if (!box) return;
 
-  const res = await fetch("/api/manager/staff-daily-summary-list", { credentials: "include" });
+  box.innerHTML = "<div class='loading'>Loading users...</div>";
 
-  let data = {};
-  try { data = await res.json(); } catch (e) {}
-
-  if (!res.ok || !data.ok || !Array.isArray(data.users)) {
+  let res;
+  try {
+    res = await fetch("/api/manager/staff-daily-summary-list", { credentials: "include" });
+  } catch (err) {
+    console.log("StaffDaily fetch failed:", err);
     box.innerHTML = "<div class='loading'>Failed to load users ❌</div>";
     return;
   }
 
-  if (data.rows.length === 0) {
+  let data = null;
+  try {
+    data = await res.json();
+  } catch (err) {
+    console.log("StaffDaily JSON parse failed:", err);
+    box.innerHTML = "<div class='loading'>Failed to load users ❌</div>";
+    return;
+  }
+
+  // ✅ Debug: see exactly what the API returned
+  console.log("staff-daily-summary-list response:", data);
+
+  // ✅ Hard guard: must be ok + array
+  const list = (data && data.ok && Array.isArray(data.users)) ? data.users : null;
+  if (!res.ok || !list) {
+    box.innerHTML = "<div class='loading'>Failed to load users ❌</div>";
+    return;
+  }
+
+  if (list.length === 0) {
     box.innerHTML = "<div class='loading'>No reps found for your manager_id.</div>";
     return;
   }
 
-  const rowsHtml = data.users.map(u => {
+  const rowsHtml = list.map(u => {
     const id = Number(u.id);
-				const email = u.email || "";
-				const name = u.nickname || email || ("User " + id);
-				const checked = (u.staff_daily_summary_enabled == 1) ? "checked" : "";
+    const email = u.email || "";
+    const name = u.nickname || email || ("User " + id);
+    const checked = (u.staff_daily_summary_enabled == 1) ? "checked" : "";
 
     return `
       <div class="user-row">
@@ -318,6 +338,7 @@ async function loadStaffDailySummaryUsers() {
       const userId = Number(e.target.dataset.userId);
 
       if (!userId || Number.isNaN(userId)) {
+        console.log("Bad checkbox dataset:", e.target.dataset);
         alert("Bad userId coming from checkbox: " + e.target.dataset.userId);
         e.target.checked = !enabled;
         return;
@@ -345,6 +366,7 @@ async function loadStaffDailySummaryUsers() {
     });
   });
 }
+
 
 async function loadUsers() {
   const usersList = document.getElementById("usersList");
