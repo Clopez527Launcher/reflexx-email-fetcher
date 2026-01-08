@@ -132,28 +132,41 @@ def employee_fetch_eproposals_yesterday(user_id: int) -> int:
 
 def employee_fetch_bucket_zscores_yesterday(user_id: int):
     """
-    Pull bucket grades + L7 z-scores from fact_daily for yesterday (PT).
+    Pull Z-scores (7-day) from fact_daily for yesterday (PT date)
+    and compute grades using the correct scale:
 
-    Returns dict:
-      {
-        phone_grade, quote_grade, movement_grade,
-        phone_z, quote_z, movement_z
-      }
+      if zNum > 1.5  -> Excellent
+      if zNum > 0.5  -> Above Average
+      if zNum >= -0.5 -> Average
+      if zNum >= -1.5 -> Below Average
+      else -> Poor
     """
     yday = (datetime.now(PACIFIC) - timedelta(days=1)).date()
+
+    def grade_from_z(z):
+        try:
+            zNum = float(z)
+        except:
+            zNum = 0.0
+
+        if zNum > 1.5:
+            return "Excellent"
+        if zNum > 0.5:
+            return "Above Average"
+        if zNum >= -0.5:
+            return "Average"
+        if zNum >= -1.5:
+            return "Below Average"
+        return "Poor"
 
     conn = get_db_connection()
     cur = conn.cursor()
 
     cur.execute("""
         SELECT
-          COALESCE(phone_activity_score, 0.0)    AS phone_score,
-          COALESCE(quote_activity_score, 0.0)    AS quote_score,
-          COALESCE(movement_activity_score, 0.0) AS movement_score,
-
-          COALESCE(phone_ce_l7_z, 0.0)           AS phone_z,
-          COALESCE(quote_ce_l7_z, 0.0)           AS quote_z,
-          COALESCE(movement_ce_l7_z, 0.0)        AS movement_z
+          phone_ce_l7_z,
+          quote_ce_l7_z,
+          movement_ce_l7_z
         FROM fact_daily
         WHERE user_id = %s
           AND date = %s
@@ -164,56 +177,28 @@ def employee_fetch_bucket_zscores_yesterday(user_id: int):
     cur.close()
     conn.close()
 
-    def grade_from_score(x: float) -> str:
-        # tweak thresholds whenever you want
-        try:
-            x = float(x)
-        except:
-            x = 0.0
+    # default if missing
+    phone_z = 0.0
+    quote_z = 0.0
+    movement_z = 0.0
 
-        if x >= 1.25: return "Excellent"
-        if x >= 0.75: return "Great"
-        if x >= 0.25: return "Good"
-        if x >= -0.25: return "Average"
-        if x >= -0.75: return "Below Avg"
-        return "Poor"
-
-    if not row:
-        return {
-            "phone_grade": "Average",
-            "quote_grade": "Average",
-            "movement_grade": "Average",
-            "phone_z": 0.0,
-            "quote_z": 0.0,
-            "movement_z": 0.0,
-        }
-
-    # dict mode
-    if isinstance(row, dict):
-        phone_score = float(row.get("phone_score") or 0)
-        quote_score = float(row.get("quote_score") or 0)
-        move_score  = float(row.get("movement_score") or 0)
-
-        phone_z = float(row.get("phone_z") or 0)
-        quote_z = float(row.get("quote_z") or 0)
-        move_z  = float(row.get("movement_z") or 0)
-    else:
-        # tuple mode fallback (same order as SELECT)
-        phone_score = float(row[0] or 0)
-        quote_score = float(row[1] or 0)
-        move_score  = float(row[2] or 0)
-
-        phone_z = float(row[3] or 0)
-        quote_z = float(row[4] or 0)
-        move_z  = float(row[5] or 0)
+    if row:
+        if isinstance(row, dict):
+            phone_z = row.get("phone_ce_l7_z") or 0.0
+            quote_z = row.get("quote_ce_l7_z") or 0.0
+            movement_z = row.get("movement_ce_l7_z") or 0.0
+        else:
+            phone_z = row[0] or 0.0
+            quote_z = row[1] or 0.0
+            movement_z = row[2] or 0.0
 
     return {
-        "phone_grade": grade_from_score(phone_score),
-        "quote_grade": grade_from_score(quote_score),
-        "movement_grade": grade_from_score(move_score),
-        "phone_z": round(phone_z, 2),
-        "quote_z": round(quote_z, 2),
-        "movement_z": round(move_z, 2),
+        "phone_grade": grade_from_z(phone_z),
+        "quote_grade": grade_from_z(quote_z),
+        "movement_grade": grade_from_z(movement_z),
+        "phone_z": float(phone_z or 0),
+        "quote_z": float(quote_z or 0),
+        "movement_z": float(movement_z or 0),
     }
 
 
