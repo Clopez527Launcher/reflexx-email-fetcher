@@ -3047,15 +3047,20 @@ def staff_daily_summary_list():
         ORDER BY nickname ASC
     """, (manager_id,))
 
-    rows = cur.fetchall()
-    cols = [d[0] for d in cur.description]
+    rows_raw = cur.fetchall()
+
+    # ✅ IMPORTANT:
+    # Some connectors/cursors return rows as DICTS already.
+    # If we re-map them, we accidentally turn values into column names.
+    if rows_raw and isinstance(rows_raw[0], dict):
+        users = rows_raw
+    else:
+        col_names = [desc[0] for desc in cur.description]
+        users = [dict(zip(col_names, r)) for r in rows_raw]
 
     cur.close()
     conn.close()
 
-    users = [dict(zip(cols, r)) for r in rows]
-
-    # ✅ return with the same structure you use elsewhere
     return jsonify({"ok": True, "users": users})
 
 
@@ -3066,16 +3071,29 @@ def staff_daily_summary_toggle():
         return jsonify({"ok": False, "error": "not_logged_in"}), 401
 
     data = request.get_json(silent=True) or {}
-    user_id = data.get("user_id")
+
+    # ✅ accept multiple key names just in case
+    target_user_id = data.get("user_id") or data.get("id") or data.get("target_user_id")
     enabled = data.get("enabled")
 
-    if user_id is None or enabled is None:
-        return jsonify({"ok": False, "error": "missing_fields"}), 400
+    if not target_user_id or enabled is None:
+        return jsonify({"ok": False, "error": "missing_fields", "received_json": data}), 400
 
     enabled_val = 1 if bool(enabled) else 0
 
     conn = get_db_connection()
     cur = conn.cursor()
+
+    # ✅ only allow updating users that belong to THIS manager
+    cur.execute(
+        "SELECT id FROM users WHERE id = %s AND manager_id = %s AND role='user' AND is_active = 1",
+        (target_user_id, manager_id)
+    )
+    owned = cur.fetchone()
+    if not owned:
+        cur.close()
+        conn.close()
+        return jsonify({"ok": False, "error": "forbidden"}), 403
 
     cur.execute("""
         UPDATE users
@@ -3083,7 +3101,8 @@ def staff_daily_summary_toggle():
         WHERE id = %s
           AND manager_id = %s
           AND role = 'user'
-    """, (enabled_val, user_id, manager_id))
+          AND is_active = 1
+    """, (enabled_val, target_user_id, manager_id))
 
     conn.commit()
     updated = cur.rowcount
@@ -3094,8 +3113,12 @@ def staff_daily_summary_toggle():
     if updated == 0:
         return jsonify({"ok": False, "error": "not_found_or_not_allowed"}), 404
 
-    return jsonify({"ok": True, "enabled": enabled_val, "user_id": user_id})
-    
+    return jsonify({"ok": True, "enabled": enabled_val, "user_id": int(target_user_id)})
+
+
+# ----------------------------------------------------
+# ✅ (TEMP) Staff Daily Summary Debug
+# ----------------------------------------------------
 @app.get("/api/manager/staff-daily-summary-debug")
 def staff_daily_summary_debug():
     manager_id = session.get("manager_id")
@@ -3104,21 +3127,34 @@ def staff_daily_summary_debug():
 
     conn = get_db_connection()
     cur = conn.cursor()
+
     cur.execute("""
-        SELECT id, email, nickname, COALESCE(staff_daily_summary_enabled,0) AS staff_daily_summary_enabled
+        SELECT
+          id,
+          email,
+          nickname,
+          COALESCE(staff_daily_summary_enabled, 0) AS staff_daily_summary_enabled
         FROM users
-        WHERE manager_id = %s AND role='user' AND is_active=1
+        WHERE manager_id = %s
+          AND role = 'user'
+          AND is_active = 1
         ORDER BY id ASC
         LIMIT 5
     """, (manager_id,))
-    rows = cur.fetchall()
-    cols = [d[0] for d in cur.description]
+
+    rows_raw = cur.fetchall()
+
+    if rows_raw and isinstance(rows_raw[0], dict):
+        users = rows_raw
+        cols = list(rows_raw[0].keys())
+    else:
+        cols = [desc[0] for desc in cur.description]
+        users = [dict(zip(cols, r)) for r in rows_raw]
+
     cur.close()
     conn.close()
 
-    users = [dict(zip(cols, r)) for r in rows]
     return jsonify({"ok": True, "users": users, "cols": cols, "marker": "DEBUG_V1"})
-
 
 
 @app.route("/api/user/email-reminder", methods=["GET"])
