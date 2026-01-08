@@ -58,18 +58,20 @@ def employee_fetch_call_stats_yesterday(user_id: int):
     cur = conn.cursor()
 
     # ------------------------------
-    # TODO REPLACE THIS QUERY
+    # ✅ REAL QUERY (call_stats_union)
     # ------------------------------
-    cur.execute("SELECT 0 AS inbounds, 0 AS outbounds, '00:00:00' AS ib_time, '00:00:00' AS ob_time")
+    yday = (datetime.now(PACIFIC) - timedelta(days=1)).date()
 
-    row = cur.fetchone()
-    cur.close()
-    conn.close()
-
-    if isinstance(row, dict):
-        return row
-
-    return {"inbounds": row[0], "outbounds": row[1], "ib_time": row[2], "ob_time": row[3]}
+    cur.execute("""
+        SELECT
+          COALESCE(SUM(inbound_calls), 0)        AS inbounds,
+          COALESCE(SUM(outbound_calls), 0)       AS outbounds,
+          COALESCE(SUM(inbound_talk_sec), 0)     AS inbound_talk_sec,
+          COALESCE(SUM(outbound_talk_sec), 0)    AS outbound_talk_sec
+        FROM call_stats_union
+        WHERE reflexx_user_id = %s
+          AND day = %s
+    """, (user_id, yday))
 
 
 def employee_fetch_eproposals_yesterday(user_id: int):
@@ -89,11 +91,28 @@ def employee_fetch_eproposals_yesterday(user_id: int):
     cur.close()
     conn.close()
 
-    if isinstance(row, dict):
-        # try common keys
-        return int(row.get("count") or row.get("cnt") or list(row.values())[0] or 0)
+def sec_to_hms(sec):
+    sec = int(sec or 0)
+    h = sec // 3600
+    m = (sec % 3600) // 60
+    s = sec % 60
+    return f"{h:02d}:{m:02d}:{s:02d}"
 
-    return int(row[0] or 0)
+if isinstance(row, dict):
+    return {
+        "inbounds": row.get("inbounds", 0),
+        "outbounds": row.get("outbounds", 0),
+        "ib_time": sec_to_hms(row.get("inbound_talk_sec", 0)),
+        "ob_time": sec_to_hms(row.get("outbound_talk_sec", 0)),
+    }
+
+# tuple mode fallback
+return {
+    "inbounds": row[0],
+    "outbounds": row[1],
+    "ib_time": sec_to_hms(row[2]),
+    "ob_time": sec_to_hms(row[3]),
+}
 
 
 def employee_fetch_bucket_zscores_yesterday(user_id: int):
