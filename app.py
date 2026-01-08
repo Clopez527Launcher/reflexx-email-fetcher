@@ -3095,6 +3095,30 @@ def staff_daily_summary_toggle():
         return jsonify({"ok": False, "error": "not_found_or_not_allowed"}), 404
 
     return jsonify({"ok": True, "enabled": enabled_val, "user_id": user_id})
+    
+@app.get("/api/manager/staff-daily-summary-debug")
+def staff_daily_summary_debug():
+    manager_id = session.get("manager_id")
+    if not manager_id:
+        return jsonify({"ok": False, "error": "not_logged_in"}), 401
+
+    conn = get_db_connection()
+    cur = conn.cursor()
+    cur.execute("""
+        SELECT id, email, nickname, COALESCE(staff_daily_summary_enabled,0) AS staff_daily_summary_enabled
+        FROM users
+        WHERE manager_id = %s AND role='user' AND is_active=1
+        ORDER BY id ASC
+        LIMIT 5
+    """, (manager_id,))
+    rows = cur.fetchall()
+    cols = [d[0] for d in cur.description]
+    cur.close()
+    conn.close()
+
+    users = [dict(zip(cols, r)) for r in rows]
+    return jsonify({"ok": True, "users": users, "cols": cols, "marker": "DEBUG_V1"})
+
 
 
 @app.route("/api/user/email-reminder", methods=["GET"])
