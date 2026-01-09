@@ -4121,9 +4121,33 @@ def home():
     
 from flask import send_file
 
+from flask import send_from_directory, abort, make_response
+import os
+
 @app.route('/download_tracker')
 def download_tracker():
-    return send_file("ReflexxApp 2.1.exe", as_attachment=True, download_name="ReflexxApp 2.1.exe", mimetype="application/octet-stream")
+    filename = "ReflexxApp_3.1.1.exe"
+    downloads_dir = os.path.join(app.root_path, "static", "downloads")
+    full_path = os.path.join(downloads_dir, filename)
+
+    # ✅ Fail loudly if the file is missing (no more mystery 0-byte downloads)
+    if not os.path.exists(full_path):
+        abort(404, description=f"Missing file on server: {filename}")
+
+    resp = make_response(send_from_directory(
+        downloads_dir,
+        filename,
+        as_attachment=True,
+        download_name=filename
+    ))
+
+    # ✅ HARD disable caching so Railway-edge can't return 304 for this
+    resp.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
+    resp.headers["Pragma"] = "no-cache"
+    resp.headers["Expires"] = "0"
+    resp.headers.pop("ETag", None)
+
+    return resp
 
 # ✅ Dashboard Route with Web Logs Chart
 @app.route("/dashboard")
