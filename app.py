@@ -1162,9 +1162,9 @@ def quotes_rollup_report(rid):
 
 
 # ✅ Download Only Screen
-@app.route('/download_tracker')
-def serve_tracker_file():
-    return send_from_directory('static', 'ReflexxApp 3.1.1.exe', as_attachment=True, download_name='ReflexxApp 3.1.1.exe')
+#@app.route('/download_tracker')
+#def serve_tracker_file():
+ #   return send_from_directory('static', 'ReflexxApp 3.1.1.exe', as_attachment=True, download_name='ReflexxApp 3.1.1.exe')
     
 @app.route('/download_page')
 def download_page():
@@ -4118,8 +4118,6 @@ from flask import render_template
 def home():
     return render_template("landing_page.html")
 
-    
-from flask import send_file
 
 from flask import send_from_directory, abort, make_response
 import os

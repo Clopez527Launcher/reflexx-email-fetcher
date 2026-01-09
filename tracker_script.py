@@ -32,6 +32,8 @@ def detect_label_from_title(title: str) -> str:
 
     if "ringcentral" in title:
         return "RingCentral"
+    elif "lead list" in title:
+        return "Lead Manager"  
     elif "advisor pro" in title:
         return "Allstate Advisor Pro"
     elif "policy view" in title:
@@ -44,16 +46,45 @@ def detect_label_from_title(title: str) -> str:
         return "Allstate Gateway"
     elif "eagent" in title:
         return "eAgent"
-    elif "policy list" in title or "policies >" in title:
-        return "Bamboo Insurance"
+    elif ("bamboo" in title) or ("jutro" in title) or ("qbwizardpage" in title) or ("agent go" in title):
+        return "Bamboo Quoting"
     elif "outlook" in title:
         return "Outlook"
     else:
         return "Other"
 
 def resource_path(name: str) -> str:
-    base = getattr(sys, "_MEIPASS", os.path.abspath("."))
-    return os.path.join(base, name)
+    """
+    Return an absolute path to a resource.
+    Works in:
+    - source mode (running tracker_script.py)
+    - PyInstaller onefile mode (sys._MEIPASS)
+    """
+    # 1) PyInstaller temp folder (onefile)
+    if hasattr(sys, "_MEIPASS"):
+        p = os.path.join(sys._MEIPASS, name)
+        if os.path.exists(p):
+            return p
+
+    # 2) Same folder as this script
+    here = os.path.dirname(os.path.abspath(__file__))
+    p = os.path.join(here, name)
+    if os.path.exists(p):
+        return p
+
+    # 3) static/ (your current structure)
+    p = os.path.join(here, "static", name)
+    if os.path.exists(p):
+        return p
+
+    # 4) static/assets/ (just in case later)
+    p = os.path.join(here, "static", "assets", name)
+    if os.path.exists(p):
+        return p
+
+    # fallback (still returns something predictable)
+    return os.path.join(here, name)
+
 
 # ✅ Headless environment check (Railway)
 IS_HEADLESS = os.getenv("RAILWAY_ENVIRONMENT") is not None
@@ -925,28 +956,35 @@ def create_login_window():
         btn_frame, text="Stop/Shutdown", command=on_stop,
         width=16, bg=stop_color, fg="white", font=("Segoe UI", 10, "bold")
     )
-    sales_btn = tk.Button(
-        btn_frame, text="Input Sales", command=input_sales_now,
-        width=16, bg=sales_color, fg="white", font=("Segoe UI", 10, "bold")
-    )
+    #sales_btn = tk.Button(
+    #    btn_frame, text="Input Sales", command=input_sales_now,
+    #    width=16, bg=sales_color, fg="white", font=("Segoe UI", 10, "bold")
+    #)
     store_btn = tk.Button(
         btn_frame, text="Store Credentials", command=on_store_credentials,
         width=16, bg=store_color, fg="white", font=("Segoe UI", 10, "bold")
     )
 
     # ---- Pack in the desired order (this sets the vertical order) ----
+    #start_btn.pack(pady=(0, 12))
+    #stop_btn.pack(pady=(0, 12))
+    #sales_btn.pack(pady=(0, 12))
+    #store_btn.pack(pady=(0, 0))
+    
+    
+    # ---- Pack in the desired order (this sets the vertical order) ----
     start_btn.pack(pady=(0, 12))
     stop_btn.pack(pady=(0, 12))
-    sales_btn.pack(pady=(0, 12))
     store_btn.pack(pady=(0, 0))
+
 
     # ---- Hover effects ----
     start_btn.bind("<Enter>", lambda e: start_btn.config(bg=hover_start))
     start_btn.bind("<Leave>", lambda e: start_btn.config(bg=start_color))
     stop_btn.bind("<Enter>",  lambda e: stop_btn.config(bg=hover_stop))
     stop_btn.bind("<Leave>",  lambda e: stop_btn.config(bg=stop_color))
-    sales_btn.bind("<Enter>", lambda e: sales_btn.config(bg=hover_sales))
-    sales_btn.bind("<Leave>", lambda e: sales_btn.config(bg=sales_color))
+   # sales_btn.bind("<Enter>", lambda e: sales_btn.config(bg=hover_sales))
+   # sales_btn.bind("<Leave>", lambda e: sales_btn.config(bg=sales_color))
     store_btn.bind("<Enter>", lambda e: store_btn.config(bg=hover_store))
     store_btn.bind("<Leave>", lambda e: store_btn.config(bg=store_color))
     # =================================================================
