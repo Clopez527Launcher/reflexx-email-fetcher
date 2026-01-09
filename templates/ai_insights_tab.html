@@ -115,6 +115,60 @@
 </div>
 
 <script>
+		// ✅ Active employee whitelist (hide inactive users like Zach)
+		let AI_ACTIVE_EMP_IDS = null;
+		let AI_ACTIVE_EMP_NAMES = null;
+
+		function aiNormName(s) {
+				return String(s || "").toLowerCase().replace(/\s+/g, " ").trim();
+		}
+
+		async function aiLoadActiveEmployeesWhitelist() {
+				if (AI_ACTIVE_EMP_IDS && AI_ACTIVE_EMP_NAMES) return;
+
+				AI_ACTIVE_EMP_IDS = new Set();
+				AI_ACTIVE_EMP_NAMES = new Set();
+
+				try {
+						const resp = await fetch("/manager-employees", { credentials: "include" });
+						const data = await resp.json();
+
+						if (Array.isArray(data)) {
+								data.forEach(emp => {
+										if (emp && emp.id != null) AI_ACTIVE_EMP_IDS.add(String(emp.id));
+
+										const bestName =
+												emp.nickname ||
+												emp.full_name ||
+												(emp.email ? emp.email.split("@")[0] : "");
+
+										const n = aiNormName(bestName);
+										if (n) AI_ACTIVE_EMP_NAMES.add(n);
+								});
+						}
+				} catch (e) {
+						console.warn("[AI Insights Tab] whitelist load failed:", e);
+						// if this fails, we won't filter (don’t accidentally hide everyone)
+						AI_ACTIVE_EMP_IDS = null;
+						AI_ACTIVE_EMP_NAMES = null;
+				}
+		}
+
+		function aiIsActiveRow(r) {
+				if (!AI_ACTIVE_EMP_IDS || !AI_ACTIVE_EMP_NAMES) return true;
+
+				const rid =
+						(r.user_id != null ? String(r.user_id) :
+						(r.employee_id != null ? String(r.employee_id) : null));
+
+				if (rid && AI_ACTIVE_EMP_IDS.has(rid)) return true;
+
+				const nm = aiNormName(r.full_name || r.user_name || "");
+				if (nm && AI_ACTIVE_EMP_NAMES.has(nm)) return true;
+
+				return false;
+		}
+
   // ------------------------------
   // State
   // ------------------------------
@@ -368,7 +422,11 @@
       const res = await fetch(url);
       const json = await res.json();
 
-      const rows = json.rows || [];
+      await aiLoadActiveEmployeesWhitelist();
+
+						let rows = json.rows || [];
+						rows = rows.filter(aiIsActiveRow);
+
       AI_CACHE_BY_RUN_WINDOW[key] = rows;
 
       renderCandidates(content, rows, windowLabel);
