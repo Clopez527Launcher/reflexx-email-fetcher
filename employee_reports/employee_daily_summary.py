@@ -29,145 +29,162 @@ def hms_to_minutes(hms: str) -> float:
 def build_employee_coaching(nickname: str, call_stats: dict, eprops: int, buckets: dict) -> dict:
     """
     Returns:
-      { well: str, improve: str, action: str }
+      {
+        well: str,
+        improve: str,
+        actions: list[str],   # 10+ direct actions for TODAY
+        focus: str            # 1-line focus for today
+      }
     """
     outbounds = int(call_stats.get("outbounds") or 0)
+    inbounds  = int(call_stats.get("inbounds") or 0)
+
     ob_minutes = hms_to_minutes(call_stats.get("ob_time") or "00:00:00")
+    ib_minutes = hms_to_minutes(call_stats.get("ib_time") or "00:00:00")
 
     phone_grade = (buckets.get("phone_grade") or "Average").strip()
     quote_grade = (buckets.get("quote_grade") or "Average").strip()
     movement_grade = (buckets.get("movement_grade") or "Average").strip()
 
     # -------------------------
-    # 1) CALLS: outbound volume
+    # Levels (simple)
     # -------------------------
-    if outbounds >= 100:
-        outbounds_msg = f"You made **{outbounds} outbounds** — that’s solid volume."
-        outbounds_level = "great"
-    elif outbounds >= 50:
-        outbounds_msg = f"You made **{outbounds} outbounds** — decent, keep pushing."
-        outbounds_level = "ok"
-    elif outbounds >= 40:
-        outbounds_msg = f"You made **{outbounds} outbounds** — borderline. Let’s aim higher."
-        outbounds_level = "low"
-    else:
-        outbounds_msg = f"You made **{outbounds} outbounds** — too low. We need more attempts."
-        outbounds_level = "bad"
+    def level_outbounds(x: int) -> str:
+        if x >= 100: return "great"
+        if x >= 50:  return "ok"
+        if x >= 40:  return "low"
+        return "bad"
+
+    def level_obtalk(m: float) -> str:
+        if m >= 90: return "great"
+        if m >= 45: return "ok"
+        if m >= 30: return "low"
+        return "bad"
+
+    def level_eprops(x: int) -> str:
+        if x >= 8: return "great"
+        if x >= 5: return "ok"
+        return "bad"
+
+    ob_level = level_outbounds(outbounds)
+    obt_level = level_obtalk(ob_minutes)
+    ep_level = level_eprops(eprops)
 
     # -------------------------
-    # 1) CALLS: outbound talk time
-    # -------------------------
-    if ob_minutes >= 90:
-        obtalk_msg = f"Your outbound talk time was **{call_stats.get('ob_time','00:00:00')}** — great (right in the 1:30+ range)."
-        obtalk_level = "great"
-    elif ob_minutes >= 45:
-        obtalk_msg = f"Your outbound talk time was **{call_stats.get('ob_time','00:00:00')}** — okay, but we want to build this toward 1:30–2:00."
-        obtalk_level = "ok"
-    elif ob_minutes >= 30:
-        obtalk_msg = f"Your outbound talk time was **{call_stats.get('ob_time','00:00:00')}** — a bit light."
-        obtalk_level = "low"
-    else:
-        obtalk_msg = f"Your outbound talk time was **{call_stats.get('ob_time','00:00:00')}** — too low. We need more real conversations."
-        obtalk_level = "bad"
-
-    # -------------------------
-    # 2) E-PROPOSALS
-    # -------------------------
-    if eprops >= 8:
-        eprop_msg = f"You sent **{eprops} E-Proposal(s)** — great follow-through."
-        eprop_level = "great"
-    elif eprops >= 5:
-        eprop_msg = f"You sent **{eprops} E-Proposals** — good. Let’s push for 8+."
-        eprop_level = "ok"
-    else:
-        eprop_msg = f"You sent **{eprops} E-Proposals** — not enough. Let’s target 5–7 minimum."
-        eprop_level = "bad"
-
-    # -------------------------
-    # 3) GRADES (focus Phone + Quote, avoid Movement unless Poor)
-    # -------------------------
-    def grade_msg(bucket_name: str, grade: str) -> str:
-        if grade == "Excellent":
-            return f"{bucket_name} was **Excellent** — keep doing what you’re doing."
-        if grade == "Above Average":
-            return f"{bucket_name} was **Above Average** — strong pace."
-        if grade == "Average":
-            return f"{bucket_name} was **Average** — okay baseline, room to level up."
-        if grade == "Below Average":
-            return f"{bucket_name} was **Below Average** — we should tighten this up."
-        return f"{bucket_name} was **Poor** — let’s fix this quickly."
-
-    phone_msg = grade_msg("Phone", phone_grade)
-    quote_msg = grade_msg("Quote", quote_grade)
-
-    movement_msg = ""
-    if movement_grade == "Poor":
-        movement_msg = "Movement was **Poor** — you may need some training navigating a few applications to reduce friction and speed up workflows."
-
-    # -------------------------
-    # Build "What you did well"
+    # What you did well (short)
     # -------------------------
     well_parts = []
-    # praise the best levers that were actually good
-    if outbounds_level in ("ok", "great"):
-        well_parts.append(outbounds_msg)
-    if obtalk_level in ("ok", "great"):
-        well_parts.append(obtalk_msg)
-    if eprop_level in ("ok", "great"):
-        well_parts.append(eprop_msg)
+
+    if ob_level in ("ok", "great"):
+        well_parts.append(f"Outbounds: **{outbounds}**.")
+    if obt_level in ("ok", "great"):
+        well_parts.append(f"Outbound talk: **{call_stats.get('ob_time','00:00:00')}**.")
+    if ep_level in ("ok", "great"):
+        well_parts.append(f"E-Proposals: **{eprops}**.")
     if phone_grade in ("Above Average", "Excellent"):
-        well_parts.append(phone_msg)
+        well_parts.append(f"Phone grade: **{phone_grade}**.")
     if quote_grade in ("Above Average", "Excellent"):
-        well_parts.append(quote_msg)
+        well_parts.append(f"Quote grade: **{quote_grade}**.")
 
     if not well_parts:
-        well_parts.append("You showed up — now let’s tighten the plan and get momentum back.")
+        well_parts.append("No strong lever yesterday — today we reset with a tighter plan.")
 
     # -------------------------
-    # Build "What to improve"
+    # What to improve (short + direct)
     # -------------------------
     improve_parts = []
-    if outbounds_level in ("bad", "low"):
-        improve_parts.append(outbounds_msg)
-    if obtalk_level in ("bad", "low"):
-        improve_parts.append(obtalk_msg)
-    if eprop_level == "bad":
-        improve_parts.append(eprop_msg)
 
-    # Focus recommendations around Phone/Quote grades
+    if ob_level in ("bad", "low"):
+        improve_parts.append(f"Outbounds were low (**{outbounds}**).")
+    if obt_level in ("bad", "low"):
+        improve_parts.append(f"Outbound talk was low (**{call_stats.get('ob_time','00:00:00')}**).")
+    if ep_level == "bad":
+        improve_parts.append(f"E-Proposals were low (**{eprops}**).")
     if phone_grade in ("Below Average", "Poor"):
-        improve_parts.append("Phone activity needs attention — set a tight call block and protect it.")
+        improve_parts.append(f"Phone grade is **{phone_grade}** (needs a protected call block).")
     if quote_grade in ("Below Average", "Poor"):
-        improve_parts.append("Quote activity needs attention — break quoting into smaller sessions so it doesn’t stack up.")
-
-    if movement_msg:
-        improve_parts.append(movement_msg)
+        improve_parts.append(f"Quote grade is **{quote_grade}** (needs tighter quote workflow).")
+    if movement_grade == "Poor":
+        improve_parts.append("Movement grade is **Poor** (workflow friction is slowing you down).")
 
     if not improve_parts:
-        improve_parts.append("Main focus: keep consistency — replicate what worked and slightly raise targets.")
+        improve_parts.append("Main goal: keep consistency and push targets slightly higher.")
 
     # -------------------------
-    # Build "One action for today"
-    # (your A/B strategy idea)
+    # TODAY: 10+ tailored actions (direct, not motivational)
     # -------------------------
-    action = (
-        "Try an experiment: for the next **2–3 days**, make most of your calls **before noon**. "
-        "Then for the next **2–3 days**, shift calls to **after noon**. Compare talk time + e-proposals and keep the better schedule."
-    )
+    actions = []
 
-    # If they’re really low, make it more urgent + specific
-    if outbounds_level == "bad" or obtalk_level == "bad":
-        action = (
-            "Do one protected call block today: **60 minutes, no distractions**. "
-            "Goal: raise outbound talk time. After that block, immediately send e-proposals while the conversations are fresh."
-        )
+    # Always include a structure plan (people need a schedule)
+    actions.append("Block **2 call sessions** today: **9:00–10:00** and **1:30–2:15** (calendar it now).")
+    actions.append("During call blocks: **no quoting**. Calls only. Quotes happen after the block.")
+
+    # Outbounds-specific
+    if ob_level == "bad":
+        actions.append("Set a floor: **40 outbounds by lunch**. If you miss it, extend the call block 15 minutes.")
+        actions.append("Use a simple pace rule: **1 outbound every 2 minutes** (timer on).")
+    elif ob_level == "low":
+        actions.append("Set a floor: **25 outbounds by lunch**. Hit it before any admin work.")
+    else:
+        actions.append("Keep pace: set a floor of **50 outbounds** again today to stay consistent.")
+
+    # Talk-time specific (conversation quality)
+    if obt_level in ("bad", "low"):
+        actions.append("On every connect, ask these 2 questions before quoting: **“What’s driving the change?” + “What coverage matters most?”**")
+        actions.append("Goal for the day: **+15 minutes outbound talk time** vs yesterday (track it after each call block).")
+        actions.append("If you get short calls: pivot to **2 follow-up questions** instead of ending the call.")
+    else:
+        actions.append("Keep talk time strong: aim for **3 meaningful connects** per call block.")
+
+    # E-proposals (conversion)
+    if ep_level == "bad":
+        actions.append("After each call block, do a **20-minute follow-up sprint**: send **at least 3 E-Proposals** immediately.")
+        actions.append("Write 1 follow-up template and reuse it all day: **Quote sent → next step + deadline**.")
+    elif ep_level == "ok":
+        actions.append("Push E-Proposals to **8 today** by doing a follow-up sprint after each call block.")
+    else:
+        actions.append("Repeat what worked: send E-Proposals **same day** while the conversation is fresh.")
+
+    # Quote grade actions
+    if quote_grade in ("Below Average", "Poor"):
+        actions.append("Run quoting in **2 small batches** (ex: **10:15–10:45** and **2:20–2:45**) so it doesn’t stack up.")
+        actions.append("Start every quote with the same checklist: **drivers → vehicles → prior → discounts → coverage** (no skipping).")
+    else:
+        actions.append("Keep quote output steady: **log the next 3 quotes** you’re going to finish today.")
+
+    # Phone grade actions
+    if phone_grade in ("Below Average", "Poor"):
+        actions.append("Use a call list rule: **new leads first**, then follow-ups, then old quotes.")
+        actions.append("Do **10 follow-ups** today on quotes already sent (quick win bucket).")
+
+    # Movement grade actions (only if Poor; avoid over-focusing idle)
+    if movement_grade == "Poor":
+        actions.append("Fix 1 friction point today: identify the **one app/tab** you bounce between the most and keep it pinned + logged in.")
+        actions.append("If you get stuck, ask manager for **10 minutes screen-share** to shorten the workflow.")
+
+    # Safety: ensure we always have 10 items
+    # If we somehow have less than 10, pad with strong generic-but-direct ops actions.
+    while len(actions) < 10:
+        actions.append("Before end of day: send **5 follow-up texts/emails** to warm prospects with a clear next step.")
+
+    # -------------------------
+    # One-line focus (simple)
+    # -------------------------
+    if ob_level == "bad" and obt_level == "bad":
+        focus = "Focus today: **build real conversations** (protected call blocks + immediate follow-up)."
+    elif ep_level == "bad":
+        focus = "Focus today: **convert activity into proposals** (follow-up sprints after calls)."
+    elif quote_grade in ("Below Average", "Poor"):
+        focus = "Focus today: **tight quoting workflow** (2 batches, no stacking)."
+    else:
+        focus = "Focus today: **repeat consistency** (call blocks + follow-ups)."
 
     return {
         "well": " ".join(well_parts),
         "improve": " ".join(improve_parts),
-        "action": action
+        "actions": actions,
+        "focus": focus
     }
-
 
 def employee_get_enabled_users():
     """
@@ -394,37 +411,60 @@ def employee_build_email_html(nickname: str, call_stats: dict, eprops: int, buck
           Total sent: <b>{eprops}</b>
         </div>
 
-        <h3 style="margin:16px 0 8px 0;">3) Performance Grades & Z-Scores (Last 7 days)</h3>
+        <h3 style="margin:16px 0 8px 0;">3) Performance Grades (Last 7 days)</h3>
+
         <table style="width:100%; border-collapse:collapse;">
           <tr style="color:#bffcff;">
-            <th style="text-align:left; padding:8px; border-bottom:1px solid rgba(255,255,255,0.08);">Bucket</th>
+            <th style="text-align:left; padding:8px; border-bottom:1px solid rgba(255,255,255,0.08);">Area</th>
             <th style="text-align:right; padding:8px; border-bottom:1px solid rgba(255,255,255,0.08);">Grade</th>
-            <th style="text-align:right; padding:8px; border-bottom:1px solid rgba(255,255,255,0.08);">Z-Score</th>
+            <th style="text-align:left; padding:8px; border-bottom:1px solid rgba(255,255,255,0.08);">What it means</th>
           </tr>
+
           <tr>
             <td style="padding:8px; border-bottom:1px solid rgba(255,255,255,0.08);">Phone</td>
             <td style="padding:8px; border-bottom:1px solid rgba(255,255,255,0.08); text-align:right;">{buckets.get("phone_grade","-")}</td>
-            <td style="padding:8px; border-bottom:1px solid rgba(255,255,255,0.08); text-align:right;">{zfmt(buckets.get("phone_z",0))}</td>
+            <td style="padding:8px; border-bottom:1px solid rgba(255,255,255,0.08);">
+              { "Strong call activity and conversations." if buckets.get("phone_grade") in ["Excellent","Above Average"]
+                else ("Baseline activity — room to push volume and talk time." if buckets.get("phone_grade") == "Average"
+                else "Below target — protect a call block and raise attempts." ) }
+            </td>
           </tr>
+
           <tr>
-            <td style="padding:8px; border-bottom:1px solid rgba(255,255,255,0.08);">Quote</td>
+            <td style="padding:8px; border-bottom:1px solid rgba(255,255,255,0.08);">Quotes</td>
             <td style="padding:8px; border-bottom:1px solid rgba(255,255,255,0.08); text-align:right;">{buckets.get("quote_grade","-")}</td>
-            <td style="padding:8px; border-bottom:1px solid rgba(255,255,255,0.08); text-align:right;">{zfmt(buckets.get("quote_z",0))}</td>
+            <td style="padding:8px; border-bottom:1px solid rgba(255,255,255,0.08);">
+              { "Strong quote output / follow-through." if buckets.get("quote_grade") in ["Excellent","Above Average"]
+                else ("Baseline quoting — tighten workflow to increase output." if buckets.get("quote_grade") == "Average"
+                else "Below target — run quoting in 2 short batches so it doesn’t stack." ) }
+            </td>
           </tr>
+
           <tr>
-            <td style="padding:8px;">Movement</td>
+            <td style="padding:8px;">Workflow</td>
             <td style="padding:8px; text-align:right;">{buckets.get("movement_grade","-")}</td>
-            <td style="padding:8px; text-align:right;">{zfmt(buckets.get("movement_z",0))}</td>
+            <td style="padding:8px;">
+              { "Smooth workflow — low friction." if buckets.get("movement_grade") in ["Excellent","Above Average"]
+                else ("Normal workflow pace." if buckets.get("movement_grade") == "Average"
+                else "High friction — ask for 10 min help to fix one bottleneck." ) }
+            </td>
           </tr>
         </table>
 
-        coaching = build_employee_coaching(nickname, call_stats, eprops, buckets)
-        
+
         <h3 style="margin:16px 0 8px 0;">4) Coaching</h3>
-        <div style="color:rgba(233,246,255,0.85); line-height:1.4;">
+        <div style="color:rgba(233,246,255,0.85); line-height:1.45;">
+          <div style="margin-bottom:10px; padding:10px; background:rgba(0,230,230,0.08); border:1px solid rgba(0,230,230,0.18); border-radius:10px;">
+            <b>{coaching["focus"]}</b>
+          </div>
+
           <b>What you did well:</b> {coaching["well"]}<br/><br/>
           <b>What to improve:</b> {coaching["improve"]}<br/><br/>
-          <b>One action for today:</b> {coaching["action"]}
+
+          <b>Today’s action plan (do these in order):</b>
+          <ol style="margin:10px 0 0 18px; padding:0; color:#e9f6ff;">
+            {''.join([f"<li style='margin:6px 0;'>{a}</li>" for a in coaching["actions"]])}
+          </ol>
         </div>
 
         <div style="margin-top:18px; color:rgba(233,246,255,0.55); font-size:12px;">
