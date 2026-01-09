@@ -162,10 +162,19 @@ def build_employee_coaching(nickname: str, call_stats: dict, eprops: int, bucket
         actions.append("Fix 1 friction point today: identify the **one app/tab** you bounce between the most and keep it pinned + logged in.")
         actions.append("If you get stuck, ask manager for **10 minutes screen-share** to shorten the workflow.")
 
-    # Safety: ensure we always have 10 items
-    # If we somehow have less than 10, pad with strong generic-but-direct ops actions.
-    while len(actions) < 10:
-        actions.append("Before end of day: send **5 follow-up texts/emails** to warm prospects with a clear next step.")
+    # ✅ Keep it simple: only 4–6 actions (best next steps)
+    # We keep the most important actions first.
+    actions = actions[:6]
+    
+    # Ensure at least 4 actions
+    fallback = [
+        "Block **1 protected call session** today (60 minutes).",
+        "After the call block, do a **15-minute follow-up sprint** (send proposals / texts).",
+        "Track one number today: **outbound talk time** (push it slightly).",
+        "Do **10 follow-ups** on warm prospects/quotes already sent."
+    ]
+    while len(actions) < 4:
+        actions.append(fallback[len(actions)])
 
     # -------------------------
     # One-line focus (simple)
@@ -376,7 +385,37 @@ def employee_fetch_bucket_zscores_yesterday(user_id: int):
 def employee_build_email_html(nickname: str, call_stats: dict, eprops: int, buckets: dict) -> str:
     yday = employee_yesterday_str()
     coaching = build_employee_coaching(nickname, call_stats, eprops, buckets)
-    
+
+    # ✅ Clean grades (safe)
+    pg = (buckets.get("phone_grade") or "Average").strip()
+    qg = (buckets.get("quote_grade") or "Average").strip()
+    mg = (buckets.get("movement_grade") or "Average").strip()
+
+    # ✅ Tiny color pill for grades
+    def pill(grade: str) -> str:
+        g = (grade or "Average").strip()
+        if g in ("Excellent", "Above Average"):
+            bg, bd, tx = "rgba(0,255,170,0.12)", "rgba(0,255,170,0.22)", "#00ffaa"
+        elif g == "Average":
+            bg, bd, tx = "rgba(191,252,255,0.10)", "rgba(191,252,255,0.18)", "#bffcff"
+        else:  # Below Average / Poor
+            bg, bd, tx = "rgba(255,90,90,0.12)", "rgba(255,90,90,0.22)", "#ff8b8b"
+
+        return (
+            f"<span style='"
+            f"display:inline-block;"
+            f"padding:3px 9px;"
+            f"border-radius:999px;"
+            f"font-weight:800;"
+            f"font-size:12px;"
+            f"background:{bg};"
+            f"border:1px solid {bd};"
+            f"color:{tx};"
+            f"'>"
+            f"{g}"
+            f"</span>"
+        )
+
     def zfmt(x):
         try:
             x = float(x)
@@ -415,37 +454,37 @@ def employee_build_email_html(nickname: str, call_stats: dict, eprops: int, buck
 
         <table style="width:100%; border-collapse:collapse;">
           <tr style="color:#bffcff;">
-            <th style="text-align:left; padding:8px; border-bottom:1px solid rgba(255,255,255,0.08);">Area</th>
-            <th style="text-align:right; padding:8px; border-bottom:1px solid rgba(255,255,255,0.08);">Grade</th>
-            <th style="text-align:left; padding:8px; border-bottom:1px solid rgba(255,255,255,0.08);">What it means</th>
+            <th style="text-align:center; padding:8px; border-bottom:1px solid rgba(255,255,255,0.08);">Area</th>
+            <th style="text-align:center; padding:8px; border-bottom:1px solid rgba(255,255,255,0.08);">Grade</th>
+            <th style="text-align:center; padding:8px; border-bottom:1px solid rgba(255,255,255,0.08);">What it means</th>
           </tr>
 
           <tr>
             <td style="padding:8px; border-bottom:1px solid rgba(255,255,255,0.08);">Phone</td>
-            <td style="padding:8px; border-bottom:1px solid rgba(255,255,255,0.08); text-align:right;">{buckets.get("phone_grade","-")}</td>
+            <td style="padding:8px; border-bottom:1px solid rgba(255,255,255,0.08); text-align:right;">{pill(pg)}</td>
             <td style="padding:8px; border-bottom:1px solid rgba(255,255,255,0.08);">
-              { "Strong call activity and conversations." if buckets.get("phone_grade") in ["Excellent","Above Average"]
-                else ("Baseline activity — room to push volume and talk time." if buckets.get("phone_grade") == "Average"
+              { "Strong call activity and conversations." if pg in ["Excellent","Above Average"]
+                else ("Baseline activity — room to push volume and talk time." if pg == "Average"
                 else "Below target — protect a call block and raise attempts." ) }
             </td>
           </tr>
 
           <tr>
             <td style="padding:8px; border-bottom:1px solid rgba(255,255,255,0.08);">Quotes</td>
-            <td style="padding:8px; border-bottom:1px solid rgba(255,255,255,0.08); text-align:right;">{buckets.get("quote_grade","-")}</td>
+            <td style="padding:8px; border-bottom:1px solid rgba(255,255,255,0.08); text-align:right;">{pill(qg)}</td>
             <td style="padding:8px; border-bottom:1px solid rgba(255,255,255,0.08);">
-              { "Strong quote output / follow-through." if buckets.get("quote_grade") in ["Excellent","Above Average"]
-                else ("Baseline quoting — tighten workflow to increase output." if buckets.get("quote_grade") == "Average"
+              { "Strong quote output / follow-through." if qg in ["Excellent","Above Average"]
+                else ("Baseline quoting — tighten workflow to increase output." if qg == "Average"
                 else "Below target — run quoting in 2 short batches so it doesn’t stack." ) }
             </td>
           </tr>
 
           <tr>
             <td style="padding:8px;">Workflow</td>
-            <td style="padding:8px; text-align:right;">{buckets.get("movement_grade","-")}</td>
+            <td style="padding:8px; text-align:right;">{pill(mg)}</td>
             <td style="padding:8px;">
-              { "Smooth workflow — low friction." if buckets.get("movement_grade") in ["Excellent","Above Average"]
-                else ("Normal workflow pace." if buckets.get("movement_grade") == "Average"
+              { "Smooth workflow — low friction." if mg in ["Excellent","Above Average"]
+                else ("Normal workflow pace." if mg == "Average"
                 else "High friction — ask for 10 min help to fix one bottleneck." ) }
             </td>
           </tr>
@@ -461,7 +500,9 @@ def employee_build_email_html(nickname: str, call_stats: dict, eprops: int, buck
           <b>What you did well:</b> {coaching["well"]}<br/><br/>
           <b>What to improve:</b> {coaching["improve"]}<br/><br/>
 
-          <b>Today’s action plan (do these in order):</b>
+          <div style="margin-top:10px; padding:8px 10px; border-radius:10px; background:rgba(191,252,255,0.08); border:1px solid rgba(191,252,255,0.14); font-weight:900; color:#bffcff;">
+            Today’s action plan (do these in order):
+          </div>
           <ol style="margin:10px 0 0 18px; padding:0; color:#e9f6ff;">
             {''.join([f"<li style='margin:6px 0;'>{a}</li>" for a in coaching["actions"]])}
           </ol>
