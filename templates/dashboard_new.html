@@ -1464,6 +1464,51 @@ document.addEventListener("DOMContentLoaded", function () {
     initRicoColumn("cs-yest-table", "cs-yest-rico-toggle", 1, "reflexx_hide_rico_yest");
   });
 		
+// ✅ Build a whitelist of ACTIVE employees using /manager-employees
+// We filter AI insights against this list so inactive users (is_active=0) don't show.
+let ACTIVE_EMP_IDS = null;        // Set of ids
+let ACTIVE_EMP_NAMES = null;      // Set of normalized names
+
+function normName(s) {
+  return String(s || "")
+    .toLowerCase()
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+async function loadActiveEmployeesWhitelist() {
+  // Cache so we don't refetch every time
+  if (ACTIVE_EMP_IDS && ACTIVE_EMP_NAMES) return;
+
+  ACTIVE_EMP_IDS = new Set();
+  ACTIVE_EMP_NAMES = new Set();
+
+  try {
+    const resp = await fetch("/manager-employees", { credentials: "include" });
+    const data = await resp.json();
+
+    if (Array.isArray(data)) {
+      data.forEach(emp => {
+        if (emp && emp.id != null) ACTIVE_EMP_IDS.add(String(emp.id));
+
+        // Prefer nickname/full_name, fallback to email local-part
+        const bestName =
+          emp.nickname ||
+          emp.full_name ||
+          (emp.email ? emp.email.split("@")[0] : "");
+
+        const n = normName(bestName);
+        if (n) ACTIVE_EMP_NAMES.add(n);
+      });
+    }
+  } catch (e) {
+    console.warn("[AI Insights] Could not load /manager-employees whitelist:", e);
+    // If this fails, we won't filter (better than hiding everyone)
+    ACTIVE_EMP_IDS = null;
+    ACTIVE_EMP_NAMES = null;
+  }
+}		
+		
 // ----------------------------------------------------
 // 🤖 AI Overall Insights (Dashboard New)
 // ----------------------------------------------------
@@ -1476,15 +1521,37 @@ async function loadAiOverallInsights() {
   weaknessesUl.innerHTML = "<li style='color:#777;'>Loading weaknesses...</li>";
 
   try {
-    const res = await fetch("/api/ai-dashboard-insights?window=overall");
-    const data = await res.json();
+    await loadActiveEmployeesWhitelist();
 
-    const rows = data.rows || [];
-    const strengths = rows.filter(r => r.polarity === "strength");
-    const weaknesses = rows.filter(r => r.polarity === "weakness");
+				const res = await fetch("/api/ai-dashboard-insights?window=overall", { credentials: "include" });
+				const data = await res.json();
 
-    renderAiList(strengthsUl, strengths, "strength");
-    renderAiList(weaknessesUl, weaknesses, "weakness");
+				let rows = data.rows || [];
+
+				// ✅ FILTER: keep only active employees
+				// Works best if your AI rows include row.user_id / row.employee_id.
+				// If not, we fallback to matching names.
+				if (ACTIVE_EMP_IDS && ACTIVE_EMP_NAMES) {
+						rows = rows.filter(r => {
+								const rid =
+										(r.user_id != null ? String(r.user_id) :
+										(r.employee_id != null ? String(r.employee_id) : null));
+
+								if (rid && ACTIVE_EMP_IDS.has(rid)) return true;
+
+								const nm = normName(r.full_name || r.user_name || "");
+								if (nm && ACTIVE_EMP_NAMES.has(nm)) return true;
+
+								return false; // not on active roster -> hide
+						});
+				}
+
+				const strengths = rows.filter(r => r.polarity === "strength");
+				const weaknesses = rows.filter(r => r.polarity === "weakness");
+
+				renderAiList(strengthsUl, strengths, "strength");
+				renderAiList(weaknessesUl, weaknesses, "weakness");
+
   } catch (err) {
     strengthsUl.innerHTML = "<li style='color:#ff9999;'>Error loading strengths</li>";
     weaknessesUl.innerHTML = "<li style='color:#ff9999;'>Error loading weaknesses</li>";
