@@ -1201,18 +1201,29 @@
 
   // STEP C: fetch a bucket from the backend
   async function fetchBucket(bucketName) {
-    const { start, end } = getDashboardDates();
-    const url = `/api/buckets?bucket=${bucketName}&start=${start}&end=${end}`;
-    try {
-      const res = await fetch(url);
-      if (!res.ok) throw new Error("network");
-      const payload = await res.json();
-      return { data: payload, start, end };
-    } catch (err) {
-      console.error("bucket fetch failed", err);
-      return { data: [], start, end };
-    }
-  }
+				const { start, end } = getDashboardDates();
+
+				const params = new URLSearchParams({
+						bucket: bucketName,
+						start,
+						end,
+						manager_id: String(window.MANAGER_ID || 0), // ✅ force tenant scope
+						ts: String(Date.now())                      // ✅ cache buster (important)
+				});
+
+				const url = `/api/buckets?${params.toString()}`;
+
+				try {
+						const res = await fetch(url, { credentials: "same-origin", cache: "no-store" });
+						if (!res.ok) throw new Error("network");
+						const payload = await res.json();
+						return { data: payload, start, end };
+				} catch (err) {
+						console.error("bucket fetch failed", err);
+						return { data: [], start, end };
+				}
+		}
+
 
   // STEP D: load all the cards
   async function loadAllDashboardBuckets() {
